@@ -13,63 +13,59 @@ Unique Selling Points (USP): Creative "limitless" crafting with a sense of humor
 Target Audience: People who enjoy idle games with mid-to-high levels of input
 Genre & Inspirations: Idle games, Shop Titans, crafting simulators
 Tone & Look & Feel: Bright, humorous, Stardew Valley-esque
-3. Core Gameplay Design
-Describes how the game is played. Focuses on the primary loop, progression, and the player’s feel of control.
-⚠️ If your loop isn’t simple and clear, your game will feel aimless; and players will bounce before they understand the fun.
 
-Core Gameplay Loop: Break it into 3 steps: What the player does → what changes → what the reward is. Repeatable actions that form the backbone of play.
-Example: Explore → Fight → Get loot → Upgrade character → Repeat.
-Player Progression: How does the player grow over time? This includes level-ups, new abilities, gear, story progress, world unlocking, etc.
-Controls & Input: List default inputs and control schemes. Explain if the game is click-heavy, skill-based, or slower-paced. Mention accessibility (remapping, alternative inputs).
-Difficulty & Challenge: What is the baseline difficulty? How does it escalate? Is it player-chosen (easy/normal/hard), dynamic, or fixed?
-Feedback Systems: How does the game talk back to the player? Visual, audio, UI… everything from screen shake to a “ding” when looting matters.
-4. Game Mechanics & Systems
-This section breaks down the underlying rules and systems that support the gameplay loop.
-⚠️ If this section is vague or hand-wavy, your devs will invent mechanics on the fly and you’ll spend months untangling them.
+## Core Gameplay Design
 
-Core Mechanics: Actions or interactions that are always present (shooting, platforming, crafting, dialogue, etc.)
-Example: “The player can combine ingredients to cook recipes, each with unique buffs.”
-Side Mechanics: Optional or supplementary mechanics like fishing, mini-games, base-building, etc. They’re not core to the loop, but they provide variety.
-Interaction Mechanics: How the player engages with the world. Are they dragging items, typing spells, rotating the camera? Touchscreens? Dialogue trees?
-Economy & Resources: Any in-game currencies, collectibles, or trade systems. Clarify sources, sinks, and exchange rules.
-Example: “Gold is earned via quests and spent at vendors or for upgrading gear.”
-5. Narrative, World, & Characters
-Even if your game is light on story, this section helps define tone, cohesion, and world logic.
-⚠️ If you leave this empty, your story will creep into the game in a poorly integrated and confusing way.
+Core Gameplay Loop: 
+- Secure an Area on the World Map
+- Use the Area to start generating resources for improving Explorers
+- Use the Explorers to overcome obstacles to enter new Areas
+- New Areas introduce different resources and crafting mechanics
+- Repeat
 
-Themes & Emotional Arc: What big ideas or moods does the game explore? Revenge? Growth? Isolation?
-Story Overview: Summarize the narrative arc from start to finish. Focus on the player’s journey, not script lines.
-Worldbuilding: What’s the setting? What are its rules (e.g., sci-fi tech, magic systems)? Are there factions, biomes, or cultural norms?
-Main Characters: Who does the player control? Who are the allies or antagonists? Keep it brief unless story is central.
-Player Agency: Are there choices that affect the story or world? How deep are they—just dialogue or full branching paths?
-6. Level & Encounter Design
-Outlines the structure and goals of the spaces the player moves through.
-⚠️ If you can’t explain what a typical level feels like or what the player is trying to accomplish, your content will lack purpose.
+Player Progression:
+- Each Area has its own incremental resource generator that can be improved or optimized
+- The player can set up these Areas to generate resources used for crafting
+- Crafted Magical Items can be assigned to Explorers to give them abilities to overcome obstacles
+- The obstacles become more complex over time and involve more creative effort from the player to overcomee
+- Resources can be also used for further optimization and/or cosmetic upgrades
 
-Objectives: What’s the win condition at a typical level? Survive, escape, build something, solve puzzles?
-Structure & Layout: Describe the spatial format: Linear corridors? Hubs? Open world?
-Gameplay Flow: What does the player do first, second, third? How is tension built or relaxed? Include pacing if relevant.
-Interactive Elements: Buttons, doors, traps, puzzles—anything that demands input.
-Progression Gates: Keys, levels, bosses—what blocks access and why?
-Environmental Storytelling: Does the world itself tell part of the story? Think ruined villages, propaganda posters, blood trails.
-7. UI, UX, & Accessibility
-Covers how players interact with the game outside of direct mechanics, especially through screens and inputs.
-⚠️ If this section is blank, your player will suffer even if the mechanics are great. Here, clarity trumps cleverness.
+Controls & Input: Mouse driven with keyboard shortcuts. This is mostly management and slower paced.
 
-Core UI Elements: Health bars, inventory slots, currency indicators. Should be immediately readable.
-Menus & Screens: What menus are in the game (pause, settings, map, loadout)? How are they navigated?
-HUD Design: What’s shown persistently during gameplay? What’s contextual?
-UX Flow: How does the player move from main menu to playing? From gameplay to inventory to quest log? Reduce friction.
-Onboarding: How does the game teach itself? Tutorials, tooltips, slow introduction of mechanics?
-Accessibility Options: Subtitles, colorblind modes, remappable keys, difficulty settings. Think inclusivity, as not everybody is an Elden Ring or Starcraft master.
-8. Production Notes (Optional)
-This is where you put planning material if it doesn’t live in a separate production doc. Can be skipped if you’re still in the pre-production or planning phase.
-⚠️ If you ignore this section, future-you will wonder why everything is late, broken, and missing half the features.
+Difficulty & Challenge: Challenges get harder as the game progresses and overcoming them requires more complex resource generation and management.
 
-Team Roles: Who’s responsible for what (designer, coder, artist)?
-Milestones: Rough phases (prototype, vertical slice, alpha, beta, launch)
-Out-of-scope Features: Things you cut but don’t want to forget.
-Marketing Hooks: Wishlist bait, pitch phrases, trailer moments
-Risks & Unknowns: Tech doubts, design uncertainty, or things that need prototyping.
-Live Ops & Post-Launch: Even a solo dev should plan for bugfixes, updates, or community wishlist.
+Feedback Systems: UI Systems make it very clear what can be unlocked next and how to do it
+
+## Game Mechanics & Systems
+
+Core Mechanics: 
+Side Mechanics:
+Interaction Mechanics:
+Economy & Resources:
+
+## Narrative, World, & Characters
+
+Themes & Emotional Arc:
+Story Overview:
+Worldbuilding:
+Main Characters:
+Player Agency: 
+
+## Level & Encounter Design
+
+Objectives:
+Structure & Layout:
+Gameplay Flow:
+Interactive Elements:
+Progression Gates:
+Environmental Storytelling:
+
+## UI, UX, & Accessibility
+
+Core UI Elements:
+Menus & Screens:
+HUD Design:
+UX Flow:
+Onboarding:
+Accessibility Options:
 
