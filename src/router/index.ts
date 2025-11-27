@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import WorldMap from '@/components/WorldMap.vue'
+import MainView from '@/views/MainView.vue'
 import DebugView from '@/views/DebugView.vue'
 
 const router = createRouter({
@@ -8,7 +8,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: WorldMap,
+      component: MainView,
     },
     {
       path: '/debug',
