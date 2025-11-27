@@ -46,6 +46,25 @@ Testing should be done in Cypress
 
 This is a Vue.js project designed to run in a web browser. See Vue.js style guides
 
+### Key Architecture Decisions
+
+**State Management**
+- Use Pinia for application state management
+- Store game state (world map, resources, explorers, etc.) in Pinia stores
+- Use composables for shared logic that accesses stores
+
+**World Map Rendering**
+- SVG-based rendering for hexagonal tiles (scalable, clean click detection)
+- Use existing hexagonal grid library (e.g., honeycomb-grid) for hex math and positioning
+- Coordinate system determined by library choice (likely axial coordinates)
+- Hexagons oriented with flat edge on top
+
+**View Switching**
+- Currently using conditional rendering for World Map ↔ Area Map transitions
+- Architecture designed to support future migration to Vue Router
+- Component structure should remain router-compatible (use props/emits appropriately)
+- View state managed through Pinia store
+
 ## Core Components
 
 - World Map: a hexagonal map representing the known world. Explored hexes have an icon designating what they are. Unexplored hexes adjacent to explored hexes are grayed out and only have vague descriptions of what to expect. New hexes are added to the map as more unexplored hexes are explored
