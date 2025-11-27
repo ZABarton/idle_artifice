@@ -69,11 +69,12 @@ const hexagons = computed(() => {
 <style scoped>
 .world-map-container {
   width: 100%;
-  height: 100vh;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   background-color: #f5f5f5;
+  overflow: auto;
 }
 
 .world-map-svg {
@@ -81,6 +82,11 @@ const hexagons = computed(() => {
   height: 100%;
   max-width: 1200px;
   max-height: 900px;
+  /* Hexagon width is 60 viewBox units (2 * radius of 30)
+     To keep hexagons at minimum 150px wide:
+     300 viewBox units / 60 units per hex * 150px = 750px minimum */
+  min-width: 750px;
+  min-height: 750px;
 }
 
 .hex-tile {
