@@ -1,16 +1,36 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import WorldMap from '@/components/WorldMap.vue'
+import AreaMap from '@/components/AreaMap.vue'
 import PiniaDebugTable from '@/components/PiniaDebugTable.vue'
+import { useNavigationStore } from '@/stores/navigation'
+import type { HexTile } from '@/types/hex'
+
+const navigationStore = useNavigationStore()
+
+const currentView = computed(() => navigationStore.currentView)
+const selectedHex = computed(() => navigationStore.selectedHex)
+
+const handleHexSelected = (tile: HexTile) => {
+  navigationStore.navigateToAreaMap(tile.q, tile.r)
+}
+
+const handleBackToWorldMap = () => {
+  navigationStore.navigateToWorldMap()
+}
 </script>
 
 <template>
-  <div class="main-layout">
+  <div v-if="currentView === 'world-map'" class="main-layout">
     <div class="world-map-panel">
-      <WorldMap />
+      <WorldMap @hex-selected="handleHexSelected" />
     </div>
     <div class="debug-panel">
       <PiniaDebugTable />
     </div>
+  </div>
+  <div v-else-if="currentView === 'area-map' && selectedHex" class="area-map-view">
+    <AreaMap :q="selectedHex.q" :r="selectedHex.r" @back="handleBackToWorldMap" />
   </div>
 </template>
 
@@ -18,6 +38,11 @@ import PiniaDebugTable from '@/components/PiniaDebugTable.vue'
 .main-layout {
   display: grid;
   grid-template-columns: 1fr 400px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.area-map-view {
   height: 100vh;
   overflow: hidden;
 }

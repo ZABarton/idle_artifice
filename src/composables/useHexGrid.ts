@@ -49,11 +49,22 @@ export function useHexGrid() {
     const grid = new Grid(HexClass, spiral({ radius: 5 }))
     const surroundingHexes: HexTile[] = Array.from(grid)
       .filter((hex) => !(hex.q === 0 && hex.r === 0)) // exclude center
-      .map((hex) => ({
-        q: hex.q,
-        r: hex.r,
-        explorationStatus: 'unexplored' as const,
-      }))
+      .map((hex) => {
+        // Mark the hex at (0, -1) as explored for testing
+        if (hex.q === 0 && hex.r === -1) {
+          return {
+            q: hex.q,
+            r: hex.r,
+            explorationStatus: 'explored' as const,
+            type: 'forest',
+          }
+        }
+        return {
+          q: hex.q,
+          r: hex.r,
+          explorationStatus: 'unexplored' as const,
+        }
+      })
 
     return [centerHex, ...surroundingHexes]
   }
