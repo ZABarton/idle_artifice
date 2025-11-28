@@ -15,7 +15,9 @@ const hexGrid = useHexGrid()
       <p>Total hexagons: {{ worldMapStore.hexTiles.length }}</p>
       <p>Explored tiles: {{ worldMapStore.exploredTiles.length }}</p>
       <p>Unexplored tiles: {{ worldMapStore.unexploredTiles.length }}</p>
-      <p>Academy location: ({{ worldMapStore.academyTile?.q }}, {{ worldMapStore.academyTile?.r }})</p>
+      <p>
+        Academy location: ({{ worldMapStore.academyTile?.q }}, {{ worldMapStore.academyTile?.r }})
+      </p>
     </div>
 
     <div class="debug-section">
@@ -48,12 +50,17 @@ const hexGrid = useHexGrid()
 
     <div class="debug-section">
       <h3>Test Actions</h3>
-      <button @click="worldMapStore.exploreTile(worldMapStore.unexploredTiles[0]?.q, worldMapStore.unexploredTiles[0]?.r)">
+      <button
+        @click="
+          worldMapStore.exploreTile(
+            worldMapStore.unexploredTiles[0]?.q,
+            worldMapStore.unexploredTiles[0]?.r
+          )
+        "
+      >
         Explore First Tile
       </button>
-      <button @click="worldMapStore.resetMap()">
-        Reset Map
-      </button>
+      <button @click="worldMapStore.resetMap()">Reset Map</button>
     </div>
   </div>
 </template>
@@ -103,7 +110,8 @@ table {
   font-size: 0.85rem;
 }
 
-th, td {
+th,
+td {
   padding: 0.4rem;
   border: 1px solid #ddd;
   text-align: left;
@@ -120,7 +128,7 @@ button {
   margin: 0.25rem 0.5rem 0.25rem 0;
   padding: 0.5rem 1rem;
   cursor: pointer;
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;

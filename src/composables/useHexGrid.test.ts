@@ -21,9 +21,7 @@ describe('useHexGrid', () => {
 
     it('should have 6 surrounding hexes that are unexplored', () => {
       const tiles = hexGrid.generateInitialMap()
-      const surroundingHexes = tiles.filter(
-        (tile) => !(tile.q === 0 && tile.r === 0)
-      )
+      const surroundingHexes = tiles.filter((tile) => !(tile.q === 0 && tile.r === 0))
 
       expect(surroundingHexes).toHaveLength(6)
       surroundingHexes.forEach((hex) => {
@@ -34,9 +32,7 @@ describe('useHexGrid', () => {
 
     it('should generate hexes adjacent to center (distance = 1)', () => {
       const tiles = hexGrid.generateInitialMap()
-      const surroundingHexes = tiles.filter(
-        (tile) => !(tile.q === 0 && tile.r === 0)
-      )
+      const surroundingHexes = tiles.filter((tile) => !(tile.q === 0 && tile.r === 0))
 
       surroundingHexes.forEach((hex) => {
         const distance = hexGrid.getDistance(0, 0, hex.q, hex.r)
