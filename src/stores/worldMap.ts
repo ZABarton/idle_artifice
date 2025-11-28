@@ -26,9 +26,7 @@ export const useWorldMapStore = defineStore('worldMap', () => {
     return hexTiles.value.find((tile) => tile.q === q && tile.r === r)
   })
 
-  const academyTile = computed(() =>
-    hexTiles.value.find((tile) => tile.type === 'academy')
-  )
+  const academyTile = computed(() => hexTiles.value.find((tile) => tile.type === 'academy'))
 
   // Actions
   function exploreTile(q: number, r: number) {

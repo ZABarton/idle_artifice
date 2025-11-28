@@ -28,6 +28,9 @@ export default [
         sourceType: 'module',
       },
     },
+    rules: {
+      'no-undef': 'off', // TypeScript handles this
+    },
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
@@ -37,6 +40,9 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
+    },
+    rules: {
+      'no-undef': 'off', // TypeScript handles this
     },
   },
   {
