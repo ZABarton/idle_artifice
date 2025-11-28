@@ -31,7 +31,7 @@ export function useHexGrid() {
   }
 
   /**
-   * Generates the initial hexagon layout with 5 rings (1 center + 5 surrounding rings = 91 hexes)
+   * Generates the initial hexagon layout with 1 ring (1 center + 6 surrounding hexes = 7 hexes total)
    * Returns an array of HexTile objects
    */
   const generateInitialMap = (): HexTile[] => {
@@ -45,26 +45,15 @@ export function useHexGrid() {
 
     // Create surrounding hexes using honeycomb-grid's spiral traverser
     // spiral(center, radius) generates hexes in a spiral pattern
-    // Radius 5 creates 5 rings around center (91 total hexes)
-    const grid = new Grid(HexClass, spiral({ radius: 5 }))
+    // Radius 1 creates 1 ring around center (7 total hexes)
+    const grid = new Grid(HexClass, spiral({ radius: 1 }))
     const surroundingHexes: HexTile[] = Array.from(grid)
       .filter((hex) => !(hex.q === 0 && hex.r === 0)) // exclude center
-      .map((hex) => {
-        // Mark the hex at (0, -1) as explored for testing
-        if (hex.q === 0 && hex.r === -1) {
-          return {
-            q: hex.q,
-            r: hex.r,
-            explorationStatus: 'explored' as const,
-            type: 'forest',
-          }
-        }
-        return {
-          q: hex.q,
-          r: hex.r,
-          explorationStatus: 'unexplored' as const,
-        }
-      })
+      .map((hex) => ({
+        q: hex.q,
+        r: hex.r,
+        explorationStatus: 'unexplored' as const,
+      }))
 
     return [centerHex, ...surroundingHexes]
   }
