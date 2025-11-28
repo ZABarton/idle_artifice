@@ -7,6 +7,10 @@ import type { HexTile } from '@/types/hex'
 const worldMapStore = useWorldMapStore()
 const { hexToPixel } = useHexGrid()
 
+const emit = defineEmits<{
+  hexSelected: [tile: HexTile]
+}>()
+
 // Hexagon size from HexClass
 const hexRadius = 30
 
@@ -175,6 +179,12 @@ const handleHexClick = (tile: HexTile) => {
       explorationStatus: tile.explorationStatus,
       type: tile.type,
     })
+
+    // Emit hex-selected event for explored tiles
+    // Future: other exploration statuses may trigger different events
+    if (tile.explorationStatus === 'explored') {
+      emit('hexSelected', tile)
+    }
   }
 }
 

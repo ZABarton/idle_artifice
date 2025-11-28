@@ -46,6 +46,13 @@ export const useWorldMapStore = defineStore('worldMap', () => {
     }
   }
 
+  function incrementVisitCount(q: number, r: number) {
+    const tile = hexTiles.value.find((t) => t.q === q && t.r === r)
+    if (tile) {
+      tile.visitCount = (tile.visitCount || 0) + 1
+    }
+  }
+
   function resetMap() {
     hexTiles.value = generateInitialMap()
   }
@@ -61,6 +68,7 @@ export const useWorldMapStore = defineStore('worldMap', () => {
     // Actions
     exploreTile,
     addTile,
+    incrementVisitCount,
     resetMap,
   }
 })
