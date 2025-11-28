@@ -24,6 +24,8 @@ export interface HexTile {
   explorationStatus: ExplorationStatus
   /** Optional type/category of this hex (e.g., 'academy', 'forest', 'mountain') */
   type?: string
+  /** Number of times this area has been visited (persistent across navigation) */
+  visitCount?: number
 }
 
 /**
