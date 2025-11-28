@@ -96,6 +96,20 @@ const panBounds = computed(() => {
 })
 
 /**
+ * Check if content needs panning (extends beyond viewBox)
+ */
+const isPannable = computed(() => {
+  const bounds = panBounds.value
+  const viewBoxWidth = 300
+  const viewBoxHeight = 300
+
+  const contentWidth = bounds.maxX - bounds.minX
+  const contentHeight = bounds.maxY - bounds.minY
+
+  return contentWidth > viewBoxWidth || contentHeight > viewBoxHeight
+})
+
+/**
  * Computed viewBox that incorporates pan offset
  */
 const viewBox = computed(() => {
@@ -110,13 +124,16 @@ const viewBox = computed(() => {
  * Mouse event handlers for drag-to-pan
  */
 const handleMouseDown = (event: MouseEvent) => {
+  // Only enable dragging if content needs panning
+  if (!isPannable.value) return
+
   isDragging.value = true
   dragStart.value = { x: event.clientX, y: event.clientY }
   dragDistance.value = 0 // Reset drag distance
 }
 
 const handleMouseMove = (event: MouseEvent) => {
-  if (!isDragging.value) return
+  if (!isDragging.value || !isPannable.value) return
 
   // Calculate the drag delta in screen pixels
   const deltaX = event.clientX - dragStart.value.x
@@ -135,21 +152,15 @@ const handleMouseMove = (event: MouseEvent) => {
   const scaleY = 300 / rect.height
 
   // Calculate new pan offset (subtract because we're moving the viewBox, not the content)
-  const newX = panOffset.value.x - (deltaX * scaleX)
-  const newY = panOffset.value.y - (deltaY * scaleY)
+  const newX = panOffset.value.x - deltaX * scaleX
+  const newY = panOffset.value.y - deltaY * scaleY
 
   // Clamp pan offset to stay within bounds
   // viewBox dimensions are 300x300, so we need to account for that
   const bounds = panBounds.value
 
-  const clampedX = Math.max(
-    bounds.minX + 150,
-    Math.min(newX, bounds.maxX - 150)
-  )
-  const clampedY = Math.max(
-    bounds.minY + 150,
-    Math.min(newY, bounds.maxY - 150)
-  )
+  const clampedX = Math.max(bounds.minX + 150, Math.min(newX, bounds.maxX - 150))
+  const clampedY = Math.max(bounds.minY + 150, Math.min(newY, bounds.maxY - 150))
 
   panOffset.value = { x: clampedX, y: clampedY }
 
@@ -173,12 +184,6 @@ const handleHexClick = (tile: HexTile) => {
   // Only register as a click if drag distance is below threshold (5px)
   if (dragDistance.value < 5) {
     clickedHex.value = { q: tile.q, r: tile.r }
-    console.log('Hex clicked:', {
-      q: tile.q,
-      r: tile.r,
-      explorationStatus: tile.explorationStatus,
-      type: tile.type,
-    })
 
     // Emit hex-selected event for explored tiles
     // Future: other exploration statuses may trigger different events
@@ -200,7 +205,7 @@ const handleHexMouseLeave = () => {
 <template>
   <div class="world-map-container">
     <svg
-      class="world-map-svg"
+      :class="['world-map-svg', { pannable: isPannable }]"
       :viewBox="viewBox"
       preserveAspectRatio="xMidYMid meet"
       @mousedown="handleMouseDown"
@@ -209,11 +214,7 @@ const handleHexMouseLeave = () => {
       @mouseleave="handleMouseLeave"
     >
       <!-- Main hexagons layer -->
-      <g
-        v-for="hex in hexagons"
-        :key="`${hex.tile.q},${hex.tile.r}`"
-        class="hex-tile"
-      >
+      <g v-for="hex in hexagons" :key="`${hex.tile.q},${hex.tile.r}`" class="hex-tile">
         <polygon
           :points="hex.points"
           :fill="hex.fill"
@@ -265,13 +266,16 @@ const handleHexMouseLeave = () => {
      300 viewBox units / 60 units per hex * 150px = 750px minimum */
   min-width: 750px;
   min-height: 750px;
-  cursor: grab;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
 }
 
-.world-map-svg:active {
+.world-map-svg.pannable {
+  cursor: grab;
+}
+
+.world-map-svg.pannable:active {
   cursor: grabbing;
 }
 

@@ -28,7 +28,12 @@ This is a standard Vue.js project.
 
 ### Testing
 
-Testing should be done in Cypress
+- **Component Tests**: Use Vitest with @vue/test-utils for component testing
+  - Test component rendering, props, events, and user interactions
+  - Run with `npm test` or `npm run test:ui`
+- **E2E Tests**: Use Cypress for end-to-end browser testing (to be added in future milestones)
+  - Test full user flows in real browser environment
+  - Use for complex multi-component interactions
 
 ### Issue Tracking
 

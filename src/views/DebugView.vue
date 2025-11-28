@@ -15,7 +15,9 @@ const hexGrid = useHexGrid()
       <p>Total hexagons: {{ worldMapStore.hexTiles.length }}</p>
       <p>Explored tiles: {{ worldMapStore.exploredTiles.length }}</p>
       <p>Unexplored tiles: {{ worldMapStore.unexploredTiles.length }}</p>
-      <p>Academy location: ({{ worldMapStore.academyTile?.q }}, {{ worldMapStore.academyTile?.r }})</p>
+      <p>
+        Academy location: ({{ worldMapStore.academyTile?.q }}, {{ worldMapStore.academyTile?.r }})
+      </p>
     </div>
 
     <div class="verification-section">
@@ -46,12 +48,17 @@ const hexGrid = useHexGrid()
 
     <div class="verification-section">
       <h2>Test Actions</h2>
-      <button @click="worldMapStore.exploreTile(worldMapStore.unexploredTiles[0]?.q, worldMapStore.unexploredTiles[0]?.r)">
+      <button
+        @click="
+          worldMapStore.exploreTile(
+            worldMapStore.unexploredTiles[0]?.q,
+            worldMapStore.unexploredTiles[0]?.r
+          )
+        "
+      >
         Explore First Tile
       </button>
-      <button @click="worldMapStore.resetMap()">
-        Reset Map
-      </button>
+      <button @click="worldMapStore.resetMap()">Reset Map</button>
     </div>
   </div>
 </template>
@@ -76,7 +83,8 @@ table {
   margin-top: 1rem;
 }
 
-th, td {
+th,
+td {
   padding: 0.5rem;
   border: 1px solid #ddd;
   text-align: left;

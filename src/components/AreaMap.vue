@@ -43,7 +43,11 @@ const handleBackClick = () => {
 
 <template>
   <div class="area-map-container">
-    <button class="close-button" @click="handleBackClick" aria-label="Close and return to World Map">
+    <button
+      class="close-button"
+      aria-label="Close and return to World Map"
+      @click="handleBackClick"
+    >
       ✕
     </button>
     <div class="area-info-panel">
@@ -81,7 +85,8 @@ const handleBackClick = () => {
           </div>
         </div>
         <p class="hint-text">
-          Resource amounts are specific to this hex ({{ q }}, {{ r }}) and will persist when you return.
+          Resource amounts are specific to this hex ({{ q }}, {{ r }}) and will persist when you
+          return.
         </p>
       </div>
     </div>
@@ -118,7 +123,9 @@ const handleBackClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
