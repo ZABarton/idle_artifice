@@ -67,10 +67,43 @@ This is a Vue.js project designed to run in a web browser. See Vue.js style guid
 
 ## Core Components
 
-- World Map: a hexagonal map representing the known world. Explored hexes have an icon designating what they are. Unexplored hexes adjacent to explored hexes are grayed out and only have vague descriptions of what to expect. New hexes are added to the map as more unexplored hexes are explored
-- Area Map: a map representing the individual hex that can be accessed by clicking on the hex. This has features and actions specific to that area.
-- Features: a UI element that lives in the Area Map
-- Resources: a type of currency that can be accrued by the player
-- Magical Items: an item that can be created by combining different resources
-- Explorer: a non-playable character that can equip magical items
-- Skills: actions that Explorers can perform based on the Magical Item they have equipped
+### World Map
+A hexagonal map representing the known world. Explored hexes have an icon designating what they are. Unexplored hexes adjacent to explored hexes are grayed out and only have vague descriptions of what to expect. New hexes are added to the map as more unexplored hexes are explored.
+
+**Implementation Details:**
+- SVG-based rendering for scalable graphics and precise click detection
+- Flat-top hexagons with 30 viewBox unit radius
+- Uses honeycomb-grid library via `useHexGrid` composable for hex math and coordinate conversion
+- Data managed through Pinia `worldMapStore`
+- ViewBox dimensions: 300x300 units base size
+- Responsive sizing: min 750px, max 1200px width; min 750px, max 900px height
+
+**Camera Controls:**
+- Drag-to-pan functionality with mouse events
+- Pan offset tracked in viewBox coordinate space
+- Boundaries automatically calculated from hex tile bounding box plus 50-unit margin
+- Smooth panning with proper screen-to-viewBox coordinate scaling
+- Prevents panning beyond visible hex tiles
+
+**Visual States:**
+- Explored tiles: green fill (#90EE90)
+- Unexplored tiles: gray fill (#CCCCCC)
+- All tiles: dark gray stroke (#333333, 2px width)
+
+### Area Map
+A map representing the individual hex that can be accessed by clicking on the hex. This has features and actions specific to that area.
+
+### Features
+A UI element that lives in the Area Map.
+
+### Resources
+A type of currency that can be accrued by the player.
+
+### Magical Items
+An item that can be created by combining different resources.
+
+### Explorer
+A non-playable character that can equip magical items.
+
+### Skills
+Actions that Explorers can perform based on the Magical Item they have equipped.
