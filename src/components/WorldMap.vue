@@ -14,19 +14,24 @@ const hexRadius = 30
 const panOffset = ref({ x: 0, y: 0 })
 const isDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
+const dragDistance = ref(0) // Track total drag distance to distinguish from clicks
+
+// Hex interaction state
+const hoveredHex = ref<{ q: number; r: number } | null>(null)
+const clickedHex = ref<{ q: number; r: number } | null>(null)
 
 /**
  * Calculates the corner points of a flat-top hexagon
  * Returns a string suitable for SVG polygon points attribute
  */
-const getHexagonPoints = (centerX: number, centerY: number): string => {
+const getHexagonPoints = (centerX: number, centerY: number, radius: number = hexRadius): string => {
   const points: string[] = []
   // For flat-top hexagons, corners are at 0°, 60°, 120°, 180°, 240°, 300°
   for (let i = 0; i < 6; i++) {
     const angleDeg = 60 * i
     const angleRad = (Math.PI / 180) * angleDeg
-    const x = centerX + hexRadius * Math.cos(angleRad)
-    const y = centerY + hexRadius * Math.sin(angleRad)
+    const x = centerX + radius * Math.cos(angleRad)
+    const y = centerY + radius * Math.sin(angleRad)
     points.push(`${x},${y}`)
   }
   return points.join(' ')
@@ -38,12 +43,18 @@ const getHexagonPoints = (centerX: number, centerY: number): string => {
 const hexagons = computed(() => {
   return worldMapStore.hexTiles.map((tile: HexTile) => {
     const { x, y } = hexToPixel(tile.q, tile.r)
+    const isClicked = clickedHex.value?.q === tile.q && clickedHex.value?.r === tile.r
+    const isHovered = hoveredHex.value?.q === tile.q && hoveredHex.value?.r === tile.r
+
     return {
       tile,
       points: getHexagonPoints(x, y),
       center: { x, y },
       fill: tile.explorationStatus === 'explored' ? '#90EE90' : '#CCCCCC',
       stroke: '#333333',
+      strokeWidth: 2,
+      opacity: isHovered && !isClicked ? 0.8 : 1, // Slight transparency on hover
+      isClicked,
     }
   })
 })
@@ -97,6 +108,7 @@ const viewBox = computed(() => {
 const handleMouseDown = (event: MouseEvent) => {
   isDragging.value = true
   dragStart.value = { x: event.clientX, y: event.clientY }
+  dragDistance.value = 0 // Reset drag distance
 }
 
 const handleMouseMove = (event: MouseEvent) => {
@@ -105,6 +117,9 @@ const handleMouseMove = (event: MouseEvent) => {
   // Calculate the drag delta in screen pixels
   const deltaX = event.clientX - dragStart.value.x
   const deltaY = event.clientY - dragStart.value.y
+
+  // Track total drag distance for click detection
+  dragDistance.value += Math.sqrt(deltaX * deltaX + deltaY * deltaY)
 
   // Get the SVG element to calculate the proper scale factor
   const svg = event.currentTarget as SVGSVGElement
@@ -146,6 +161,30 @@ const handleMouseLeave = () => {
   // Stop dragging if mouse leaves the SVG area
   isDragging.value = false
 }
+
+/**
+ * Hex interaction handlers
+ */
+const handleHexClick = (tile: HexTile) => {
+  // Only register as a click if drag distance is below threshold (5px)
+  if (dragDistance.value < 5) {
+    clickedHex.value = { q: tile.q, r: tile.r }
+    console.log('Hex clicked:', {
+      q: tile.q,
+      r: tile.r,
+      explorationStatus: tile.explorationStatus,
+      type: tile.type,
+    })
+  }
+}
+
+const handleHexMouseEnter = (tile: HexTile) => {
+  hoveredHex.value = { q: tile.q, r: tile.r }
+}
+
+const handleHexMouseLeave = () => {
+  hoveredHex.value = null
+}
 </script>
 
 <template>
@@ -159,6 +198,7 @@ const handleMouseLeave = () => {
       @mouseup="handleMouseUp"
       @mouseleave="handleMouseLeave"
     >
+      <!-- Main hexagons layer -->
       <g
         v-for="hex in hexagons"
         :key="`${hex.tile.q},${hex.tile.r}`"
@@ -168,7 +208,26 @@ const handleMouseLeave = () => {
           :points="hex.points"
           :fill="hex.fill"
           :stroke="hex.stroke"
-          stroke-width="2"
+          :stroke-width="hex.strokeWidth"
+          :opacity="hex.opacity"
+          @click="handleHexClick(hex.tile)"
+          @mouseenter="handleHexMouseEnter(hex.tile)"
+          @mouseleave="handleHexMouseLeave"
+        />
+      </g>
+      <!-- Borders layer - drawn on top -->
+      <g
+        v-for="hex in hexagons"
+        :key="`border-${hex.tile.q},${hex.tile.r}`"
+        class="hex-border-layer"
+      >
+        <polygon
+          v-if="hex.isClicked"
+          :points="hex.points"
+          fill="none"
+          stroke="#ff0000"
+          stroke-width="1"
+          pointer-events="none"
         />
       </g>
     </svg>
@@ -207,7 +266,11 @@ const handleMouseLeave = () => {
 }
 
 .hex-tile {
-  cursor: default;
-  pointer-events: none;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.hex-tile polygon {
+  transition: opacity 0.2s ease;
 }
 </style>
