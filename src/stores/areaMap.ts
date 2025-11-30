@@ -153,7 +153,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
           type: 'foundry',
           name: 'Foundry',
           icon: '🔨', // Placeholder emoji icon
-          position: { x: -100, y: -80 },
+          position: { x: -130, y: -110 }, // Top-left, centered 2x2 grid with 20-unit gaps
           state: 'unlocked',
           isActive: false,
           interactionType: 'navigation',
@@ -163,7 +163,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
           type: 'workshop',
           name: 'Workshop',
           icon: '🔧', // Placeholder emoji icon
-          position: { x: 20, y: -80 },
+          position: { x: 10, y: -110 }, // Top-right, centered 2x2 grid with 20-unit gaps
           state: 'locked',
           isActive: false,
           prerequisites: [
@@ -180,7 +180,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
           type: 'alchemist',
           name: 'Alchemist',
           icon: '⚗️', // Placeholder emoji icon
-          position: { x: -100, y: 40 },
+          position: { x: -130, y: 10 }, // Bottom-left, centered 2x2 grid with 20-unit gaps
           state: 'locked',
           isActive: false,
           prerequisites: [
@@ -197,7 +197,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
           type: 'shop',
           name: 'Shop',
           icon: '🏪', // Placeholder emoji icon
-          position: { x: 20, y: 40 },
+          position: { x: 10, y: 10 }, // Bottom-right, centered 2x2 grid with 20-unit gaps
           state: 'unlocked',
           isActive: false,
           interactionType: 'inline',

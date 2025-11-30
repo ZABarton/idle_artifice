@@ -188,7 +188,7 @@ function handleClick() {
   width: 100%;
   height: 100%;
   font-family: system-ui, -apple-system, sans-serif;
-  font-size: 3.5px;
+  font-size: 7px;
   color: #333333;
   overflow: hidden;
   box-sizing: border-box;
@@ -206,7 +206,7 @@ function handleClick() {
 }
 
 .lock-icon {
-  font-size: 7px;
+  font-size: 14px;
   margin-bottom: 2px;
 }
 

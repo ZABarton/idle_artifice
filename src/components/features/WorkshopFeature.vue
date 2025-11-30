@@ -20,7 +20,7 @@
   gap: 1px;
   padding: 2px;
   font-family: system-ui, -apple-system, sans-serif;
-  font-size: 3px;
+  font-size: 6px;
   text-align: center;
   box-sizing: border-box;
   width: 100%;

@@ -46,7 +46,7 @@ const calculateRevenue = (margin: number) => {
   gap: 2px;
   padding: 2px;
   font-family: system-ui, -apple-system, sans-serif;
-  font-size: 3px;
+  font-size: 6px;
   box-sizing: border-box;
   width: 100%;
   height: 100%;
