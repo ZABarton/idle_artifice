@@ -134,7 +134,6 @@ const getFeatureComponent = (featureType: FeatureType) => {
 const handleFeatureClick = (feature: Feature) => {
   if (feature.state === 'locked') {
     // For locked features, could show a tooltip or modal with requirements
-    console.log('Feature is locked:', feature.name, feature.prerequisites)
     return
   }
 
@@ -148,14 +147,14 @@ const handleFeatureClick = (feature: Feature) => {
   // For navigation-type features, this is where we would navigate to feature screen
   // This will be implemented in a future milestone
   if (feature.interactionType === 'navigation') {
-    console.log('Would navigate to feature screen:', feature.type)
+    // TODO: Navigate to feature screen
   }
 }
 
 // Handle navigate event from feature components
 const handleFeatureNavigate = (featureType: string) => {
-  console.log('Navigate to feature screen:', featureType)
-  // This will be implemented in a future milestone
+  // TODO: Navigate to feature screen - will be implemented in a future milestone
+  void featureType // Suppress unused variable warning
 }
 </script>
 
