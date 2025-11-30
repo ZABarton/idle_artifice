@@ -244,19 +244,17 @@ const handleFeatureNavigate = (featureType: string) => {
   flex: 1;
   overflow: auto;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background-color: #f5f5f5;
 }
 
 /* SVG Canvas */
 .area-map-canvas {
   display: block;
-  width: 1000px;
-  height: 750px;
-  max-width: 100%;
-  max-height: 100%;
+  width: 1600px;
+  height: 1200px;
+  min-width: 1600px;
+  min-height: 1200px;
+  margin: 0 auto;
 }
 
 /* Floating Close Button (Optional Redundancy) */
