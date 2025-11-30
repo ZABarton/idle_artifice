@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useWorldMapStore } from '@/stores/worldMap'
 import { useAreaMapStore } from '@/stores/areaMap'
 import FeatureCard from './FeatureCard.vue'
@@ -13,6 +13,7 @@ import type { Feature, FeatureType } from '@/types/feature'
  * AreaMap Component
  * Displays a spatial canvas with interactive Features for a specific hex area
  * Architecture: Header bar + SVG canvas with positioned Features
+ * Responsive: 2x2 grid at ≥1400px, 1x4 vertical stack below
  */
 
 interface Props {
@@ -49,9 +50,44 @@ const areaTitle = computed(() => {
 // Background color from area data
 const backgroundColor = computed(() => area.value?.background ?? '#f5f5f5')
 
-// ViewBox dimensions (consistent with World Map)
+// Responsive layout tracking
+const windowWidth = ref(window.innerWidth)
+const LAYOUT_BREAKPOINT = 1400
+
+// Layout mode: 2x2 grid or 1x4 vertical stack
+const layoutMode = computed(() => (windowWidth.value >= LAYOUT_BREAKPOINT ? '2x2' : '1x4'))
+
+// ViewBox dimensions
 const VIEWBOX_WIDTH = 300
-const VIEWBOX_HEIGHT = 300
+const viewBoxHeight = computed(() => (layoutMode.value === '2x2' ? 300 : 500))
+
+// Canvas dimensions (scales with viewBox and layout mode)
+const canvasWidth = computed(() => (layoutMode.value === '2x2' ? 1600 : 1000))
+const canvasHeight = computed(() => (layoutMode.value === '2x2' ? 1200 : 2000))
+
+// Feature position order for vertical stacking (upper-left, upper-right, lower-left, lower-right)
+const featureStackOrder = ['academy-foundry', 'academy-workshop', 'academy-alchemist', 'academy-shop']
+
+// Get dynamic position based on layout mode
+const getFeaturePosition = (feature: Feature) => {
+  if (layoutMode.value === '2x2') {
+    return feature.position // Use original 2x2 grid positions
+  } else {
+    // Calculate 1x4 vertical stack positions
+    const index = featureStackOrder.indexOf(feature.id)
+    if (index === -1) return feature.position // Fallback
+
+    return {
+      x: -60, // Center horizontally (card width is 120, so -60 centers it)
+      y: -230 + index * 120, // Stack vertically with 20-unit gaps (100 card + 20 gap)
+    }
+  }
+}
+
+// Window resize handler
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+}
 
 // Initialize area on mount
 onMounted(() => {
@@ -60,10 +96,18 @@ onMounted(() => {
   // Initialize area data if not already loaded
   if (!area.value) {
     // For now, only Academy is implemented
-    if (tile.value?.type === 'academy' || props.q === 0 && props.r === 0) {
+    if (tile.value?.type === 'academy' || (props.q === 0 && props.r === 0)) {
       areaMapStore.initializeAcademy(props.q, props.r)
     }
   }
+
+  // Add resize listener
+  window.addEventListener('resize', handleResize)
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 
 // Handle back button click
@@ -133,23 +177,29 @@ const handleFeatureNavigate = (featureType: string) => {
     <div class="area-map-canvas-wrapper">
       <svg
         class="area-map-canvas"
-        :viewBox="`${-VIEWBOX_WIDTH / 2} ${-VIEWBOX_HEIGHT / 2} ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`"
+        :style="{
+          width: `${canvasWidth}px`,
+          height: `${canvasHeight}px`,
+          minWidth: `${canvasWidth}px`,
+          minHeight: `${canvasHeight}px`,
+        }"
+        :viewBox="`${-VIEWBOX_WIDTH / 2} ${-viewBoxHeight / 2} ${VIEWBOX_WIDTH} ${viewBoxHeight}`"
         xmlns="http://www.w3.org/2000/svg"
       >
         <!-- Background -->
         <rect
           :x="-VIEWBOX_WIDTH / 2"
-          :y="-VIEWBOX_HEIGHT / 2"
+          :y="layoutMode === '2x2' ? -viewBoxHeight / 2 : -viewBoxHeight / 2 - 50"
           :width="VIEWBOX_WIDTH"
-          :height="VIEWBOX_HEIGHT"
+          :height="layoutMode === '2x2' ? viewBoxHeight : viewBoxHeight + 100"
           :fill="backgroundColor"
         />
 
-        <!-- Features -->
+        <!-- Features with dynamic positions -->
         <FeatureCard
           v-for="feature in features"
           :key="feature.id"
-          :feature="feature"
+          :feature="{ ...feature, position: getFeaturePosition(feature) }"
           @click="handleFeatureClick"
         >
           <!-- Dynamic feature component based on feature type -->
@@ -245,16 +295,15 @@ const handleFeatureNavigate = (featureType: string) => {
   overflow: auto;
   position: relative;
   background-color: #f5f5f5;
+  display: flex;
+  justify-content: center;
 }
 
 /* SVG Canvas */
 .area-map-canvas {
   display: block;
-  width: 1600px;
-  height: 1200px;
-  min-width: 1600px;
-  min-height: 1200px;
-  margin: 0 auto;
+  align-self: flex-start;
+  /* Width and height are set dynamically via inline styles based on layout mode */
 }
 
 /* Floating Close Button (Optional Redundancy) */
@@ -301,10 +350,6 @@ const handleFeatureNavigate = (featureType: string) => {
 @media (max-width: 768px) {
   .area-map-header {
     padding: 0 1rem;
-  }
-
-  .area-map-header__title {
-    font-size: 1.25rem;
   }
 
   .floating-close-button {
