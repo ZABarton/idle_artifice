@@ -1,6 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useWorldMapStore } from '@/stores/worldMap'
+import { useAreaMapStore } from '@/stores/areaMap'
+import FeatureCard from './FeatureCard.vue'
+import FoundryFeature from './features/FoundryFeature.vue'
+import ShopFeature from './features/ShopFeature.vue'
+import WorkshopFeature from './features/WorkshopFeature.vue'
+import AlchemistFeature from './features/AlchemistFeature.vue'
+import type { Feature, FeatureType } from '@/types/feature'
+
+/**
+ * AreaMap Component
+ * Displays a spatial canvas with interactive Features for a specific hex area
+ * Architecture: Header bar + SVG canvas with positioned Features
+ */
 
 interface Props {
   q: number
@@ -14,256 +27,291 @@ const emit = defineEmits<{
 }>()
 
 const worldMapStore = useWorldMapStore()
+const areaMapStore = useAreaMapStore()
 
 // Get the tile data for this area
 const tile = computed(() => worldMapStore.getTileAt(props.q, props.r))
 
-// Increment visit count when area is entered
-onMounted(() => {
-  worldMapStore.incrementVisitCount(props.q, props.r)
+// Get area data from areaMapStore
+const area = computed(() => areaMapStore.getArea(props.q, props.r))
+
+// Get visible features (filters out hidden features)
+const features = computed(() => areaMapStore.getFeatures(props.q, props.r))
+
+// Area title for header
+const areaTitle = computed(() => {
+  if (area.value?.areaType === 'academy') return 'Academy'
+  if (area.value?.areaType === 'forest') return 'Forest'
+  if (area.value?.areaType === 'mountain') return 'Mountain'
+  return 'Area Map'
 })
 
-// Mock resources that vary by hex coordinates
-// This demonstrates that different hexes show different data
-const mockResources = computed(() => {
-  // Use coordinates to generate pseudo-random but consistent values
-  const seed = Math.abs(props.q * 7 + props.r * 13)
+// Background color from area data
+const backgroundColor = computed(() => area.value?.background ?? '#f5f5f5')
 
-  return {
-    plants: 5 + (seed % 10),
-    stone: 12 + (seed % 15),
-    wood: 8 + (seed % 12),
+// ViewBox dimensions (consistent with World Map)
+const VIEWBOX_WIDTH = 300
+const VIEWBOX_HEIGHT = 300
+
+// Initialize area on mount
+onMounted(() => {
+  worldMapStore.incrementVisitCount(props.q, props.r)
+
+  // Initialize area data if not already loaded
+  if (!area.value) {
+    // For now, only Academy is implemented
+    if (tile.value?.type === 'academy' || props.q === 0 && props.r === 0) {
+      areaMapStore.initializeAcademy(props.q, props.r)
+    }
   }
 })
 
+// Handle back button click
 const handleBackClick = () => {
+  // Deactivate any active features before leaving
+  areaMapStore.setActiveFeature(null)
   emit('back')
+}
+
+// Map feature types to components
+const featureComponents: Record<FeatureType, any> = {
+  foundry: FoundryFeature,
+  shop: ShopFeature,
+  workshop: WorkshopFeature,
+  alchemist: AlchemistFeature,
+}
+
+// Get component for a specific feature
+const getFeatureComponent = (featureType: FeatureType) => {
+  return featureComponents[featureType]
+}
+
+// Handle feature card click
+const handleFeatureClick = (feature: Feature) => {
+  if (feature.state === 'locked') {
+    // For locked features, could show a tooltip or modal with requirements
+    console.log('Feature is locked:', feature.name, feature.prerequisites)
+    return
+  }
+
+  // Toggle active state
+  if (feature.isActive) {
+    areaMapStore.setActiveFeature(null)
+  } else {
+    areaMapStore.setActiveFeature(feature.id)
+  }
+
+  // For navigation-type features, this is where we would navigate to feature screen
+  // This will be implemented in a future milestone
+  if (feature.interactionType === 'navigation') {
+    console.log('Would navigate to feature screen:', feature.type)
+  }
+}
+
+// Handle navigate event from feature components
+const handleFeatureNavigate = (featureType: string) => {
+  console.log('Navigate to feature screen:', featureType)
+  // This will be implemented in a future milestone
 }
 </script>
 
 <template>
   <div class="area-map-container">
+    <!-- Header Bar -->
+    <header class="area-map-header">
+      <h1 class="area-map-header__title">{{ areaTitle }}</h1>
+      <button
+        class="area-map-header__close"
+        aria-label="Close and return to World Map"
+        @click="handleBackClick"
+      >
+        ✕
+      </button>
+    </header>
+
+    <!-- SVG Canvas -->
+    <div class="area-map-canvas-wrapper">
+      <svg
+        class="area-map-canvas"
+        :viewBox="`${-VIEWBOX_WIDTH / 2} ${-VIEWBOX_HEIGHT / 2} ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <!-- Background -->
+        <rect
+          :x="-VIEWBOX_WIDTH / 2"
+          :y="-VIEWBOX_HEIGHT / 2"
+          :width="VIEWBOX_WIDTH"
+          :height="VIEWBOX_HEIGHT"
+          :fill="backgroundColor"
+        />
+
+        <!-- Features -->
+        <FeatureCard
+          v-for="feature in features"
+          :key="feature.id"
+          :feature="feature"
+          @click="handleFeatureClick"
+        >
+          <!-- Dynamic feature component based on feature type -->
+          <component
+            :is="getFeatureComponent(feature.type)"
+            @navigate="handleFeatureNavigate(feature.type)"
+          />
+        </FeatureCard>
+      </svg>
+    </div>
+
+    <!-- Optional floating close button (for redundancy) -->
     <button
-      class="close-button"
+      class="floating-close-button"
       aria-label="Close and return to World Map"
       @click="handleBackClick"
     >
       ✕
     </button>
-    <div class="area-info-panel">
-      <div class="panel-header">
-        <h2>Area Information</h2>
-      </div>
-      <div class="panel-content">
-        <div class="info-section">
-          <h3>Location</h3>
-          <p><strong>Coordinates:</strong> ({{ q }}, {{ r }})</p>
-          <p><strong>Status:</strong> {{ tile?.explorationStatus || 'unknown' }}</p>
-          <p v-if="tile?.type"><strong>Type:</strong> {{ tile.type }}</p>
-        </div>
-        <div class="info-section">
-          <h3>Persistent Data</h3>
-          <div class="visit-counter">
-            <span class="counter-label">Times visited:</span>
-            <span class="counter-value">{{ tile?.visitCount || 0 }}</span>
-          </div>
-          <p class="counter-hint">
-            This counter increments each time you enter this area and persists when you leave.
-          </p>
-        </div>
-      </div>
-    </div>
-    <div class="resources-panel">
-      <div class="panel-header">
-        <h2>Resources</h2>
-      </div>
-      <div class="panel-content">
-        <div class="resource-list">
-          <div v-for="(amount, resource) in mockResources" :key="resource" class="resource-item">
-            <span class="resource-name">{{ resource }}:</span>
-            <span class="resource-amount">{{ amount }}</span>
-          </div>
-        </div>
-        <p class="hint-text">
-          Resource amounts are specific to this hex ({{ q }}, {{ r }}) and will persist when you
-          return.
-        </p>
-      </div>
-    </div>
   </div>
 </template>
 
 <style scoped>
+/* Container */
 .area-map-container {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
+  width: 100vw;
   overflow: hidden;
-  gap: 1rem;
-  padding: 1rem;
-  padding-top: 4.5rem; /* Make room for close button */
   background-color: #f5f5f5;
 }
 
-.close-button {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 48px;
-  height: 48px;
-  background-color: #333;
+/* Header Bar */
+.area-map-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  background-color: #2c3e50;
+  padding: 0 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  flex-shrink: 0;
+}
+
+.area-map-header__title {
+  margin: 0;
   color: white;
-  border: none;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.area-map-header__close {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: white !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
   border-radius: 4px;
+  font-size: 1.75rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0 !important;
+  position: relative;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.area-map-header__close:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.area-map-header__close:active {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(0.95);
+}
+
+/* Canvas Wrapper - Scrollable Container */
+.area-map-canvas-wrapper {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+}
+
+/* SVG Canvas */
+.area-map-canvas {
+  display: block;
+  width: 1000px;
+  height: 750px;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Floating Close Button (Optional Redundancy) */
+.floating-close-button {
+  position: absolute !important;
+  bottom: 1.5rem !important;
+  right: 1.5rem !important;
+  width: 56px !important;
+  height: 56px !important;
+  min-width: 56px !important;
+  min-height: 56px !important;
+  background-color: #2c3e50 !important;
+  color: white !important;
+  border: 3px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50%;
   font-size: 2rem;
   font-weight: 300;
   line-height: 1;
   cursor: pointer;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  transition:
-    background-color 0.2s,
-    transform 0.1s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 9999 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
-.close-button:hover {
-  background-color: #555;
-  transform: scale(1.05);
+.floating-close-button:hover {
+  background-color: #34495e;
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
-.close-button:active {
+.floating-close-button:active {
   transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.area-info-panel,
-.resources-panel {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.panel-header {
-  padding: 1rem;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.panel-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: #333;
-}
-
-.panel-content {
-  padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.info-section h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  color: #555;
-  font-size: 1.2rem;
-}
-
-.info-section p {
-  margin: 0.5rem 0;
-  color: #666;
-  font-size: 1rem;
-}
-
-.visit-counter {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background-color: #e8f4f8;
-  border-radius: 4px;
-  border-left: 4px solid #4a90e2;
-  margin-bottom: 0.5rem;
-}
-
-.counter-label {
-  font-weight: 600;
-  color: #333;
-  font-size: 1rem;
-}
-
-.counter-value {
-  font-weight: bold;
-  color: #4a90e2;
-  font-size: 1.5rem;
-}
-
-.counter-hint {
-  font-size: 0.85rem;
-  color: #666;
-  font-style: italic;
-  margin-top: 0.5rem;
-}
-
-.resource-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.resource-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.75rem;
-  background-color: #f9f9f9;
-  border-radius: 4px;
-  border-left: 4px solid #4a90e2;
-}
-
-.resource-name {
-  font-weight: 600;
-  color: #333;
-  text-transform: capitalize;
-}
-
-.resource-amount {
-  font-weight: bold;
-  color: #4a90e2;
-  font-size: 1.1rem;
-}
-
-.hint-text {
-  margin-top: 1.5rem;
-  padding: 0.75rem;
-  background-color: #fff9e6;
-  border-left: 4px solid #ffc107;
-  color: #666;
-  font-size: 0.9rem;
-  font-style: italic;
-  border-radius: 4px;
-}
-
-/* Tablet breakpoint - stack vertically */
-@media (max-width: 1024px) {
-  .area-map-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-  }
-}
-
-/* Mobile breakpoint */
+/* Responsive */
 @media (max-width: 768px) {
-  .area-map-container {
-    padding: 0.5rem;
-    gap: 0.5rem;
+  .area-map-header {
+    padding: 0 1rem;
   }
 
-  .close-button {
-    top: 0.5rem;
-    right: 0.5rem;
+  .area-map-header__title {
+    font-size: 1.25rem;
+  }
+
+  .floating-close-button {
+    bottom: 1rem;
+    right: 1rem;
   }
 }
 </style>
