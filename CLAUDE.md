@@ -5,7 +5,7 @@
 This file provides guidance and context to Claude Code (claude.ai/code) and others agents (and humans!) when working with code in this repository.
 
 See also:
-@GAMEDESIGN.md - Game Design Document that describes the game overview, core gameplay loop, and overall project information
+@docs/GAMEDESIGN.md - Game Design Document that describes the game overview, core gameplay loop, and overall project information
 
 ## Game concepts:
 
@@ -46,6 +46,25 @@ This is a standard Vue.js project.
 
 - Ask clarifying questions when needed
 - Keep prose in roadmaps, readme, and commit messages simple and to the point. Avoid puffery or self-congratulatory language.
+
+### Issue Implementation Workflow
+
+When starting work on a GitHub issue:
+1. **Fetch the issue details** using `gh issue view <number>`
+2. **Explore relevant code** to understand existing patterns and architecture
+3. **Create an implementation plan** that includes:
+   - Overview of the work
+   - Breakdown of tasks/files to create or modify
+   - Technical approach aligned with existing patterns
+   - Testing considerations
+4. **Ask clarifying questions** about:
+   - Ambiguous requirements or multiple valid approaches
+   - Integration points with existing systems
+   - Scope boundaries (what's in vs out for this issue)
+   - Initial data/config content preferences
+   - Technical decisions that affect architecture
+5. **Wait for approval** before executing the implementation
+6. **Only proceed** after questions are answered and plan is confirmed
 
 ## Code Architecture
 

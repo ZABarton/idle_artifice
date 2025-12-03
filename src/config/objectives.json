@@ -1,0 +1,71 @@
+{
+  "objectives": [
+    {
+      "id": "visit-academy",
+      "title": "Visit the Academy",
+      "description": "Navigate to the Academy hex on the World Map to begin your journey.",
+      "status": "active",
+      "category": "main",
+      "order": 1
+    },
+    {
+      "id": "explore-features",
+      "title": "Explore the Academy Features",
+      "description": "Interact with each feature in the Academy to understand your facilities.",
+      "status": "hidden",
+      "category": "main",
+      "order": 2,
+      "discoveryConditions": [
+        {
+          "type": "objective",
+          "id": "visit-academy",
+          "description": "Complete 'Visit the Academy'"
+        }
+      ],
+      "subtasks": [
+        {
+          "id": "visit-foundry",
+          "description": "Visit the Foundry",
+          "completed": false
+        },
+        {
+          "id": "visit-shop",
+          "description": "Visit the Shop",
+          "completed": false
+        },
+        {
+          "id": "visit-workshop",
+          "description": "Visit the Workshop",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "craft-first-items",
+      "title": "Craft Items at the Foundry",
+      "description": "Use the Foundry to craft your first magical items.",
+      "status": "hidden",
+      "category": "main",
+      "order": 3,
+      "currentProgress": 0,
+      "maxProgress": 5,
+      "discoveryConditions": [
+        {
+          "type": "objective",
+          "id": "explore-features",
+          "description": "Complete 'Explore the Academy Features'"
+        }
+      ]
+    },
+    {
+      "id": "gather-wood",
+      "title": "Gather Wood Resources",
+      "description": "Collect wood to fuel your crafting operations.",
+      "status": "active",
+      "category": "secondary",
+      "order": 1,
+      "currentProgress": 0,
+      "maxProgress": 50
+    }
+  ]
+}
