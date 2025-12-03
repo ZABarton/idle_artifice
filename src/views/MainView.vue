@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import WorldMap from '@/components/WorldMap.vue'
 import AreaMap from '@/components/AreaMap.vue'
 import PiniaDebugTable from '@/components/PiniaDebugTable.vue'
+import StatusColumn from '@/components/StatusColumn.vue'
 import { useNavigationStore } from '@/stores/navigation'
 import type { HexTile } from '@/types/hex'
 
@@ -10,76 +11,93 @@ const navigationStore = useNavigationStore()
 
 const currentView = computed(() => navigationStore.currentView)
 const selectedHex = computed(() => navigationStore.selectedHex)
+const showDebugPanel = ref(false)
 
 const handleHexSelected = (tile: HexTile) => {
-  navigationStore.navigateToAreaMap(tile.q, tile.r)
+  navigationStore.navigateToAreaMap(tile.q, tile.r, tile.type)
 }
 
 const handleBackToWorldMap = () => {
   navigationStore.navigateToWorldMap()
 }
+
+const handleToggleDebugPanel = () => {
+  showDebugPanel.value = !showDebugPanel.value
+}
 </script>
 
 <template>
-  <div v-if="currentView === 'world-map'" class="main-layout">
-    <div class="world-map-panel">
-      <WorldMap @hex-selected="handleHexSelected" />
+  <div class="main-layout">
+    <!-- Status Column - always visible on left -->
+    <StatusColumn @toggle-debug-panel="handleToggleDebugPanel" />
+
+    <!-- Main content area - switches between views -->
+    <div class="content-area">
+      <!-- Debug Panel View - shown when toggled -->
+      <div v-if="showDebugPanel" class="debug-view">
+        <PiniaDebugTable />
+      </div>
+
+      <!-- World Map View -->
+      <div v-else-if="currentView === 'world-map'" class="world-map-view">
+        <WorldMap @hex-selected="handleHexSelected" />
+      </div>
+
+      <!-- Area Map View -->
+      <div v-else-if="currentView === 'area-map' && selectedHex" class="area-map-view">
+        <AreaMap :q="selectedHex.q" :r="selectedHex.r" @back="handleBackToWorldMap" />
+      </div>
+
+      <!-- Objectives View (placeholder for future) -->
+      <div v-else-if="currentView === 'objectives-view'" class="objectives-view">
+        <div class="placeholder">Objectives View - Coming Soon</div>
+      </div>
     </div>
-    <div class="debug-panel">
-      <PiniaDebugTable />
-    </div>
-  </div>
-  <div v-else-if="currentView === 'area-map' && selectedHex" class="area-map-view">
-    <AreaMap :q="selectedHex.q" :r="selectedHex.r" @back="handleBackToWorldMap" />
   </div>
 </template>
 
 <style scoped>
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: auto 1fr;
   height: 100vh;
   overflow: hidden;
 }
 
-.area-map-view {
-  height: 100vh;
+.content-area {
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.debug-view,
+.world-map-view,
+.area-map-view,
+.objectives-view {
+  height: 100%;
   overflow: hidden;
 }
 
-.world-map-panel {
-  min-width: 0; /* Allows grid item to shrink below content size */
-  overflow: hidden;
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 1.5rem;
+  color: #999;
 }
 
-.debug-panel {
-  min-width: 300px;
-  overflow: hidden;
-}
-
-/* Tablet breakpoint - stack vertically */
+/* Tablet breakpoint - stack vertically if needed */
 @media (max-width: 1024px) {
   .main-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: 60vh 40vh;
+    grid-template-columns: auto 1fr;
   }
 }
 
-/* Mobile breakpoint - adjust proportions */
+/* Mobile breakpoint - status column collapses to narrow bar */
 @media (max-width: 768px) {
   .main-layout {
-    grid-template-rows: 50vh 50vh;
-  }
-
-  .debug-panel {
-    min-width: 0;
-  }
-}
-
-/* Small mobile - prioritize debug panel */
-@media (max-width: 480px) {
-  .main-layout {
-    grid-template-rows: 40vh 60vh;
+    grid-template-columns: auto 1fr;
   }
 }
 </style>

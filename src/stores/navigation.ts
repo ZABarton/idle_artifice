@@ -4,7 +4,17 @@ import { ref } from 'vue'
 /**
  * View types for navigation
  */
-export type ViewType = 'world-map' | 'area-map'
+export type ViewType = 'world-map' | 'area-map' | 'objectives-view'
+
+/**
+ * Recent location entry
+ */
+export interface RecentLocation {
+  q: number
+  r: number
+  type: string | null
+  timestamp: number
+}
 
 /**
  * Navigation Store
@@ -15,15 +25,17 @@ export const useNavigationStore = defineStore('navigation', () => {
   // State
   const currentView = ref<ViewType>('world-map')
   const selectedHex = ref<{ q: number; r: number } | null>(null)
+  const recentLocations = ref<RecentLocation[]>([])
 
   // Actions
   /**
    * Navigate to the Area Map for a specific hex tile
    * In future: replace with router.push({ name: 'area-map', params: { q, r } })
    */
-  function navigateToAreaMap(q: number, r: number) {
+  function navigateToAreaMap(q: number, r: number, hexType: string | null = null) {
     selectedHex.value = { q, r }
     currentView.value = 'area-map'
+    addRecentLocation(q, r, hexType)
   }
 
   /**
@@ -36,20 +48,60 @@ export const useNavigationStore = defineStore('navigation', () => {
   }
 
   /**
+   * Navigate to the Objectives View
+   * In future: replace with router.push({ name: 'objectives-view' })
+   */
+  function navigateToObjectivesView() {
+    currentView.value = 'objectives-view'
+  }
+
+  /**
+   * Add a location to the recent locations list
+   * Prevents duplicates by moving existing entries to the front
+   * Limits to 5 most recent locations
+   */
+  function addRecentLocation(q: number, r: number, hexType: string | null = null) {
+    // Remove existing entry for this location if present
+    const existingIndex = recentLocations.value.findIndex(
+      (loc) => loc.q === q && loc.r === r
+    )
+    if (existingIndex !== -1) {
+      recentLocations.value.splice(existingIndex, 1)
+    }
+
+    // Add to front of list
+    recentLocations.value.unshift({
+      q,
+      r,
+      type: hexType,
+      timestamp: Date.now(),
+    })
+
+    // Limit to 5 most recent
+    if (recentLocations.value.length > 5) {
+      recentLocations.value = recentLocations.value.slice(0, 5)
+    }
+  }
+
+  /**
    * Reset navigation state
    */
   function reset() {
     currentView.value = 'world-map'
     selectedHex.value = null
+    recentLocations.value = []
   }
 
   return {
     // State
     currentView,
     selectedHex,
+    recentLocations,
     // Actions
     navigateToAreaMap,
     navigateToWorldMap,
+    navigateToObjectivesView,
+    addRecentLocation,
     reset,
   }
 })
