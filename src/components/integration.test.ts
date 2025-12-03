@@ -15,7 +15,7 @@ describe('Integration Tests', () => {
       const wrapper = mount(MainView)
 
       // Should start on World Map
-      expect(wrapper.find('.main-layout').exists()).toBe(true)
+      expect(wrapper.find('.world-map-view').exists()).toBe(true)
       expect(wrapper.find('.area-map-view').exists()).toBe(false)
 
       // Find and click the academy tile (explored, green)
@@ -27,7 +27,7 @@ describe('Integration Tests', () => {
 
       // Should navigate to Area Map
       await wrapper.vm.$nextTick()
-      expect(wrapper.find('.main-layout').exists()).toBe(false)
+      expect(wrapper.find('.world-map-view').exists()).toBe(false)
       expect(wrapper.find('.area-map-view').exists()).toBe(true)
     })
 
