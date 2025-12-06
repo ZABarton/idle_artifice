@@ -24,6 +24,7 @@ export interface RecentLocation {
 export const useNavigationStore = defineStore('navigation', () => {
   // State
   const currentView = ref<ViewType>('world-map')
+  const previousView = ref<ViewType>('world-map')
   const selectedHex = ref<{ q: number; r: number } | null>(null)
   const recentLocations = ref<RecentLocation[]>([])
 
@@ -33,6 +34,7 @@ export const useNavigationStore = defineStore('navigation', () => {
    * In future: replace with router.push({ name: 'area-map', params: { q, r } })
    */
   function navigateToAreaMap(q: number, r: number, hexType: string | null = null) {
+    previousView.value = currentView.value
     selectedHex.value = { q, r }
     currentView.value = 'area-map'
     addRecentLocation(q, r, hexType)
@@ -43,6 +45,7 @@ export const useNavigationStore = defineStore('navigation', () => {
    * In future: replace with router.push({ name: 'world-map' })
    */
   function navigateToWorldMap() {
+    previousView.value = currentView.value
     currentView.value = 'world-map'
     // Keep selectedHex for potential breadcrumb or history features
   }
@@ -52,7 +55,18 @@ export const useNavigationStore = defineStore('navigation', () => {
    * In future: replace with router.push({ name: 'objectives-view' })
    */
   function navigateToObjectivesView() {
+    previousView.value = currentView.value
     currentView.value = 'objectives-view'
+  }
+
+  /**
+   * Navigate back to the previous view
+   * Used for back buttons in sub-views
+   */
+  function navigateToPreviousView() {
+    const targetView = previousView.value
+    previousView.value = currentView.value
+    currentView.value = targetView
   }
 
   /**
@@ -95,12 +109,14 @@ export const useNavigationStore = defineStore('navigation', () => {
   return {
     // State
     currentView,
+    previousView,
     selectedHex,
     recentLocations,
     // Actions
     navigateToAreaMap,
     navigateToWorldMap,
     navigateToObjectivesView,
+    navigateToPreviousView,
     addRecentLocation,
     reset,
   }
