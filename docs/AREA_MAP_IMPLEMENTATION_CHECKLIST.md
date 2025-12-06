@@ -75,7 +75,7 @@
   - Add header bar component/section
   - Add SVG element with viewBox="..."
   - Implement scrollable container
-  - Add both header close button AND optional floating close button
+  - Add header close button
 
 - [ ] Implement header bar
   - Fixed height: 60px
@@ -417,7 +417,7 @@ All key design questions have been answered and documented:
    - Simple Features (e.g., Shop): Inline controls within Area Map
    - Complex Features (e.g., Foundry): Navigate to dedicated Feature screen
 
-5. **Close Button Placement:** Both header bar AND optional floating close button for redundancy and flexibility.
+5. **Close Button Placement:** Header bar only
 
 ### Technical Decisions (To Be Determined During Implementation)
 

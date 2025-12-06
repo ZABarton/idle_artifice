@@ -39,14 +39,6 @@ describe('AreaMap', () => {
       expect(wrapper.find('.area-map-canvas').exists()).toBe(true)
     })
 
-    it('renders floating close button', () => {
-      const wrapper = mount(AreaMap, {
-        props: { q: 0, r: 0 },
-      })
-
-      expect(wrapper.find('.floating-close-button').exists()).toBe(true)
-    })
-
     it('renders visible features', () => {
       const wrapper = mount(AreaMap, {
         props: { q: 0, r: 0 },
@@ -102,16 +94,6 @@ describe('AreaMap', () => {
       })
 
       await wrapper.find('.area-map-header__close').trigger('click')
-
-      expect(wrapper.emitted('back')).toBeTruthy()
-    })
-
-    it('emits back event when floating close button is clicked', async () => {
-      const wrapper = mount(AreaMap, {
-        props: { q: 0, r: 0 },
-      })
-
-      await wrapper.find('.floating-close-button').trigger('click')
 
       expect(wrapper.emitted('back')).toBeTruthy()
     })
@@ -255,10 +237,8 @@ describe('AreaMap', () => {
       })
 
       const headerClose = wrapper.find('.area-map-header__close')
-      const floatingClose = wrapper.find('.floating-close-button')
 
       expect(headerClose.attributes('aria-label')).toBe('Close and return to World Map')
-      expect(floatingClose.attributes('aria-label')).toBe('Close and return to World Map')
     })
   })
 })
