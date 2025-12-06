@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import WorldMap from '@/components/WorldMap.vue'
 import AreaMap from '@/components/AreaMap.vue'
+import ObjectivesView from '@/views/ObjectivesView.vue'
 import PiniaDebugTable from '@/components/PiniaDebugTable.vue'
 import StatusColumn from '@/components/StatusColumn.vue'
 import { useNavigationStore } from '@/stores/navigation'
@@ -19,6 +20,11 @@ const handleHexSelected = (tile: HexTile) => {
 
 const handleBackToWorldMap = () => {
   navigationStore.navigateToWorldMap()
+}
+
+const handleBackFromObjectivesView = () => {
+  // The ObjectivesView component handles navigation internally
+  // This handler is here for consistency with other views
 }
 
 const handleToggleDebugPanel = () => {
@@ -48,9 +54,9 @@ const handleToggleDebugPanel = () => {
         <AreaMap :q="selectedHex.q" :r="selectedHex.r" @back="handleBackToWorldMap" />
       </div>
 
-      <!-- Objectives View (placeholder for future) -->
+      <!-- Objectives View -->
       <div v-else-if="currentView === 'objectives-view'" class="objectives-view">
-        <div class="placeholder">Objectives View - Coming Soon</div>
+        <ObjectivesView @back="handleBackFromObjectivesView" />
       </div>
     </div>
   </div>

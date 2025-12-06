@@ -55,9 +55,7 @@ function toggleCollapse() {
 }
 
 function handleObjectiveClick() {
-  // Placeholder for navigating to Objectives View
-  // Will be implemented when ObjectivesView is created
-  console.log('Navigate to Objectives View')
+  navigationStore.navigateToObjectivesView()
 }
 
 function handleWorldMapClick() {
