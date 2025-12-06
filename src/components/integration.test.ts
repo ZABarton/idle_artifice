@@ -87,26 +87,6 @@ describe('Integration Tests', () => {
       expect(wrapper.find('.main-layout').exists()).toBe(true)
       expect(wrapper.find('.area-map-view').exists()).toBe(false)
     })
-
-    it('navigates back to World Map when clicking floating close button', async () => {
-      const wrapper = mount(MainView)
-
-      // Navigate to Area Map
-      const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
-      await academyPolygon!.trigger('click')
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.find('.area-map-view').exists()).toBe(true)
-
-      // Click floating close button
-      await wrapper.find('.floating-close-button').trigger('click')
-      await wrapper.vm.$nextTick()
-
-      // Should navigate back to World Map
-      expect(wrapper.find('.main-layout').exists()).toBe(true)
-      expect(wrapper.find('.area-map-view').exists()).toBe(false)
-    })
   })
 
   describe('Feature Interactions', () => {

@@ -209,15 +209,6 @@ const handleFeatureNavigate = (featureType: string) => {
         </FeatureCard>
       </svg>
     </div>
-
-    <!-- Optional floating close button (for redundancy) -->
-    <button
-      class="floating-close-button"
-      aria-label="Close and return to World Map"
-      @click="handleBackClick"
-    >
-      ✕
-    </button>
   </div>
 </template>
 
@@ -303,46 +294,6 @@ const handleFeatureNavigate = (featureType: string) => {
   display: block;
   align-self: flex-start;
   /* Width and height are set dynamically via inline styles based on layout mode */
-}
-
-/* Floating Close Button (Optional Redundancy) */
-.floating-close-button {
-  position: absolute !important;
-  bottom: 1.5rem !important;
-  right: 1.5rem !important;
-  width: 56px !important;
-  height: 56px !important;
-  min-width: 56px !important;
-  min-height: 56px !important;
-  background-color: #2c3e50 !important;
-  color: white !important;
-  border: 3px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 50%;
-  font-size: 2rem;
-  font-weight: 300;
-  line-height: 1;
-  cursor: pointer;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 9999 !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-}
-
-.floating-close-button:hover {
-  background-color: #34495e;
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-}
-
-.floating-close-button:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive */
