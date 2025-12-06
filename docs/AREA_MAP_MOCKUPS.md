@@ -277,7 +277,6 @@ Spacing:
 
 Navigation:
   - Header close button (✕) returns to World Map
-  - Optional floating close button for redundancy
 ```
 
 ---

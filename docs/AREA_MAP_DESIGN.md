@@ -42,14 +42,12 @@ BEFORE (AreaMap.vue):
 - CSS Grid layout (2-column)
 - Panel-based UI (info panel, resources panel)
 - Responsive breakpoints
-- Floating close button only
 
 AFTER:
 - Header bar with area title and close button
 - SVG canvas with viewBox coordinate system
 - Features positioned at (x, y) coordinates
 - Scrollable container instead of responsive scaling
-- Both header close button AND floating close button for redundancy
 ```
 
 **Header Bar Specification:**
@@ -404,7 +402,7 @@ All key design questions have been resolved:
    - Simple Features (e.g., Shop): Inline controls within Area Map
    - Complex Features (e.g., Foundry): Navigate to dedicated Feature screen
 
-5. **Close Button Placement:** Both header bar AND floating close button for redundancy and flexibility.
+5. **Close Button Placement:** Header bar
 
 ---
 
