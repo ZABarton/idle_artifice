@@ -113,7 +113,10 @@ function handleDebugToggle() {
             {{ objectiveProgress }}
           </div>
         </div>
-        <div v-else class="no-objective">No objective tracked</div>
+        <div v-else class="no-objective" @click="handleObjectiveClick">
+          <div class="no-objective-title">No Objectives Tracked</div>
+          <div class="no-objective-hint">Click to view all objectives</div>
+        </div>
       </section>
 
       <!-- Resources Section -->
@@ -314,7 +317,29 @@ section h3 {
 }
 
 .no-objective {
-  font-size: 0.9rem;
+  background: #f9f9f9;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.no-objective:hover {
+  background: #f0f8f0;
+  border-color: #4caf50;
+}
+
+.no-objective-title {
+  font-size: 0.95rem;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.no-objective-hint {
+  font-size: 0.8rem;
   color: #999;
   font-style: italic;
 }
