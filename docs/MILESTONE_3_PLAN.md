@@ -143,12 +143,13 @@ interface Objective {
 - Filter/search capabilities (optional for this milestone)
 
 ### 5. Objective Completion Celebration
-**New Component**: `src/components/ObjectiveCompletionNotification.vue`
+**New Component**: `src/components/NotificationContainer.vue`
 
 **Behavior**:
+- Generic notification system for all notification types (success, info, warning, error)
 - Brief animation/toast notification when objective completes
 - Auto-dismisses after 3-5 seconds
-- Does NOT auto-switch tracked objective (user controls this)
+- Auto-switches to next main objective when tracked objective completes (enhances UX)
 - Simple, non-intrusive design
 
 ### 6. Navigation Store Updates
@@ -201,7 +202,7 @@ interface Objective {
 10. Create ObjectivesView.vue component
 11. Update navigation store with objectives view support
 12. Implement objective selection/tracking logic
-13. Create ObjectiveCompletionNotification.vue component
+13. Create NotificationContainer.vue component
 14. Wire up completion celebration logic
 
 ### Phase 4: Integration & Polish
