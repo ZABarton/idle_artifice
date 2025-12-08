@@ -4,6 +4,7 @@ import type { Objective, ObjectiveStatus, ObjectiveCategory, UnlockCondition } f
 import objectivesConfig from '@/config/objectives.json'
 import { useResourcesStore } from './resources'
 import { useWorldMapStore } from './worldMap'
+import { useNotificationsStore } from './notifications'
 
 /**
  * Objectives Store
@@ -160,8 +161,30 @@ export const useObjectivesStore = defineStore('objectives', () => {
     objective.status = 'completed'
     objective.completedAt = new Date()
 
+    // Show completion notification
+    const notificationsStore = useNotificationsStore()
+    notificationsStore.showSuccess(
+      `Objective Complete: ${objective.title}`,
+      objective.description
+    )
+
     // Evaluate discovery conditions to potentially reveal new objectives
     evaluateDiscoveryConditions()
+
+    // Auto-switch to next main objective if the completed one was tracked
+    if (trackedObjectiveId.value === id) {
+      // Find next uncompleted main objective in order
+      const nextMainObjective = objectives.value
+        .filter((obj) => obj.category === 'main' && obj.status === 'active')
+        .sort((a, b) => a.order - b.order)[0]
+
+      if (nextMainObjective) {
+        trackedObjectiveId.value = nextMainObjective.id
+      } else {
+        // No more main objectives, clear tracked objective
+        trackedObjectiveId.value = null
+      }
+    }
 
     return true
   }

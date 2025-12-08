@@ -5,6 +5,7 @@ import AreaMap from '@/components/AreaMap.vue'
 import ObjectivesView from '@/views/ObjectivesView.vue'
 import PiniaDebugTable from '@/components/PiniaDebugTable.vue'
 import StatusColumn from '@/components/StatusColumn.vue'
+import ObjectiveCompletionNotification from '@/components/ObjectiveCompletionNotification.vue'
 import { useNavigationStore } from '@/stores/navigation'
 import type { HexTile } from '@/types/hex'
 
@@ -59,6 +60,9 @@ const handleToggleDebugPanel = () => {
         <ObjectivesView @back="handleBackFromObjectivesView" />
       </div>
     </div>
+
+    <!-- Notification system - rendered on top of all content -->
+    <ObjectiveCompletionNotification />
   </div>
 </template>
 
