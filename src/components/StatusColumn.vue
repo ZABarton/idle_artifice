@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useObjectivesStore } from '@/stores/objectives'
 import { useResourcesStore } from '@/stores/resources'
 import { useNavigationStore } from '@/stores/navigation'
@@ -13,6 +13,25 @@ const emit = defineEmits<{
 }>()
 
 const isCollapsed = ref(false)
+const isMobile = ref(false)
+
+// Check if screen is mobile size
+const checkScreenSize = () => {
+  isMobile.value = window.innerWidth <= 768
+  // Auto-collapse on mobile
+  if (isMobile.value && !isCollapsed.value) {
+    isCollapsed.value = true
+  }
+}
+
+onMounted(() => {
+  checkScreenSize()
+  window.addEventListener('resize', checkScreenSize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize)
+})
 
 const trackedObjective = computed(() => objectivesStore.getTrackedObjective)
 
@@ -82,7 +101,14 @@ function handleDebugToggle() {
 </script>
 
 <template>
-  <div class="status-column" :class="{ collapsed: isCollapsed }">
+  <!-- Mobile overlay backdrop -->
+  <div
+    v-if="isMobile && !isCollapsed"
+    class="mobile-overlay"
+    @click="toggleCollapse"
+  ></div>
+
+  <div class="status-column" :class="{ collapsed: isCollapsed, mobile: isMobile }">
     <!-- Collapsed view: icon-only -->
     <div v-if="isCollapsed" class="collapsed-view">
       <button class="expand-button" @click="toggleCollapse" title="Expand Status Column">
@@ -171,21 +197,71 @@ function handleDebugToggle() {
 </template>
 
 <style scoped>
+/* Mobile overlay backdrop */
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .status-column {
   background-color: #f5f5f5;
   border-right: 2px solid #ccc;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   overflow: hidden;
+  height: 100vh;
 }
 
 .status-column.collapsed {
   width: 50px;
 }
 
+/* Desktop: 250px */
 .status-column:not(.collapsed) {
-  width: 280px;
+  width: 250px;
+}
+
+/* Mobile drawer pattern */
+.status-column.mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.status-column.mobile.collapsed {
+  transform: translateX(0);
+}
+
+.status-column.mobile:not(.collapsed) {
+  transform: translateX(0);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 /* Collapsed View */
@@ -206,10 +282,19 @@ function handleDebugToggle() {
   cursor: pointer;
   margin-bottom: 1rem;
   font-size: 1rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .expand-button:hover {
   background: #45a049;
+}
+
+.expand-button:active {
+  transform: scale(0.95);
 }
 
 .collapsed-icons {
@@ -257,10 +342,19 @@ function handleDebugToggle() {
   padding: 0.4rem 0.6rem;
   cursor: pointer;
   font-size: 0.9rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .collapse-button:hover {
   background: #45a049;
+}
+
+.collapse-button:active {
+  transform: scale(0.95);
 }
 
 section {
@@ -460,10 +554,31 @@ section h3 {
   cursor: not-allowed;
 }
 
-/* Responsive */
+/* Responsive Breakpoints */
+
+/* Tablet: 200px at 1024px breakpoint */
+@media (max-width: 1024px) {
+  .status-column:not(.collapsed):not(.mobile) {
+    width: 200px;
+  }
+}
+
+/* Mobile: Drawer pattern at 768px breakpoint */
 @media (max-width: 768px) {
-  .status-column:not(.collapsed) {
-    width: 240px;
+  /* Buttons are already touch-friendly (44px min) */
+
+  /* Ensure nav and system buttons are touch-friendly */
+  .nav-button,
+  .system-button {
+    min-height: 44px;
+    padding: 0.75rem;
+  }
+
+  /* Slightly larger tap targets for objective cards */
+  .objective-card,
+  .no-objective {
+    min-height: 80px;
+    padding: 1.25rem;
   }
 }
 </style>

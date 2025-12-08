@@ -97,17 +97,24 @@ const handleToggleDebugPanel = () => {
   color: #999;
 }
 
-/* Tablet breakpoint - stack vertically if needed */
+/* Tablet breakpoint - StatusColumn at 200px */
 @media (max-width: 1024px) {
   .main-layout {
+    /* StatusColumn handles its own width, grid adjusts automatically */
     grid-template-columns: auto 1fr;
   }
 }
 
-/* Mobile breakpoint - status column collapses to narrow bar */
+/* Mobile breakpoint - StatusColumn becomes fixed drawer overlay */
 @media (max-width: 768px) {
   .main-layout {
-    grid-template-columns: auto 1fr;
+    /* On mobile, StatusColumn is fixed positioned, so content takes full width */
+    grid-template-columns: 50px 1fr;
+  }
+
+  .content-area {
+    /* Allow content to flow under the collapsed status column */
+    grid-column: 1 / -1;
   }
 }
 </style>
