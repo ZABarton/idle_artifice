@@ -108,13 +108,13 @@ const handleToggleDebugPanel = () => {
 /* Mobile breakpoint - StatusColumn becomes fixed drawer overlay */
 @media (max-width: 768px) {
   .main-layout {
-    /* On mobile, StatusColumn is fixed positioned, so content takes full width */
-    grid-template-columns: 50px 1fr;
+    /* On mobile, StatusColumn is fixed positioned, so grid is just content */
+    grid-template-columns: 1fr;
   }
 
   .content-area {
-    /* Allow content to flow under the collapsed status column */
-    grid-column: 1 / -1;
+    /* Add left padding to prevent content from being hidden under collapsed bar */
+    padding-left: 50px;
   }
 }
 </style>
