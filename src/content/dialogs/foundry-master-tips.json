@@ -1,0 +1,10 @@
+{
+  "id": "foundry-master-tips",
+  "characterName": "Foundry Master",
+  "portrait": {
+    "path": null,
+    "alt": "Foundry Master portrait"
+  },
+  "message": "Ah, a new apprentice! Let me give you some advice about crafting.\n\nDon't be afraid to experiment - some of the best magical items were discovered by accident. Try combining resources you wouldn't normally put together!",
+  "conversationId": "foundry-master-intro"
+}
