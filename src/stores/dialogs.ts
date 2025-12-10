@@ -170,7 +170,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
 
     try {
       // Dynamically import the dialog file
-      const module = await import(`/src/content/dialogs/${dialogId}.json`)
+      const module = await import(`../content/dialogs/${dialogId}.json`)
       const dialog = module.default as DialogModal
 
       // Validate dialog has required fields

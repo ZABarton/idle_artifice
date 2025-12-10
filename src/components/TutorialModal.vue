@@ -54,7 +54,7 @@ function handleModalClick(event: MouseEvent) {
   z-index: 10000;
   display: flex;
   align-items: flex-start;
-  justify-content: flex-end;
+  justify-content: left;
   padding: 20px;
 }
 
