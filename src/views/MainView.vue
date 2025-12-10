@@ -7,6 +7,7 @@ import PiniaDebugTable from '@/components/PiniaDebugTable.vue'
 import StatusColumn from '@/components/StatusColumn.vue'
 import NotificationContainer from '@/components/NotificationContainer.vue'
 import TutorialModal from '@/components/TutorialModal.vue'
+import DialogModal from '@/components/DialogModal.vue'
 import { useNavigationStore } from '@/stores/navigation'
 import type { HexTile } from '@/types/hex'
 
@@ -67,6 +68,9 @@ const handleToggleDebugPanel = () => {
 
     <!-- Tutorial modal - rendered on top of notifications -->
     <TutorialModal />
+
+    <!-- Dialog modal - rendered on top of notifications -->
+    <DialogModal />
   </div>
 </template>
 
