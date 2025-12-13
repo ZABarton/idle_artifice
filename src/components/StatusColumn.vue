@@ -102,18 +102,12 @@ function handleDebugToggle() {
 
 <template>
   <!-- Mobile overlay backdrop -->
-  <div
-    v-if="isMobile && !isCollapsed"
-    class="mobile-overlay"
-    @click="toggleCollapse"
-  ></div>
+  <div v-if="isMobile && !isCollapsed" class="mobile-overlay" @click="toggleCollapse"></div>
 
   <div class="status-column" :class="{ collapsed: isCollapsed, mobile: isMobile }">
     <!-- Collapsed view: icon-only -->
     <div v-if="isCollapsed" class="collapsed-view">
-      <button class="expand-button" @click="toggleCollapse" title="Expand Status Column">
-        ▶
-      </button>
+      <button class="expand-button" title="Expand Status Column" @click="toggleCollapse">▶</button>
       <div class="collapsed-icons">
         <div class="icon" title="Current Objective">🎯</div>
         <div class="icon" title="Resources">📦</div>
@@ -126,7 +120,7 @@ function handleDebugToggle() {
     <div v-else class="expanded-view">
       <div class="header">
         <h2>Status</h2>
-        <button class="collapse-button" @click="toggleCollapse" title="Collapse">◀</button>
+        <button class="collapse-button" title="Collapse" @click="toggleCollapse">◀</button>
       </div>
 
       <!-- Current Objective Section -->
@@ -161,11 +155,11 @@ function handleDebugToggle() {
       <section class="navigation-section">
         <h3>Quick Navigation</h3>
         <div class="nav-links">
-          <button @click="handleWorldMapClick" class="nav-button">🗺️ World Map</button>
+          <button class="nav-button" @click="handleWorldMapClick">🗺️ World Map</button>
           <button
             v-if="currentLocationDisplay"
-            @click="handleCurrentLocationClick"
             class="nav-button"
+            @click="handleCurrentLocationClick"
           >
             📍 {{ currentLocationDisplay }}
           </button>
@@ -174,8 +168,8 @@ function handleDebugToggle() {
             <button
               v-for="location in recentLocations.slice(1)"
               :key="`${location.q},${location.r}`"
-              @click="handleRecentLocationClick(location)"
               class="nav-button recent"
+              @click="handleRecentLocationClick(location)"
             >
               {{ location.type || 'Unknown' }}
             </button>

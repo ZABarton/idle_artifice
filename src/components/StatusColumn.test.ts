@@ -180,9 +180,9 @@ describe('StatusColumn', () => {
     it('displays World Map button', () => {
       const wrapper = mount(StatusColumn)
 
-      const worldMapButton = wrapper.findAll('.nav-button').find((btn) =>
-        btn.text().includes('World Map')
-      )
+      const worldMapButton = wrapper
+        .findAll('.nav-button')
+        .find((btn) => btn.text().includes('World Map'))
       expect(worldMapButton).toBeDefined()
     })
 
@@ -192,9 +192,9 @@ describe('StatusColumn', () => {
 
       const wrapper = mount(StatusColumn)
 
-      const worldMapButton = wrapper.findAll('.nav-button').find((btn) =>
-        btn.text().includes('World Map')
-      )
+      const worldMapButton = wrapper
+        .findAll('.nav-button')
+        .find((btn) => btn.text().includes('World Map'))
       await worldMapButton?.trigger('click')
 
       expect(navigationStore.currentView).toBe('world-map')
@@ -215,8 +215,8 @@ describe('StatusColumn', () => {
       expect(navButtons.length).toBeGreaterThanOrEqual(2)
 
       // Find button containing location emoji and Academy text
-      const currentLocationButton = navButtons.find((btn) =>
-        btn.text().includes('📍') && btn.text().toLowerCase().includes('academy')
+      const currentLocationButton = navButtons.find(
+        (btn) => btn.text().includes('📍') && btn.text().toLowerCase().includes('academy')
       )
       expect(currentLocationButton).toBeDefined()
     })
@@ -244,36 +244,36 @@ describe('StatusColumn', () => {
     it('Settings button is disabled', () => {
       const wrapper = mount(StatusColumn)
 
-      const settingsButton = wrapper.findAll('.system-button').find((btn) =>
-        btn.text().includes('Settings')
-      )
+      const settingsButton = wrapper
+        .findAll('.system-button')
+        .find((btn) => btn.text().includes('Settings'))
       expect(settingsButton?.attributes('disabled')).toBeDefined()
     })
 
     it('Save Game button is disabled', () => {
       const wrapper = mount(StatusColumn)
 
-      const saveButton = wrapper.findAll('.system-button').find((btn) =>
-        btn.text().includes('Save Game')
-      )
+      const saveButton = wrapper
+        .findAll('.system-button')
+        .find((btn) => btn.text().includes('Save Game'))
       expect(saveButton?.attributes('disabled')).toBeDefined()
     })
 
     it('Debug Panel button is enabled', () => {
       const wrapper = mount(StatusColumn)
 
-      const debugButton = wrapper.findAll('.system-button').find((btn) =>
-        btn.text().includes('Debug Panel')
-      )
+      const debugButton = wrapper
+        .findAll('.system-button')
+        .find((btn) => btn.text().includes('Debug Panel'))
       expect(debugButton?.attributes('disabled')).toBeUndefined()
     })
 
     it('emits toggleDebugPanel event when Debug Panel button is clicked', async () => {
       const wrapper = mount(StatusColumn)
 
-      const debugButton = wrapper.findAll('.system-button').find((btn) =>
-        btn.text().includes('Debug Panel')
-      )
+      const debugButton = wrapper
+        .findAll('.system-button')
+        .find((btn) => btn.text().includes('Debug Panel'))
       await debugButton?.trigger('click')
 
       expect(wrapper.emitted('toggleDebugPanel')).toBeTruthy()

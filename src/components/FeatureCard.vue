@@ -72,7 +72,10 @@ function handleClick() {
 <template>
   <g
     class="feature-card"
-    :class="{ 'feature-card--active': feature.isActive, 'feature-card--locked': feature.state === 'locked' }"
+    :class="{
+      'feature-card--active': feature.isActive,
+      'feature-card--locked': feature.state === 'locked',
+    }"
     :data-feature-id="feature.id"
     :transform="`translate(${feature.position.x}, ${feature.position.y})`"
     :style="{ cursor: cursorStyle, opacity: cardOpacity }"
@@ -187,7 +190,10 @@ function handleClick() {
 .feature-card__content {
   width: 100%;
   height: 100%;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 7px;
   color: #333333;
   overflow: hidden;

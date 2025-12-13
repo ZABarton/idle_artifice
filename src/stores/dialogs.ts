@@ -12,6 +12,7 @@ import { useNotificationsStore } from './notifications'
 // LocalStorage keys
 const STORAGE_KEY_COMPLETED_TUTORIALS = 'idle-artifice-completed-tutorials'
 const STORAGE_KEY_DIALOG_HISTORY = 'idle-artifice-dialog-history'
+const STORAGE_KEY_INTERACTED_FEATURES = 'idle-artifice-interacted-features'
 
 // Track if we've shown storage warning to avoid spam
 let hasShownStorageWarning = false
@@ -28,6 +29,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
   const loadedTutorials = ref<Map<string, TutorialModal>>(new Map())
   const loadedDialogs = ref<Map<string, DialogModal>>(new Map())
   const activeConversation = ref<DialogHistoryRecord | null>(null)
+  const interactedFeatures = ref<Set<string>>(new Set())
 
   // Getters
 
@@ -43,6 +45,13 @@ export const useDialogsStore = defineStore('dialogs', () => {
    */
   const hasSeenTutorial = computed(() => (tutorialId: string) => {
     return completedTutorials.value.has(tutorialId)
+  })
+
+  /**
+   * Check if a feature has been interacted with
+   */
+  const hasInteractedWithFeature = computed(() => (featureId: string) => {
+    return interactedFeatures.value.has(featureId)
   })
 
   /**
@@ -118,6 +127,25 @@ export const useDialogsStore = defineStore('dialogs', () => {
   }
 
   /**
+   * Load interacted features from localStorage
+   */
+  function loadInteractedFeatures(): void {
+    const interacted = loadFromLocalStorage<string[]>(STORAGE_KEY_INTERACTED_FEATURES, [])
+    interactedFeatures.value = new Set(interacted)
+  }
+
+  /**
+   * Mark a feature as interacted with
+   */
+  function markFeatureInteracted(featureId: string): void {
+    interactedFeatures.value.add(featureId)
+
+    // Save to localStorage
+    const interactedArray = Array.from(interactedFeatures.value)
+    saveToLocalStorage(STORAGE_KEY_INTERACTED_FEATURES, interactedArray)
+  }
+
+  /**
    * Load all tutorials from content directory
    */
   async function loadTutorials(): Promise<void> {
@@ -177,11 +205,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
       if (!dialog.id || !dialog.characterName || !dialog.message) {
         console.error(`Invalid dialog ${dialogId}: missing required fields`)
         const notificationsStore = useNotificationsStore()
-        notificationsStore.showError(
-          'Dialog Error',
-          `Missing dialog: ${dialogId}`,
-          8000
-        )
+        notificationsStore.showError('Dialog Error', `Missing dialog: ${dialogId}`, 8000)
         return null
       }
 
@@ -341,6 +365,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
   async function initialize(): Promise<void> {
     loadCompletedTutorials()
     loadDialogHistory()
+    loadInteractedFeatures()
     await loadTutorials()
   }
 
@@ -354,9 +379,11 @@ export const useDialogsStore = defineStore('dialogs', () => {
     dialogHistory,
     loadedTutorials,
     activeConversation,
+    interactedFeatures,
     // Getters
     currentModal,
     hasSeenTutorial,
+    hasInteractedWithFeature,
     conversationHistory,
     // Actions
     showTutorial,
@@ -366,6 +393,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
     completeConversation,
     closeCurrentModal,
     markTutorialCompleted,
+    markFeatureInteracted,
     loadTutorials,
     initialize,
   }

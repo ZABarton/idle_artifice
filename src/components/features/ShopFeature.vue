@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useTutorials } from '@/composables/useTutorials'
 
 /**
  * ShopFeature Component
@@ -15,6 +16,12 @@ const calculateRevenue = (margin: number) => {
   // Simple mock calculation - will be replaced with real game logic
   return Math.floor(100 + margin * 2)
 }
+
+// Trigger tutorials on first interaction with this feature
+const { triggerFeatureTutorial } = useTutorials()
+onMounted(() => {
+  triggerFeatureTutorial('shop')
+})
 </script>
 
 <template>
@@ -45,7 +52,10 @@ const calculateRevenue = (margin: number) => {
   flex-direction: column;
   gap: 2px;
   padding: 2px;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 6px;
   box-sizing: border-box;
   width: 100%;

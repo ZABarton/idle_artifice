@@ -46,9 +46,7 @@ function getNotificationIcon(notification: Notification): string {
             {{ notification.message }}
           </div>
         </div>
-        <button class="notification-close" @click.stop="handleDismiss(notification.id)">
-          ×
-        </button>
+        <button class="notification-close" @click.stop="handleDismiss(notification.id)">×</button>
       </div>
     </TransitionGroup>
   </div>

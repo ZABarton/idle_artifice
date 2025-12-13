@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useTutorials } from '@/composables/useTutorials'
+
 /**
  * FoundryFeature Component
  * Complex feature with navigation to dedicated Foundry screen
@@ -21,6 +24,12 @@ const mockResources = {
 const handleOpenFoundry = () => {
   emit('navigate')
 }
+
+// Trigger tutorials on first interaction with this feature
+const { triggerFeatureTutorial } = useTutorials()
+onMounted(() => {
+  triggerFeatureTutorial('foundry')
+})
 </script>
 
 <template>
@@ -46,7 +55,10 @@ const handleOpenFoundry = () => {
   flex-direction: column;
   gap: 2px;
   padding: 2px;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 6px;
   box-sizing: border-box;
   width: 100%;

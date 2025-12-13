@@ -1,10 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Objective, ObjectiveStatus, ObjectiveCategory, UnlockCondition } from '@/types/objectives'
+import type {
+  Objective,
+  ObjectiveStatus,
+  ObjectiveCategory,
+  UnlockCondition,
+} from '@/types/objectives'
 import objectivesConfig from '@/config/objectives.json'
 import { useResourcesStore } from './resources'
 import { useWorldMapStore } from './worldMap'
 import { useNotificationsStore } from './notifications'
+import { useTutorials } from '@/composables/useTutorials'
 
 /**
  * Objectives Store
@@ -66,7 +72,9 @@ export const useObjectivesStore = defineStore('objectives', () => {
   const getOrderedObjectives = computed(() => {
     const visible = visibleObjectives.value
     const main = visible.filter((obj) => obj.category === 'main').sort((a, b) => a.order - b.order)
-    const secondary = visible.filter((obj) => obj.category === 'secondary').sort((a, b) => a.order - b.order)
+    const secondary = visible
+      .filter((obj) => obj.category === 'secondary')
+      .sort((a, b) => a.order - b.order)
     return [...main, ...secondary]
   })
 
@@ -163,10 +171,11 @@ export const useObjectivesStore = defineStore('objectives', () => {
 
     // Show completion notification
     const notificationsStore = useNotificationsStore()
-    notificationsStore.showSuccess(
-      `Objective Complete: ${objective.title}`,
-      objective.description
-    )
+    notificationsStore.showSuccess(`Objective Complete: ${objective.title}`, objective.description)
+
+    // Trigger any tutorials associated with this objective completion
+    const { triggerObjectiveTutorial } = useTutorials()
+    triggerObjectiveTutorial(id)
 
     // Evaluate discovery conditions to potentially reveal new objectives
     evaluateDiscoveryConditions()
