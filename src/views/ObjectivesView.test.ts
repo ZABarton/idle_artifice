@@ -62,7 +62,10 @@ describe('ObjectivesView', () => {
         (obj) => obj.status === 'active' && obj.category === 'main'
       )
 
-      const mainObjectiveCards = wrapper.findAll('.objectives-subsection').at(0)?.findAll('.objective-card')
+      const mainObjectiveCards = wrapper
+        .findAll('.objectives-subsection')
+        .at(0)
+        ?.findAll('.objective-card')
       expect(mainObjectiveCards?.length).toBe(activeMain.length)
     })
 
@@ -98,7 +101,9 @@ describe('ObjectivesView', () => {
       const wrapper = mount(ObjectivesView)
 
       const sectionTitles = wrapper.findAll('.section-title')
-      const hasCompleted = sectionTitles.some((title) => title.text().includes('Completed Objectives'))
+      const hasCompleted = sectionTitles.some((title) =>
+        title.text().includes('Completed Objectives')
+      )
       expect(hasCompleted).toBe(true)
     })
 
@@ -156,7 +161,6 @@ describe('ObjectivesView', () => {
 
     it('sorts objectives by order within category', () => {
       const objectivesStore = useObjectivesStore()
-      const wrapper = mount(ObjectivesView)
 
       const activeMain = objectivesStore.visibleObjectives
         .filter((obj) => obj.status === 'active' && obj.category === 'main')
@@ -191,9 +195,9 @@ describe('ObjectivesView', () => {
       const wrapper = mount(ObjectivesView)
 
       // Find gather-wood which has progress tracking
-      const objectiveCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Gather Wood')
-      )
+      const objectiveCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Gather Wood'))
 
       if (objectiveCard) {
         expect(objectiveCard.find('.objective-progress').exists()).toBe(true)
@@ -208,9 +212,9 @@ describe('ObjectivesView', () => {
 
       const wrapper = mount(ObjectivesView)
 
-      const objectiveCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Gather Wood')
-      )
+      const objectiveCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Gather Wood'))
 
       if (objectiveCard) {
         const progressText = objectiveCard.find('.progress-text')
@@ -224,9 +228,9 @@ describe('ObjectivesView', () => {
 
       const wrapper = mount(ObjectivesView)
 
-      const exploreFeaturesCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Explore Features')
-      )
+      const exploreFeaturesCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Explore Features'))
 
       if (exploreFeaturesCard) {
         expect(exploreFeaturesCard.find('.subtasks-list').exists()).toBe(true)
@@ -241,9 +245,9 @@ describe('ObjectivesView', () => {
 
       const wrapper = mount(ObjectivesView)
 
-      const exploreFeaturesCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Explore Features')
-      )
+      const exploreFeaturesCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Explore Features'))
 
       if (exploreFeaturesCard) {
         const completedSubtask = exploreFeaturesCard.findAll('.subtask-item.completed')
@@ -257,9 +261,9 @@ describe('ObjectivesView', () => {
 
       const wrapper = mount(ObjectivesView)
 
-      const exploreFeaturesCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Explore Features')
-      )
+      const exploreFeaturesCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Explore Features'))
 
       if (exploreFeaturesCard) {
         const progressText = exploreFeaturesCard.find('.progress-text')
@@ -322,7 +326,7 @@ describe('ObjectivesView', () => {
 
       const wrapper = mount(ObjectivesView)
 
-      let trackedBadge = wrapper.find('.tracked-badge')
+      const trackedBadge = wrapper.find('.tracked-badge')
       expect(trackedBadge.exists()).toBe(true)
 
       // Change tracked objective
@@ -332,9 +336,9 @@ describe('ObjectivesView', () => {
       await wrapper.vm.$nextTick()
 
       // Find the new tracked badge
-      const gatherWoodCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Gather Wood')
-      )
+      const gatherWoodCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Gather Wood'))
       expect(gatherWoodCard?.find('.tracked-badge').exists()).toBe(true)
     })
   })
@@ -343,9 +347,9 @@ describe('ObjectivesView', () => {
     it('applies correct border color for main objectives', () => {
       const wrapper = mount(ObjectivesView)
 
-      const visitAcademyCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Visit the Academy')
-      )
+      const visitAcademyCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Visit the Academy'))
 
       if (visitAcademyCard) {
         const borderColor = visitAcademyCard.attributes('style')
@@ -359,9 +363,9 @@ describe('ObjectivesView', () => {
 
       const wrapper = mount(ObjectivesView)
 
-      const exploreFeaturesCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Explore Features')
-      )
+      const exploreFeaturesCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Explore Features'))
 
       if (exploreFeaturesCard) {
         const borderColor = exploreFeaturesCard.attributes('style')
@@ -392,7 +396,9 @@ describe('ObjectivesView', () => {
       const wrapper = mount(ObjectivesView)
 
       const sectionTitles = wrapper.findAll('.section-title')
-      const hasCompleted = sectionTitles.some((title) => title.text().includes('Completed Objectives'))
+      const hasCompleted = sectionTitles.some((title) =>
+        title.text().includes('Completed Objectives')
+      )
 
       // Initially, no objectives should be completed
       expect(hasCompleted).toBe(false)
@@ -406,9 +412,9 @@ describe('ObjectivesView', () => {
 
       // Check that visit-academy is initially not completed
       expect(
-        wrapper.findAll('.objective-card.completed').find((card) =>
-          card.text().includes('Visit the Academy')
-        )
+        wrapper
+          .findAll('.objective-card.completed')
+          .find((card) => card.text().includes('Visit the Academy'))
       ).toBeUndefined()
 
       // Complete an objective
@@ -449,9 +455,9 @@ describe('ObjectivesView', () => {
       objectivesStore.updateProgress('gather-wood', 30)
       await wrapper.vm.$nextTick()
 
-      const gatherWoodCard = wrapper.findAll('.objective-card').find((card) =>
-        card.text().includes('Gather Wood')
-      )
+      const gatherWoodCard = wrapper
+        .findAll('.objective-card')
+        .find((card) => card.text().includes('Gather Wood'))
 
       if (gatherWoodCard) {
         const progressText = gatherWoodCard.find('.progress-text')

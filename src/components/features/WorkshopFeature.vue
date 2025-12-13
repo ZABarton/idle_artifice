@@ -1,9 +1,18 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { useTutorials } from '@/composables/useTutorials'
+
 /**
  * WorkshopFeature Component
  * Placeholder for locked Workshop feature
  * Will be implemented in a future milestone
  */
+
+// Trigger tutorials on first interaction with this feature
+const { triggerFeatureTutorial } = useTutorials()
+onMounted(() => {
+  triggerFeatureTutorial('workshop')
+})
 </script>
 
 <template>
@@ -19,7 +28,10 @@
   flex-direction: column;
   gap: 1px;
   padding: 2px;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   font-size: 6px;
   text-align: center;
   box-sizing: border-box;

@@ -44,7 +44,11 @@ function handleModalClick(event: MouseEvent) {
   <Transition name="modal">
     <div v-if="currentModal" class="modal-backdrop" @click="handleBackdropClick">
       <!-- Tutorial Modal -->
-      <div v-if="isTutorial && tutorialData" class="tutorial-modal modal-panel" @click="handleModalClick">
+      <div
+        v-if="isTutorial && tutorialData"
+        class="tutorial-modal modal-panel"
+        @click="handleModalClick"
+      >
         <div class="tutorial-header">
           <h2 class="tutorial-title">{{ tutorialData.title }}</h2>
         </div>
@@ -57,7 +61,11 @@ function handleModalClick(event: MouseEvent) {
       </div>
 
       <!-- Dialog Modal -->
-      <div v-else-if="isDialog && dialogData" class="dialog-modal modal-panel" @click="handleModalClick">
+      <div
+        v-else-if="isDialog && dialogData"
+        class="dialog-modal modal-panel"
+        @click="handleModalClick"
+      >
         <!-- Left column: Character portrait -->
         <div class="dialog-portrait">
           <img

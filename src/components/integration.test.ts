@@ -106,9 +106,7 @@ describe('Integration Tests', () => {
 
       // Find and click Shop feature (inline)
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
-      const shopCard = featureCards.find(
-        (card) => card.props('feature').id === 'academy-shop'
-      )
+      const shopCard = featureCards.find((card) => card.props('feature').id === 'academy-shop')
 
       await shopCard!.trigger('click')
       await wrapper.vm.$nextTick()
@@ -155,9 +153,7 @@ describe('Integration Tests', () => {
 
       // Activate a feature
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
-      const shopCard = featureCards.find(
-        (card) => card.props('feature').id === 'academy-shop'
-      )
+      const shopCard = featureCards.find((card) => card.props('feature').id === 'academy-shop')
       await shopCard!.trigger('click')
       await wrapper.vm.$nextTick()
 

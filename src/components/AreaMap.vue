@@ -66,7 +66,12 @@ const canvasWidth = computed(() => (layoutMode.value === '2x2' ? 1600 : 1000))
 const canvasHeight = computed(() => (layoutMode.value === '2x2' ? 1200 : 2000))
 
 // Feature position order for vertical stacking (upper-left, upper-right, lower-left, lower-right)
-const featureStackOrder = ['academy-foundry', 'academy-workshop', 'academy-alchemist', 'academy-shop']
+const featureStackOrder = [
+  'academy-foundry',
+  'academy-workshop',
+  'academy-alchemist',
+  'academy-shop',
+]
 
 // Get dynamic position based on layout mode
 const getFeaturePosition = (feature: Feature) => {

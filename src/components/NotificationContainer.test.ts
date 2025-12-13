@@ -148,9 +148,8 @@ describe('NotificationContainer', () => {
       const notification = wrapper.find('.notification')
       const closeButton = wrapper.find('.notification-close')
 
-      let notificationClicked = false
       notification.element.addEventListener('click', () => {
-        notificationClicked = true
+        // Notification clicked
       })
 
       await closeButton.trigger('click')

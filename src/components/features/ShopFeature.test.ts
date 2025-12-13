@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import ShopFeature from './ShopFeature.vue'
 
 describe('ShopFeature', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
   describe('Rendering', () => {
     it('renders description text', () => {
       const wrapper = mount(ShopFeature)

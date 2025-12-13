@@ -32,13 +32,10 @@ export const useAreaMapStore = defineStore('areaMap', () => {
   /**
    * Get all features for a specific area
    */
-  const getFeatures = computed(
-    () =>
-      (q: number, r: number): Feature[] => {
-        const area = getArea.value(q, r)
-        return area?.features.filter((f) => f.state !== 'hidden') ?? []
-      }
-  )
+  const getFeatures = computed(() => (q: number, r: number): Feature[] => {
+    const area = getArea.value(q, r)
+    return area?.features.filter((f) => f.state !== 'hidden') ?? []
+  })
 
   /**
    * Get a specific feature by ID across all areas

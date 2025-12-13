@@ -76,9 +76,7 @@ export const useNavigationStore = defineStore('navigation', () => {
    */
   function addRecentLocation(q: number, r: number, hexType: string | null = null) {
     // Remove existing entry for this location if present
-    const existingIndex = recentLocations.value.findIndex(
-      (loc) => loc.q === q && loc.r === r
-    )
+    const existingIndex = recentLocations.value.findIndex((loc) => loc.q === q && loc.r === r)
     if (existingIndex !== -1) {
       recentLocations.value.splice(existingIndex, 1)
     }
