@@ -10,6 +10,7 @@ const navigationStore = useNavigationStore()
 
 const emit = defineEmits<{
   toggleDebugPanel: []
+  toggleHelpView: []
 }>()
 
 const isCollapsed = ref(false)
@@ -98,6 +99,10 @@ function handleRecentLocationClick(location: { q: number; r: number; type: strin
 function handleDebugToggle() {
   emit('toggleDebugPanel')
 }
+
+function handleHelpToggle() {
+  emit('toggleHelpView')
+}
 </script>
 
 <template>
@@ -181,6 +186,7 @@ function handleDebugToggle() {
       <section class="system-section">
         <h3>System</h3>
         <div class="system-links">
+          <button class="system-button" @click="handleHelpToggle">❓ Help</button>
           <button class="system-button" disabled title="Coming soon">⚙️ Settings</button>
           <button class="system-button" disabled title="Coming soon">💾 Save Game</button>
           <button class="system-button" @click="handleDebugToggle">🐛 Debug Panel</button>

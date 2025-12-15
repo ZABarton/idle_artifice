@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import WorldMap from '@/components/WorldMap.vue'
 import AreaMap from '@/components/AreaMap.vue'
 import ObjectivesView from '@/views/ObjectivesView.vue'
+import HelpView from '@/views/HelpView.vue'
 import PiniaDebugTable from '@/components/PiniaDebugTable.vue'
 import StatusColumn from '@/components/StatusColumn.vue'
 import NotificationContainer from '@/components/NotificationContainer.vue'
@@ -15,6 +16,7 @@ const navigationStore = useNavigationStore()
 const currentView = computed(() => navigationStore.currentView)
 const selectedHex = computed(() => navigationStore.selectedHex)
 const showDebugPanel = ref(false)
+const showHelpView = ref(false)
 
 const handleHexSelected = (tile: HexTile) => {
   navigationStore.navigateToAreaMap(tile.q, tile.r, tile.type)
@@ -32,17 +34,29 @@ const handleBackFromObjectivesView = () => {
 const handleToggleDebugPanel = () => {
   showDebugPanel.value = !showDebugPanel.value
 }
+
+const handleToggleHelpView = () => {
+  showHelpView.value = !showHelpView.value
+}
 </script>
 
 <template>
   <div class="main-layout">
     <!-- Status Column - always visible on left -->
-    <StatusColumn @toggle-debug-panel="handleToggleDebugPanel" />
+    <StatusColumn
+      @toggle-debug-panel="handleToggleDebugPanel"
+      @toggle-help-view="handleToggleHelpView"
+    />
 
     <!-- Main content area - switches between views -->
     <div class="content-area">
+      <!-- Help View - shown when toggled -->
+      <div v-if="showHelpView" class="help-view">
+        <HelpView />
+      </div>
+
       <!-- Debug Panel View - shown when toggled -->
-      <div v-if="showDebugPanel" class="debug-view">
+      <div v-else-if="showDebugPanel" class="debug-view">
         <PiniaDebugTable />
       </div>
 
@@ -84,6 +98,7 @@ const handleToggleDebugPanel = () => {
   position: relative;
 }
 
+.help-view,
 .debug-view,
 .world-map-view,
 .area-map-view,
