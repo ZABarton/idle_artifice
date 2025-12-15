@@ -378,6 +378,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
     completedTutorials,
     dialogHistory,
     loadedTutorials,
+    loadedDialogs,
     activeConversation,
     interactedFeatures,
     // Getters
