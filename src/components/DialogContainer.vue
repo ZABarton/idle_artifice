@@ -1,14 +1,28 @@
 <script setup lang="ts">
+/**
+ * DialogContainer - Unified container component for displaying tutorial and dialog modals
+ *
+ * This component renders the appropriate modal type from the dialogs store queue:
+ * - Tutorial modals: Simple one-way informational messages
+ * - Dialog modals: Character conversations with portraits
+ *
+ * Only one modal is displayed at a time (first in queue). When closed, the next
+ * modal in the queue is automatically displayed.
+ */
 import { computed } from 'vue'
 import { useDialogsStore } from '@/stores/dialogs'
 import type { TutorialModal, DialogModal } from '@/types/dialogs'
 
 const dialogsStore = useDialogsStore()
 
+// Get the first modal from the queue (or null if queue is empty)
 const currentModal = computed(() => dialogsStore.currentModal)
+
+// Type guards to determine which modal type to display
 const isTutorial = computed(() => currentModal.value?.type === 'tutorial')
 const isDialog = computed(() => currentModal.value?.type === 'dialog')
 
+// Extract tutorial data with proper typing
 const tutorialData = computed(() => {
   if (currentModal.value?.type === 'tutorial') {
     return currentModal.value.modal as TutorialModal
@@ -16,6 +30,7 @@ const tutorialData = computed(() => {
   return null
 })
 
+// Extract dialog data with proper typing
 const dialogData = computed(() => {
   if (currentModal.value?.type === 'dialog') {
     return currentModal.value.modal as DialogModal
@@ -23,19 +38,29 @@ const dialogData = computed(() => {
   return null
 })
 
+/**
+ * Close the current modal and advance to the next in queue
+ * Handles tutorial completion tracking and dialog history
+ */
 function handleClose() {
   dialogsStore.closeCurrentModal()
 }
 
+/**
+ * Handle clicks on the backdrop (semi-transparent overlay)
+ * Only tutorials can be closed via backdrop click (dialogs require explicit Continue button)
+ */
 function handleBackdropClick() {
-  // Only close on backdrop click for tutorials
   if (isTutorial.value) {
     handleClose()
   }
 }
 
+/**
+ * Prevent clicks inside the modal from bubbling to the backdrop
+ * Without this, clicking inside the modal would trigger backdrop click handler
+ */
 function handleModalClick(event: MouseEvent) {
-  // Prevent backdrop click when clicking inside modal
   event.stopPropagation()
 }
 </script>

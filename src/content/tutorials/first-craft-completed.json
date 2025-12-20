@@ -1,0 +1,13 @@
+{
+  "id": "first-craft-completed",
+  "title": "Item Crafted!",
+  "content": "Congratulations on crafting your first **magical item**!\n\nMagical items can be equipped to your explorers, giving them unique abilities to overcome obstacles in the wilderness.\n\nHead to the Explorers menu to assign this item to one of your team members.",
+  "triggerConditions": [
+    {
+      "type": "objective",
+      "id": "craft-first-item",
+      "description": "Player has completed the objective to craft their first item"
+    }
+  ],
+  "showOnce": true
+}

@@ -1,0 +1,13 @@
+{
+  "id": "shop-intro",
+  "title": "The Shop",
+  "content": "The **Shop** allows you to sell crafted items for gold.\n\nSet your profit margin using the slider - higher margins mean more gold per sale, but items will sell less frequently. Find the right balance to maximize your income!\n\nGold can be used to expand your facilities and hire more explorers.",
+  "triggerConditions": [
+    {
+      "type": "feature",
+      "id": "shop",
+      "description": "First time opening the Shop"
+    }
+  ],
+  "showOnce": true
+}

@@ -1,0 +1,10 @@
+{
+  "id": "alchemist-introduction",
+  "characterName": "Alchemist Mirelle",
+  "portrait": {
+    "path": null,
+    "alt": "Alchemist Mirelle surrounded by bubbling potions"
+  },
+  "message": "Welcome to my laboratory! The name's Mirelle.\n\nWhile the Foundry focuses on permanent enchantments, I specialize in **potions and elixirs** - temporary but powerful effects.\n\nBring me herbs, crystals, and other reagents, and I'll brew you something special. Just... try not to knock anything over. Some of these mixtures are rather volatile!",
+  "conversationId": "alchemist-intro"
+}

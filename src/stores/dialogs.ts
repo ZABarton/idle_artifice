@@ -147,15 +147,20 @@ export const useDialogsStore = defineStore('dialogs', () => {
 
   /**
    * Load all tutorials from content directory
+   *
+   * Uses Vite's import.meta.glob for eager loading of all tutorial JSON files.
+   * This happens once at app startup since tutorials are lightweight and commonly needed.
+   * All tutorials are cached in memory for fast trigger evaluation.
    */
   async function loadTutorials(): Promise<void> {
     try {
       // Use Vite's import.meta.glob to import all tutorial JSON files
+      // Pattern: /src/content/tutorials/*.json
       const tutorialModules = import.meta.glob<{ default: TutorialModal }>(
         '/src/content/tutorials/*.json'
       )
 
-      // Load each tutorial
+      // Load each tutorial file
       for (const path in tutorialModules) {
         const module = await tutorialModules[path]()
         const tutorial = module.default
@@ -172,6 +177,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
           continue
         }
 
+        // Store in memory cache keyed by tutorial ID
         loadedTutorials.value.set(tutorial.id, tutorial)
       }
 
@@ -189,15 +195,26 @@ export const useDialogsStore = defineStore('dialogs', () => {
 
   /**
    * Load a specific dialog by ID (lazy loading)
+   *
+   * Dialogs are loaded on-demand rather than at startup because:
+   * 1. There may be many dialogs that are never seen in a playthrough
+   * 2. Dialog files may include large portrait images
+   * 3. Reduces initial app load time
+   *
+   * Once loaded, dialogs are cached in memory for subsequent triggers.
+   *
+   * @param dialogId - The dialog ID (must match filename in src/content/dialogs/)
+   * @returns The dialog modal data, or null if loading failed
    */
   async function loadDialog(dialogId: string): Promise<DialogModal | null> {
-    // Check cache first
+    // Check cache first to avoid redundant file loads
     if (loadedDialogs.value.has(dialogId)) {
       return loadedDialogs.value.get(dialogId)!
     }
 
     try {
-      // Dynamically import the dialog file
+      // Dynamically import the dialog file by ID
+      // File must exist at: src/content/dialogs/{dialogId}.json
       const module = await import(`../content/dialogs/${dialogId}.json`)
       const dialog = module.default as DialogModal
 
@@ -209,7 +226,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
         return null
       }
 
-      // Cache the loaded dialog
+      // Cache the loaded dialog for future use
       loadedDialogs.value.set(dialogId, dialog)
       return dialog
     } catch (error) {
@@ -261,6 +278,16 @@ export const useDialogsStore = defineStore('dialogs', () => {
 
   /**
    * Show a dialog modal (lazy loads and adds to queue)
+   *
+   * Loads the dialog JSON file on-demand (if not already cached) and adds it
+   * to the modal queue. Also starts tracking this conversation for history.
+   *
+   * Conversation tracking allows future features like:
+   * - Dialog history viewer
+   * - Branching dialog trees with player choices
+   * - Replaying past conversations
+   *
+   * @param dialogId - The dialog ID (must match filename in src/content/dialogs/)
    */
   async function showDialog(dialogId: string): Promise<void> {
     const dialog = await loadDialog(dialogId)
@@ -269,6 +296,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
     }
 
     // Start new conversation for this dialog
+    // conversationId groups related dialogs (e.g., multi-part conversations)
     const conversationId = dialog.conversationId || dialogId
     activeConversation.value = {
       conversationId,
@@ -277,7 +305,8 @@ export const useDialogsStore = defineStore('dialogs', () => {
       startedAt: new Date(),
     }
 
-    // Add NPC message to transcript
+    // Add the NPC's message to the conversation transcript
+    // Future: Player responses would also be added here
     addDialogEntry({
       speaker: 'npc',
       speakerName: dialog.characterName,
@@ -285,7 +314,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
       timestamp: new Date(),
     })
 
-    // Add to queue
+    // Add to modal queue for display
     modalQueue.value.push({
       type: 'dialog',
       modal: dialog,
@@ -327,6 +356,14 @@ export const useDialogsStore = defineStore('dialogs', () => {
 
   /**
    * Close the current modal and handle completion
+   *
+   * This is called when the user dismisses a modal (clicks "Got it!" or "Continue").
+   * Handles different cleanup tasks based on modal type:
+   * - Tutorial: Mark as completed and save to localStorage
+   * - Dialog: Save conversation to history
+   *
+   * After cleanup, the modal is removed from the queue and the next modal
+   * (if any) will automatically be displayed via the currentModal computed property.
    */
   function closeCurrentModal(): void {
     const current = currentModal.value
@@ -334,17 +371,18 @@ export const useDialogsStore = defineStore('dialogs', () => {
       return
     }
 
-    // Handle tutorial completion
+    // Handle tutorial completion tracking
     if (current.type === 'tutorial') {
       markTutorialCompleted(current.modal.id)
     }
 
-    // Handle dialog completion
+    // Handle dialog conversation history
     if (current.type === 'dialog') {
       completeConversation()
     }
 
-    // Remove from queue
+    // Remove from queue (shift removes first element)
+    // The UI will reactively update to show the next modal in queue
     modalQueue.value.shift()
   }
 

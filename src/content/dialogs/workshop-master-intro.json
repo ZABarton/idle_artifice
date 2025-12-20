@@ -1,0 +1,10 @@
+{
+  "id": "workshop-master-intro",
+  "characterName": "Master Craftsman Torvin",
+  "portrait": {
+    "path": null,
+    "alt": "Master Craftsman Torvin at his workbench"
+  },
+  "message": "Ah, a new face at the Workshop! I'm Torvin, master craftsman.\n\nThis is where we turn raw materials into useful items. Not as fancy as what you make in the Foundry, but just as important!\n\nBring me wood, stone, or metal, and I'll help you craft tools and equipment for your explorers. Every great adventure starts with good preparation.",
+  "conversationId": "workshop-master-intro"
+}

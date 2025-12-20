@@ -1,0 +1,13 @@
+{
+  "id": "workshop-intro",
+  "title": "The Workshop",
+  "content": "Welcome to the **Workshop**!\n\nThis is where you can craft basic items using the resources you've gathered. As you progress, you'll unlock more advanced crafting recipes.\n\nExperiment with different resource combinations to discover what you can create!",
+  "triggerConditions": [
+    {
+      "type": "feature",
+      "id": "workshop",
+      "description": "First time opening the Workshop"
+    }
+  ],
+  "showOnce": true
+}

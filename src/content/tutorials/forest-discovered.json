@@ -1,0 +1,13 @@
+{
+  "id": "forest-discovered",
+  "title": "The Forest",
+  "content": "You've discovered a **Forest** area!\n\nForest hexes provide wood resources that can be used in the Workshop to craft basic items. Click on the forest hex to explore it further and set up resource gathering.\n\nDifferent terrain types will provide different resources and opportunities.",
+  "triggerConditions": [
+    {
+      "type": "location",
+      "id": "1,-1",
+      "description": "Player has explored the forest hex at coordinates (1,-1)"
+    }
+  ],
+  "showOnce": true
+}
