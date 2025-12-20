@@ -238,7 +238,7 @@ describe('StatusColumn', () => {
       const wrapper = mount(StatusColumn)
 
       const systemButtons = wrapper.findAll('.system-button')
-      expect(systemButtons.length).toBe(3)
+      expect(systemButtons.length).toBe(4)
     })
 
     it('Settings button is disabled', () => {
