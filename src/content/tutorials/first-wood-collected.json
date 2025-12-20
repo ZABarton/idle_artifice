@@ -1,0 +1,14 @@
+{
+  "id": "first-wood-collected",
+  "title": "Resource Collected!",
+  "content": "You've collected your first **Wood** resource!\n\nResources are the foundation of crafting magical items. You can gather different resources from various areas across the map.\n\nCheck your resource counter to see what you have available for crafting.",
+  "triggerConditions": [
+    {
+      "type": "resource",
+      "id": "wood",
+      "value": 1,
+      "description": "Player has collected at least 1 wood"
+    }
+  ],
+  "showOnce": true
+}

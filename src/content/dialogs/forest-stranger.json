@@ -1,0 +1,10 @@
+{
+  "id": "forest-stranger",
+  "characterName": "Mysterious Wanderer",
+  "portrait": {
+    "path": null,
+    "alt": "A hooded figure standing among the trees"
+  },
+  "message": "...So the Academy is expanding again. Interesting.\n\nI've wandered these woods for many years, and I've seen things... strange things. The wilderness has secrets it doesn't give up easily.\n\nBe careful what you disturb out here. Not everything wants to be found.",
+  "conversationId": "forest-encounters"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "headmaster-congratulations",
+  "characterName": "Headmaster",
+  "portrait": {
+    "path": null,
+    "alt": "Headmaster portrait"
+  },
+  "message": "Excellent work! Your first magical item is complete.\n\nThis is just the beginning. As you explore further and discover new materials, you'll be able to craft items with incredible powers.\n\nNow, equip this item to one of your explorers. They'll need all the help they can get in the wilderness ahead.",
+  "conversationId": "headmaster-intro"
+}

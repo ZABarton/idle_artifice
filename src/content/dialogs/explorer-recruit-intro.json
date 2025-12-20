@@ -1,0 +1,10 @@
+{
+  "id": "explorer-recruit-intro",
+  "characterName": "Explorer Captain Sera",
+  "portrait": {
+    "path": null,
+    "alt": "Captain Sera in explorer gear with a map"
+  },
+  "message": "Ready to expand your expedition team? Good timing.\n\nI'm Captain Sera, and I train all the explorers who venture into the wilderness. Each explorer has their own strengths and specialties.\n\nEquip them with the right magical items, and there's no obstacle they can't overcome. But send them out unprepared, and... well, let's just say the wilderness doesn't forgive mistakes.",
+  "conversationId": "explorer-captain-intro"
+}

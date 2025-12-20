@@ -1,0 +1,10 @@
+{
+  "id": "shop-keeper-greeting",
+  "characterName": "Merchant Lyra",
+  "portrait": {
+    "path": null,
+    "alt": "Merchant Lyra smiling behind her counter"
+  },
+  "message": "Welcome to my shop! I'm Lyra, and I've been trading with the Academy for years.\n\nI buy the items you craft and sell them to travelers passing through. The better the quality, the more gold I can offer!\n\nUse the profit margin slider to control your pricing. Higher margins mean more gold per sale, but items will take longer to sell. Find the sweet spot!",
+  "conversationId": "shop-keeper-intro"
+}

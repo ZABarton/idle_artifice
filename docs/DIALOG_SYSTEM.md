@@ -1,0 +1,661 @@
+# Dialog System Documentation
+
+## Overview
+
+The Dialog System in Idle Artifice manages two types of modals that appear to the player:
+
+1. **Tutorial Modals**: Simple one-way informational messages that explain game mechanics (e.g., "Welcome to the Foundry!")
+2. **Dialog Modals**: Character conversations with portrait and dialogue text (e.g., NPC greetings and story moments)
+
+Both modal types are managed through a unified **modal queue** system. When multiple modals are triggered, they display one at a time in the order they were added to the queue.
+
+### Key Components
+
+- **Dialogs Store** (`src/stores/dialogs.ts`): Central state management for modal queue, tutorial completion tracking, and dialog history
+- **Tutorial Modal** (`src/components/TutorialModal.vue`): UI component for displaying tutorial modals
+- **Dialog Modal** (`src/components/DialogModal.vue`): UI component for displaying character dialog modals
+- **Dialog Container** (`src/components/DialogContainer.vue`): Wrapper component that renders the appropriate modal type
+- **useTutorials** (`src/composables/useTutorials.ts`): Composable for triggering tutorials based on game conditions
+- **useDialogs** (`src/composables/useDialogs.ts`): Composable for triggering character dialogs from features and events
+
+### Modal Queue System
+
+Modals are added to a queue and displayed one at a time. When a modal is closed:
+- Tutorial modals are marked as "completed" and saved to localStorage
+- Dialog modals are added to the conversation history
+- The next modal in the queue is automatically displayed
+
+## Tutorial JSON Files
+
+Tutorial files are stored in `src/content/tutorials/` and automatically loaded when the game starts.
+
+### File Format
+
+```json
+{
+  "id": "unique-tutorial-id",
+  "title": "Tutorial Title",
+  "content": "Tutorial content. Supports **markdown** formatting and\nmultiline text.",
+  "triggerConditions": [
+    {
+      "type": "immediate|location|feature|objective|resource|custom",
+      "id": "optional-id-for-specific-trigger",
+      "value": 123,
+      "description": "Human-readable description of when this triggers"
+    }
+  ],
+  "showOnce": true
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique identifier for this tutorial. Used for tracking completion. |
+| `title` | string | Yes | Display title shown at the top of the modal. |
+| `content` | string | Yes | Tutorial message content. Supports markdown and `\n` for line breaks. |
+| `triggerConditions` | array | Yes | Array of conditions that must ALL be met for tutorial to trigger. |
+| `showOnce` | boolean | Yes | If `true`, tutorial only shows once per player (tracked in localStorage). |
+
+### Trigger Condition Types
+
+#### 1. Immediate Trigger
+
+Shows immediately when explicitly triggered by code (e.g., on game load).
+
+```json
+{
+  "type": "immediate",
+  "description": "First time opening the game"
+}
+```
+
+**Example Usage:**
+```typescript
+// In App.vue or main component
+import { useTutorials } from '@/composables/useTutorials'
+
+const { triggerImmediateTutorials } = useTutorials()
+
+onMounted(() => {
+  triggerImmediateTutorials()
+})
+```
+
+#### 2. Location Trigger
+
+Shows when a specific hex on the world map is explored.
+
+```json
+{
+  "type": "location",
+  "id": "0,0",
+  "description": "When player explores the starting hex"
+}
+```
+
+**Location ID Format:** `"q,r"` (axial coordinates, e.g., `"0,0"`, `"1,-1"`)
+
+**Example Usage:**
+```typescript
+import { useTutorials } from '@/composables/useTutorials'
+
+const { triggerLocationTutorial } = useTutorials()
+
+function exploreHex(q: number, r: number) {
+  // Mark hex as explored...
+  triggerLocationTutorial(q, r)
+}
+```
+
+#### 3. Feature Trigger
+
+Shows when a specific feature is first opened or interacted with.
+
+```json
+{
+  "type": "feature",
+  "id": "foundry",
+  "description": "First time opening the Foundry"
+}
+```
+
+**Example Usage:**
+```typescript
+import { useTutorials } from '@/composables/useTutorials'
+
+const { triggerFeatureTutorial } = useTutorials()
+
+function openFoundry() {
+  // Navigate to foundry...
+  triggerFeatureTutorial('foundry')
+}
+```
+
+#### 4. Objective Trigger
+
+Shows when a specific objective is completed.
+
+```json
+{
+  "type": "objective",
+  "id": "craft-first-item",
+  "description": "When player crafts their first magical item"
+}
+```
+
+**Example Usage:**
+```typescript
+import { useTutorials } from '@/composables/useTutorials'
+import { useObjectivesStore } from '@/stores/objectives'
+
+const { triggerObjectiveTutorial } = useTutorials()
+const objectivesStore = useObjectivesStore()
+
+function completeObjective(objectiveId: string) {
+  objectivesStore.completeObjective(objectiveId)
+  triggerObjectiveTutorial(objectiveId)
+}
+```
+
+#### 5. Resource Trigger
+
+Shows when a resource reaches a specific threshold.
+
+```json
+{
+  "type": "resource",
+  "id": "wood",
+  "value": 10,
+  "description": "When player collects 10 wood"
+}
+```
+
+**Example Usage:**
+```typescript
+import { useTutorials } from '@/composables/useTutorials'
+import { watch } from 'vue'
+
+const { triggerTutorials } = useTutorials()
+const resourcesStore = useResourcesStore()
+
+// Watch for resource changes
+watch(() => resourcesStore.resources.wood, () => {
+  triggerTutorials('resource', 'wood')
+})
+```
+
+#### 6. Custom Trigger
+
+Shows based on custom game logic (requires custom evaluation context).
+
+```json
+{
+  "type": "custom",
+  "description": "When player has 3 explorers equipped with items"
+}
+```
+
+**Example Usage:**
+```typescript
+import { useTutorials } from '@/composables/useTutorials'
+
+const { triggerTutorials, isConditionMet } = useTutorials()
+
+// Provide custom evaluation context
+const context = {
+  evaluateCustom: (condition) => {
+    // Your custom logic here
+    return explorersStore.equippedExplorers.length >= 3
+  }
+}
+
+triggerTutorials('custom', undefined, context)
+```
+
+### Multiple Trigger Conditions
+
+All conditions in the `triggerConditions` array must be met for the tutorial to trigger.
+
+**Example:** Tutorial that triggers when player has explored a location AND collected wood:
+
+```json
+{
+  "id": "forest-gathering",
+  "title": "Forest Resources",
+  "content": "You've found wood! This resource can be used in the Workshop to craft items.",
+  "triggerConditions": [
+    {
+      "type": "location",
+      "id": "1,-1",
+      "description": "Player has explored the forest hex"
+    },
+    {
+      "type": "resource",
+      "id": "wood",
+      "value": 1,
+      "description": "Player has collected at least 1 wood"
+    }
+  ],
+  "showOnce": true
+}
+```
+
+### Complete Tutorial Examples
+
+See `src/content/tutorials/` for working examples:
+- `welcome.json` - Immediate trigger on game load
+- `foundry-intro.json` - Feature trigger when opening Foundry
+- `first-wood-collected.json` - Resource threshold trigger
+- `forest-discovered.json` - Location exploration trigger
+
+## Dialog JSON Files
+
+Dialog files are stored in `src/content/dialogs/` and loaded on-demand when triggered.
+
+### File Format
+
+```json
+{
+  "id": "unique-dialog-id",
+  "characterName": "Character Name",
+  "portrait": {
+    "path": "/path/to/portrait.png",
+    "alt": "Character portrait description"
+  },
+  "message": "Dialog message from the character.\n\nSupports multiple paragraphs.",
+  "conversationId": "optional-conversation-group-id"
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique identifier for this dialog. Used as filename and for triggering. |
+| `characterName` | string | Yes | Name of the character speaking (displayed in dialog header). |
+| `portrait` | object | Yes | Character portrait configuration. |
+| `portrait.path` | string\|null | Yes | Path to portrait image. Use `null` for placeholder icon. |
+| `portrait.alt` | string | Yes | Alt text for accessibility. |
+| `message` | string | Yes | Dialog message content. Supports `\n` for line breaks. |
+| `conversationId` | string | No | Optional ID linking related dialogs together for conversation history. |
+
+### Complete Dialog Examples
+
+**Simple NPC Introduction:**
+
+```json
+{
+  "id": "headmaster-welcome",
+  "characterName": "Headmaster",
+  "portrait": {
+    "path": null,
+    "alt": "Headmaster portrait"
+  },
+  "message": "Greetings! I'm the Headmaster of this Academy. I'm glad you've arrived - we have much work to do.\n\nThe wilderness beyond our borders holds many secrets and dangers. Your expertise in creating magical items will be crucial to our success.",
+  "conversationId": "headmaster-intro"
+}
+```
+
+**NPC with Custom Portrait:**
+
+```json
+{
+  "id": "shop-keeper-greeting",
+  "characterName": "Merchant Lyra",
+  "portrait": {
+    "path": "/assets/portraits/shop-keeper.png",
+    "alt": "Merchant Lyra smiling behind her counter"
+  },
+  "message": "Welcome to my shop! I buy items you've crafted and sell them to travelers.\n\nSet your profit margin wisely - higher margins mean more gold per sale, but sales happen less frequently!",
+  "conversationId": "shop-keeper-intro"
+}
+```
+
+See `src/content/dialogs/` for more working examples.
+
+## Triggering Tutorials Programmatically
+
+### Using the `useTutorials` Composable
+
+```typescript
+import { useTutorials } from '@/composables/useTutorials'
+
+const {
+  triggerImmediateTutorials,    // Trigger all 'immediate' tutorials
+  triggerFeatureTutorial,        // Trigger for specific feature ID
+  triggerLocationTutorial,       // Trigger for specific hex coordinates
+  triggerObjectiveTutorial,      // Trigger for specific objective ID
+  triggerTutorials,              // Generic trigger with type and optional ID
+  isConditionMet,                // Check if single condition is met
+  areAllConditionsMet            // Check if all conditions are met
+} = useTutorials()
+```
+
+### Common Patterns
+
+**On Game Load:**
+```typescript
+// In App.vue
+import { onMounted } from 'vue'
+import { useTutorials } from '@/composables/useTutorials'
+
+const { triggerImmediateTutorials } = useTutorials()
+
+onMounted(() => {
+  triggerImmediateTutorials()
+})
+```
+
+**When Opening a Feature:**
+```typescript
+// In AreaMap.vue or feature component
+import { useTutorials } from '@/composables/useTutorials'
+
+const { triggerFeatureTutorial } = useTutorials()
+
+function navigateToFeature(featureId: string) {
+  currentView.value = 'feature'
+  currentFeature.value = featureId
+
+  // Trigger any tutorials for this feature
+  triggerFeatureTutorial(featureId)
+}
+```
+
+**When Exploring a Hex:**
+```typescript
+// In WorldMap.vue
+import { useTutorials } from '@/composables/useTutorials'
+
+const { triggerLocationTutorial } = useTutorials()
+
+function exploreHex(q: number, r: number) {
+  worldMapStore.exploreHex(q, r)
+  triggerLocationTutorial(q, r)
+}
+```
+
+**When Resources Change:**
+```typescript
+// Using a watcher
+import { watch } from 'vue'
+import { useTutorials } from '@/composables/useTutorials'
+import { useResourcesStore } from '@/stores/resources'
+
+const { triggerTutorials } = useTutorials()
+const resourcesStore = useResourcesStore()
+
+watch(() => resourcesStore.resources.wood, (newAmount) => {
+  // Will trigger any tutorials with resource condition type 'wood'
+  triggerTutorials('resource', 'wood')
+})
+```
+
+**Manual Trigger with Multiple Conditions:**
+```typescript
+import { useTutorials } from '@/composables/useTutorials'
+
+const { triggerTutorials } = useTutorials()
+
+// This will check ALL loaded tutorials and trigger any that:
+// 1. Have trigger type 'feature' with id 'workshop'
+// 2. Have all their trigger conditions met
+// 3. Haven't been seen yet (if showOnce is true)
+triggerTutorials('feature', 'workshop')
+```
+
+## Triggering Dialogs Programmatically
+
+### Using the `useDialogs` Composable
+
+```typescript
+import { useDialogs } from '@/composables/useDialogs'
+
+const {
+  triggerDialog,              // Trigger single dialog by ID
+  triggerDialogSequence,      // Trigger multiple dialogs in order
+  triggerFeatureDialog,       // Trigger dialog when opening feature
+  triggerObjectiveDialog,     // Trigger dialog on objective completion
+  triggerEventDialog,         // Trigger dialog from game event
+  isDialogActive,             // Check if any dialog is currently showing
+  getCurrentDialogId          // Get ID of current dialog (or null)
+} = useDialogs()
+```
+
+### Common Patterns
+
+**Simple Dialog Trigger:**
+```typescript
+// Trigger a single dialog
+import { useDialogs } from '@/composables/useDialogs'
+
+const { triggerDialog } = useDialogs()
+
+async function showWelcome() {
+  await triggerDialog('headmaster-welcome')
+}
+```
+
+**Dialog Sequence:**
+```typescript
+// Show multiple dialogs in order
+import { useDialogs } from '@/composables/useDialogs'
+
+const { triggerDialogSequence } = useDialogs()
+
+async function startIntroSequence() {
+  await triggerDialogSequence([
+    'headmaster-welcome',
+    'headmaster-tour',
+    'headmaster-first-task'
+  ])
+}
+```
+
+**Feature-Based Dialog:**
+```typescript
+// Trigger dialog when opening a feature (marks feature as interacted)
+import { useDialogs } from '@/composables/useDialogs'
+
+const { triggerFeatureDialog } = useDialogs()
+
+function openShop() {
+  currentFeature.value = 'shop'
+
+  // Show dialog and mark shop as interacted
+  triggerFeatureDialog('shop', 'shop-keeper-greeting')
+}
+```
+
+**Objective Completion Dialog:**
+```typescript
+// Show character reaction when objective is completed
+import { useDialogs } from '@/composables/useDialogs'
+
+const { triggerObjectiveDialog } = useDialogs()
+
+function completeFirstCraft() {
+  objectivesStore.completeObjective('craft-first-item')
+
+  // Show congratulatory dialog
+  triggerObjectiveDialog('craft-first-item', 'headmaster-congratulations')
+}
+```
+
+**Event-Based Dialog:**
+```typescript
+// Trigger dialog from random event or game event
+import { useDialogs } from '@/composables/useDialogs'
+
+const { triggerEventDialog } = useDialogs()
+
+function triggerRandomEncounter(encounterType: string) {
+  if (encounterType === 'forest-mystery') {
+    triggerEventDialog('forest-mystery', 'forest-stranger-appears')
+  }
+}
+```
+
+**Check if Dialog is Active:**
+```typescript
+import { useDialogs } from '@/composables/useDialogs'
+
+const { isDialogActive, getCurrentDialogId } = useDialogs()
+
+// Prevent other actions while dialog is showing
+function performAction() {
+  if (isDialogActive()) {
+    console.log('Cannot perform action while dialog is active')
+    return
+  }
+
+  // Proceed with action...
+}
+```
+
+## Tutorial Completion Tracking
+
+Tutorials marked with `"showOnce": true` are tracked in localStorage under the key `idle-artifice-completed-tutorials`.
+
+### Checking Tutorial Completion
+
+```typescript
+import { useDialogsStore } from '@/stores/dialogs'
+
+const dialogsStore = useDialogsStore()
+
+// Check if player has seen a tutorial
+if (dialogsStore.hasSeenTutorial('welcome')) {
+  console.log('Player has seen the welcome tutorial')
+}
+```
+
+### Replaying Tutorials
+
+```typescript
+import { useDialogsStore } from '@/stores/dialogs'
+
+const dialogsStore = useDialogsStore()
+
+// Force show a tutorial even if already completed (e.g., from help menu)
+dialogsStore.replayTutorial('welcome')
+```
+
+## Dialog History
+
+All dialog conversations are saved to localStorage under the key `idle-artifice-dialog-history`.
+
+### Accessing Dialog History
+
+```typescript
+import { useDialogsStore } from '@/stores/dialogs'
+
+const dialogsStore = useDialogsStore()
+
+// Get all conversation history (most recent first)
+const history = dialogsStore.conversationHistory
+
+// Each history record contains:
+// - conversationId: ID linking related dialogs
+// - characterName: Name of the NPC
+// - transcript: Array of messages (NPC and player)
+// - startedAt: When conversation started
+// - completedAt: When conversation ended
+```
+
+### Conversation Transcripts
+
+Each conversation history record includes a complete transcript:
+
+```typescript
+interface DialogHistoryEntry {
+  speaker: 'npc' | 'player'     // Who is speaking
+  speakerName: string            // Display name
+  message: string                // Message content
+  timestamp: Date                // When message was sent
+}
+```
+
+## Best Practices
+
+### Tutorial Design
+
+1. **Keep tutorials concise** - Players prefer learning by doing rather than reading walls of text
+2. **Use markdown sparingly** - Bold key terms but avoid over-formatting
+3. **Trigger at the right moment** - Show tutorials when they're immediately relevant
+4. **Group related tutorials** - Use multiple conditions to ensure proper context
+5. **Test showOnce behavior** - Clear localStorage during development to test first-time experience
+
+### Dialog Design
+
+1. **Give characters personality** - Make dialog memorable and match the game's tone
+2. **Use conversationId** - Group related dialogs for better history tracking
+3. **Keep messages focused** - Break long exposition into multiple dialog entries
+4. **Consider dialog sequences** - Use `triggerDialogSequence` for multi-part conversations
+5. **Provide context** - Make sure dialogs make sense based on current game state
+
+### Performance
+
+1. **Tutorials load eagerly** - All tutorial JSON files are loaded at game start (lightweight)
+2. **Dialogs load lazily** - Dialog files are only loaded when first triggered
+3. **Use descriptive IDs** - File names must match the `id` field in the JSON
+4. **Avoid heavy images** - Keep portrait images optimized for web
+
+### File Organization
+
+```
+src/content/
+├── tutorials/
+│   ├── welcome.json              # Immediate tutorial on game load
+│   ├── foundry-intro.json        # Feature tutorial
+│   ├── first-wood-collected.json # Resource threshold tutorial
+│   └── forest-discovered.json    # Location tutorial
+└── dialogs/
+    ├── headmaster-welcome.json   # NPC introduction
+    ├── shop-keeper-greeting.json # Feature NPC dialog
+    └── forest-stranger.json      # Event-based dialog
+```
+
+### Error Handling
+
+The system includes built-in error handling:
+
+- Missing tutorial/dialog files show error notifications
+- Invalid JSON shows console errors with file path
+- Missing required fields are logged with details
+- LocalStorage failures show warning notification (once per session)
+
+## Future Enhancements
+
+The dialog system is designed to support future features:
+
+1. **Branching Dialog Trees** - `conversationId` field supports linking multiple dialogs
+2. **Player Responses** - Dialog history structure includes player entries
+3. **Conditional Dialogs** - Similar trigger system could be added to dialogs
+4. **Portrait Animations** - Portrait structure supports future animation paths
+5. **Voice Acting** - Dialog structure could include audio file paths
+
+## Examples Directory
+
+See these files for complete working examples:
+
+**Tutorials:**
+- `src/content/tutorials/welcome.json` - Immediate trigger
+- `src/content/tutorials/foundry-intro.json` - Feature trigger
+- `src/content/tutorials/first-wood-collected.json` - Resource trigger
+- `src/content/tutorials/forest-discovered.json` - Location trigger
+
+**Dialogs:**
+- `src/content/dialogs/headmaster-welcome.json` - Simple NPC dialog
+- `src/content/dialogs/foundry-master-tips.json` - Feature-based dialog
+- `src/content/dialogs/shop-keeper-greeting.json` - Shop NPC dialog
+- `src/content/dialogs/workshop-master-intro.json` - Workshop NPC dialog
+
+**Code Examples:**
+- `src/composables/useTutorials.ts` - Tutorial composable implementation
+- `src/composables/useDialogs.ts` - Dialog composable implementation
+- `src/stores/dialogs.ts` - Central store implementation
+- `src/components/TutorialModal.vue` - Tutorial UI component
+- `src/components/DialogModal.vue` - Dialog UI component
