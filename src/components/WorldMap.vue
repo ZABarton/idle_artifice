@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useWorldMapStore } from '@/stores/worldMap'
 import { useHexGrid } from '@/composables/useHexGrid'
 import type { HexTile } from '@/types/hex'
@@ -10,6 +10,9 @@ const { hexToPixel } = useHexGrid()
 const emit = defineEmits<{
   hexSelected: [tile: HexTile]
 }>()
+
+// Debug mode for showing coordinates
+const showCoordinates = ref(false)
 
 // Hexagon size from HexClass
 const hexRadius = 30
@@ -50,11 +53,17 @@ const hexagons = computed(() => {
     const isClicked = clickedHex.value?.q === tile.q && clickedHex.value?.r === tile.r
     const isHovered = hoveredHex.value?.q === tile.q && hoveredHex.value?.r === tile.r
 
+    // Determine fill color based on tile type and exploration status
+    let fill = '#CCCCCC' // unexplored default
+    if (tile.explorationStatus === 'explored') {
+      fill = tile.type === 'ocean' ? '#87CEEB' : '#90EE90' // ocean: sky blue, other: light green
+    }
+
     return {
       tile,
       points: getHexagonPoints(x, y),
       center: { x, y },
-      fill: tile.explorationStatus === 'explored' ? '#90EE90' : '#CCCCCC',
+      fill,
       stroke: '#333333',
       strokeWidth: 2,
       opacity: isHovered && !isClicked ? 0.8 : 1, // Slight transparency on hover
@@ -185,9 +194,10 @@ const handleHexClick = (tile: HexTile) => {
   if (dragDistance.value < 5) {
     clickedHex.value = { q: tile.q, r: tile.r }
 
-    // Emit hex-selected event for explored tiles
-    // Future: other exploration statuses may trigger different events
-    if (tile.explorationStatus === 'explored') {
+    // Emit hex-selected event for explored, clickable tiles
+    // clickable defaults to true if not specified
+    const isClickable = tile.clickable !== false
+    if (tile.explorationStatus === 'explored' && isClickable) {
       emit('hexSelected', tile)
     }
   }
@@ -200,6 +210,25 @@ const handleHexMouseEnter = (tile: HexTile) => {
 const handleHexMouseLeave = () => {
   hoveredHex.value = null
 }
+
+/**
+ * Keyboard handler for debug toggle
+ */
+const handleKeyPress = (event: KeyboardEvent) => {
+  if (event.key === 'd' || event.key === 'D') {
+    showCoordinates.value = !showCoordinates.value
+  }
+}
+
+// Set up keyboard listener on mount
+onMounted(() => {
+  window.addEventListener('keypress', handleKeyPress)
+})
+
+// Clean up on unmount
+onUnmounted(() => {
+  window.removeEventListener('keypress', handleKeyPress)
+})
 </script>
 
 <template>
@@ -225,6 +254,17 @@ const handleHexMouseLeave = () => {
           @mouseenter="handleHexMouseEnter(hex.tile)"
           @mouseleave="handleHexMouseLeave"
         />
+        <!-- Coordinate labels (debug mode) -->
+        <text
+          v-if="showCoordinates"
+          :x="hex.center.x"
+          :y="hex.center.y"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          class="hex-coordinates"
+        >
+          ({{ hex.tile.q }}, {{ hex.tile.r }})
+        </text>
       </g>
       <!-- Borders layer - drawn on top -->
       <g
@@ -286,5 +326,12 @@ const handleHexMouseLeave = () => {
 
 .hex-tile polygon {
   transition: opacity 0.2s ease;
+}
+
+.hex-coordinates {
+  font-size: 8px;
+  fill: #333;
+  pointer-events: none;
+  user-select: none;
 }
 </style>

@@ -22,8 +22,10 @@ export interface HexTile {
   r: number
   /** Whether this hex has been explored */
   explorationStatus: ExplorationStatus
-  /** Optional type/category of this hex (e.g., 'academy', 'forest', 'mountain') */
+  /** Optional type/category of this hex (e.g., 'academy', 'harbor', 'ocean', 'forest', 'mountain') */
   type?: string
+  /** Whether this hex can be clicked to navigate (defaults to true for explored tiles) */
+  clickable?: boolean
   /** Number of times this area has been visited (persistent across navigation) */
   visitCount?: number
 }

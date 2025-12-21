@@ -9,20 +9,27 @@ describe('useWorldMapStore', () => {
   })
 
   describe('initial state', () => {
-    it('should initialize with 7 hexagons', () => {
+    it('should initialize with 10 hexagons', () => {
       const store = useWorldMapStore()
-      expect(store.hexTiles).toHaveLength(7)
+      expect(store.hexTiles).toHaveLength(10)
     })
 
-    it('should have 1 explored tile (academy)', () => {
+    it('should have 7 explored tiles (academy, harbor, and 5 ocean)', () => {
       const store = useWorldMapStore()
-      expect(store.exploredTiles).toHaveLength(1)
-      expect(store.exploredTiles[0].type).toBe('academy')
+      expect(store.exploredTiles).toHaveLength(7)
+
+      const academy = store.exploredTiles.find(tile => tile.type === 'academy')
+      const harbor = store.exploredTiles.find(tile => tile.type === 'harbor')
+      const oceanTiles = store.exploredTiles.filter(tile => tile.type === 'ocean')
+
+      expect(academy).toBeDefined()
+      expect(harbor).toBeDefined()
+      expect(oceanTiles).toHaveLength(5)
     })
 
-    it('should have 6 unexplored tiles', () => {
+    it('should have 3 unexplored tiles', () => {
       const store = useWorldMapStore()
-      expect(store.unexploredTiles).toHaveLength(6)
+      expect(store.unexploredTiles).toHaveLength(3)
     })
 
     it('should have academy tile at origin (0, 0)', () => {
@@ -31,6 +38,26 @@ describe('useWorldMapStore', () => {
       expect(store.academyTile?.q).toBe(0)
       expect(store.academyTile?.r).toBe(0)
       expect(store.academyTile?.explorationStatus).toBe('explored')
+      expect(store.academyTile?.clickable).toBe(true)
+    })
+
+    it('should have harbor at (-1, 0)', () => {
+      const store = useWorldMapStore()
+      const harbor = store.getTileAt(-1, 0)
+      expect(harbor).toBeDefined()
+      expect(harbor?.type).toBe('harbor')
+      expect(harbor?.explorationStatus).toBe('explored')
+      expect(harbor?.clickable).toBe(true)
+    })
+
+    it('should have 5 ocean hexes that are not clickable', () => {
+      const store = useWorldMapStore()
+      const oceanTiles = store.hexTiles.filter(tile => tile.type === 'ocean')
+      expect(oceanTiles).toHaveLength(5)
+      oceanTiles.forEach(tile => {
+        expect(tile.explorationStatus).toBe('explored')
+        expect(tile.clickable).toBe(false)
+      })
     })
   })
 
@@ -60,8 +87,8 @@ describe('useWorldMapStore', () => {
       store.exploreTile(unexploredTile.q, unexploredTile.r)
 
       expect(unexploredTile.explorationStatus).toBe('explored')
-      expect(store.exploredTiles).toHaveLength(2)
-      expect(store.unexploredTiles).toHaveLength(5)
+      expect(store.exploredTiles).toHaveLength(8)
+      expect(store.unexploredTiles).toHaveLength(2)
     })
 
     it('should do nothing for non-existent tile', () => {
@@ -116,9 +143,9 @@ describe('useWorldMapStore', () => {
       store.resetMap()
 
       // Verify reset
-      expect(store.hexTiles).toHaveLength(7)
-      expect(store.exploredTiles).toHaveLength(1)
-      expect(store.unexploredTiles).toHaveLength(6)
+      expect(store.hexTiles).toHaveLength(10)
+      expect(store.exploredTiles).toHaveLength(7)
+      expect(store.unexploredTiles).toHaveLength(3)
     })
   })
 })

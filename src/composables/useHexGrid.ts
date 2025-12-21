@@ -31,31 +31,92 @@ export function useHexGrid() {
   }
 
   /**
-   * Generates the initial hexagon layout with 1 ring (1 center + 6 surrounding hexes = 7 hexes total)
-   * Returns an array of HexTile objects
+   * Generates the initial hexagon layout for the first gameplay loop
+   * Returns 10 hexes total:
+   * - Academy at (0, 0) - explored, clickable
+   * - Harbor at (-1, 0) - explored, clickable
+   * - 5 ocean hexes surrounding Harbor - explored, NOT clickable
+   * - 3 unexplored land hexes to the NE, SE, and S of Academy
    */
   const generateInitialMap = (): HexTile[] => {
-    // Create center hex at origin (0, 0)
-    const centerHex: HexTile = {
-      q: 0,
-      r: 0,
-      explorationStatus: 'explored',
-      type: 'academy',
-    }
-
-    // Create surrounding hexes using honeycomb-grid's spiral traverser
-    // spiral(center, radius) generates hexes in a spiral pattern
-    // Radius 1 creates 1 ring around center (7 total hexes)
-    const grid = new Grid(HexClass, spiral({ radius: 1 }))
-    const surroundingHexes: HexTile[] = Array.from(grid)
-      .filter((hex) => !(hex.q === 0 && hex.r === 0)) // exclude center
-      .map((hex) => ({
-        q: hex.q,
-        r: hex.r,
-        explorationStatus: 'unexplored' as const,
-      }))
-
-    return [centerHex, ...surroundingHexes]
+    return [
+      // Academy - origin point
+      {
+        q: 0,
+        r: 0,
+        explorationStatus: 'explored',
+        type: 'academy',
+        clickable: true,
+      },
+      // Harbor - NW of Academy
+      {
+        q: -1,
+        r: 0,
+        explorationStatus: 'explored',
+        type: 'harbor',
+        clickable: true,
+      },
+      // Ocean hexes - all neighbors of Harbor except Academy
+      // Harbor's N neighbor
+      {
+        q: -1,
+        r: -1,
+        explorationStatus: 'explored',
+        type: 'ocean',
+        clickable: false,
+      },
+      // Harbor's NE neighbor
+      {
+        q: 0,
+        r: -1,
+        explorationStatus: 'explored',
+        type: 'ocean',
+        clickable: false,
+      },
+      // Harbor's S neighbor
+      {
+        q: -1,
+        r: 1,
+        explorationStatus: 'explored',
+        type: 'ocean',
+        clickable: false,
+      },
+      // Harbor's SW neighbor
+      {
+        q: -2,
+        r: 1,
+        explorationStatus: 'explored',
+        type: 'ocean',
+        clickable: false,
+      },
+      // Harbor's NW neighbor
+      {
+        q: -2,
+        r: 0,
+        explorationStatus: 'explored',
+        type: 'ocean',
+        clickable: false,
+      },
+      // Unexplored land hexes - NE, SE, S of Academy
+      // Academy's NE neighbor
+      {
+        q: 1,
+        r: -1,
+        explorationStatus: 'unexplored',
+      },
+      // Academy's SE neighbor
+      {
+        q: 1,
+        r: 0,
+        explorationStatus: 'unexplored',
+      },
+      // Academy's S neighbor
+      {
+        q: 0,
+        r: 1,
+        explorationStatus: 'unexplored',
+      },
+    ]
   }
 
   /**
