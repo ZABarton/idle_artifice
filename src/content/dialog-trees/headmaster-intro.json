@@ -1,0 +1,123 @@
+{
+  "id": "headmaster-intro",
+  "characterName": "Headmaster Steinerhausen",
+  "portrait": {
+    "path": "images/portraits/headmaster.png",
+    "alt": "Headmaster portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "It's about time you got here. This place needs work and it's not going to get done with you just standing around. Might as well ask me questions now. I really don't want to repeat myself.\n\nWhat do you want to know?",
+      "responses": [
+        {
+          "text": "Wow, what's with the attitude?",
+          "nextNodeId": "attitude"
+        },
+        {
+          "text": "Tell me about the Academy",
+          "nextNodeId": "about-academy"
+        },
+        {
+          "text": "What's it like outside of camp?",
+          "nextNodeId": "about-wilderness"
+        },
+        {
+          "text": "I think that tells me all I need to know",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "knowMore": {
+      "id": "knowMore",
+      "message": "What did I say about repeating myself?",
+      "responses": [
+        {
+          "text": "I forget, can you tell me again?",
+          "nextNodeId": "ship"
+        },
+        {
+          "text": "Tell me about the Academy",
+          "nextNodeId": "about-academy"
+        },
+        {
+          "text": "What's it like outside of camp?",
+          "nextNodeId": "about-wilderness"
+        },
+        {
+          "text": "I'm ready to begin",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "attitude": {
+      "id": "attitude",
+      "message": "Hah! <spits> I think we might get along after all. I've been waiting for your boat to arrive for weeks now. After a few weeks here, you might get a little gruff too.\n\nNow ask yer questions.",
+      "portrait": {
+        "path": "images/portraits/headmaster-happy.png",
+        "alt": "Headmaster portrait"
+      },
+      "responses": [
+        {
+          "text": "Tell me about the Academy",
+          "nextNodeId": "about-academy"
+        },
+        {
+          "text": "What's it like outside of camp?",
+          "nextNodeId": "about-wilderness"
+        },
+        {
+          "text": "I'm ready to begin",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "about-academy": {
+      "id": "about-academy",
+      "message": "We set up camp here and scuttled our ship to establish what we got. It's piss poor, to be sure, but that's what you're here for, innit?\n\nWe have the basics set up - a Foundry for crafting what we can and a Quartermaster to dole out what supplies we have. You'll need to get to work right away if we're going to survive out here.",
+      "responses": [
+        {
+          "text": "Scuttled the ship? How are we supposed to get back?",
+          "nextNodeId": "ship"
+        },
+        {
+          "text": "This makes sense and I want to ask something else, please!",
+          "nextNodeId": "knowMore"
+        },
+        {
+          "text": "That's all I need to know. Let's find something else to scuttle.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "about-wilderness": {
+      "id": "about-wilderness",
+      "message": "To be honest, we don't know much. We don't have the supplies or manpower to explore further out, but our initial scouts say there's good natural resources for the plundering nearby",
+      "responses": [
+        {
+          "text": "Despite my misgivings, I do have more questions.",
+          "nextNodeId": "knowMore"
+        },
+        {
+          "text": "I think I regret coming here. Let's get started.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "ship": {
+      "id": "ship",
+      "portrait": {
+        "path": "images/portraits/headmaster-angry.png",
+        "alt": "Headmaster portrait"
+      },
+      "message": "<Gustavo looks at like you with a mixture of disdain and pity, and says nothing.>",
+      "responses": [
+        {
+          "text": "Let me ask some less stupid questions, please.",
+          "nextNodeId": "knowMore"
+        }
+      ]
+    }
+  }
+}

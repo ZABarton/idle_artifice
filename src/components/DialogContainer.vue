@@ -5,6 +5,7 @@
  * This component renders the appropriate modal type from the dialogs store queue:
  * - Tutorial modals: Simple one-way informational messages
  * - Dialog modals: Character conversations with portraits
+ * - Dialog trees: Branching conversations with player choices
  *
  * Only one modal is displayed at a time (first in queue). When closed, the next
  * modal in the queue is automatically displayed.
@@ -22,6 +23,12 @@ const currentModal = computed(() => dialogsStore.currentModal)
 const isTutorial = computed(() => currentModal.value?.type === 'tutorial')
 const isDialog = computed(() => currentModal.value?.type === 'dialog')
 
+// Check if we're displaying a dialog tree (branching conversation)
+const isDialogTree = computed(() => dialogsStore.activeDialogTree !== null)
+
+// Get the current node in the dialog tree
+const currentNode = computed(() => dialogsStore.currentNode)
+
 // Extract tutorial data with proper typing
 const tutorialData = computed(() => {
   if (currentModal.value?.type === 'tutorial') {
@@ -38,12 +45,43 @@ const dialogData = computed(() => {
   return null
 })
 
+// Get character info from either tree or simple dialog
+const characterName = computed(() => {
+  if (isDialogTree.value && dialogsStore.activeDialogTree) {
+    return dialogsStore.activeDialogTree.characterName
+  }
+  return dialogData.value?.characterName || ''
+})
+
+const portrait = computed(() => {
+  // For dialog trees, use the store's currentPortrait (handles node-level overrides)
+  if (isDialogTree.value && dialogsStore.currentPortrait) {
+    return dialogsStore.currentPortrait
+  }
+  // For simple dialogs, use the dialog's portrait
+  return dialogData.value?.portrait || { path: null, alt: '' }
+})
+
+const dialogMessage = computed(() => {
+  if (isDialogTree.value && currentNode.value) {
+    return currentNode.value.message
+  }
+  return dialogData.value?.message || ''
+})
+
 /**
  * Close the current modal and advance to the next in queue
  * Handles tutorial completion tracking and dialog history
  */
 function handleClose() {
   dialogsStore.closeCurrentModal()
+}
+
+/**
+ * Handle player selecting a choice in a dialog tree
+ */
+function handleChoiceSelect(responseIndex: number) {
+  dialogsStore.selectPlayerResponse(responseIndex)
 }
 
 /**
@@ -94,9 +132,9 @@ function handleModalClick(event: MouseEvent) {
         <!-- Left column: Character portrait -->
         <div class="dialog-portrait">
           <img
-            v-if="dialogData.portrait.path"
-            :src="dialogData.portrait.path"
-            :alt="dialogData.portrait.alt"
+            v-if="portrait.path"
+            :src="portrait.path"
+            :alt="portrait.alt"
             class="portrait-image"
           />
           <div v-else class="portrait-placeholder">
@@ -107,12 +145,31 @@ function handleModalClick(event: MouseEvent) {
         <!-- Right column: Dialog content -->
         <div class="dialog-content-area">
           <div class="dialog-header">
-            <h2 class="character-name">{{ dialogData.characterName }}</h2>
+            <h2 class="character-name">{{ characterName }}</h2>
           </div>
           <div class="dialog-message">
-            {{ dialogData.message }}
+            {{ dialogMessage }}
           </div>
-          <div class="dialog-footer">
+
+          <!-- Dialog Tree: Show player response choices -->
+          <div v-if="isDialogTree && currentNode" class="dialog-footer">
+            <!-- If node has responses, show them as buttons -->
+            <div v-if="currentNode.responses.length > 0" class="choice-buttons">
+              <button
+                v-for="(response, index) in currentNode.responses"
+                :key="index"
+                class="choice-button"
+                @click="handleChoiceSelect(index)"
+              >
+                {{ response.text }}
+              </button>
+            </div>
+            <!-- If no responses, this is a terminal node - show Continue to close -->
+            <button v-else class="dialog-button" @click="handleClose">Continue</button>
+          </div>
+
+          <!-- Simple Linear Dialog: Show Continue button -->
+          <div v-else class="dialog-footer">
             <button class="dialog-button" @click="handleClose">Continue</button>
           </div>
         </div>
@@ -211,10 +268,10 @@ function handleModalClick(event: MouseEvent) {
 .dialog-modal {
   width: 700px;
   max-width: 90%;
+  min-height: 500px;
   display: flex;
   flex-direction: row;
   gap: 0;
-  padding-top: 60px;
 }
 
 /* Left column: Portrait (~30% width) */
@@ -225,13 +282,12 @@ function handleModalClick(event: MouseEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  overflow: hidden;
 }
 
 .portrait-image {
   width: 100%;
-  height: auto;
-  border-radius: 4px;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -308,6 +364,45 @@ function handleModalClick(event: MouseEvent) {
 
 .dialog-button:active {
   transform: translateY(0);
+}
+
+/* Choice buttons for dialog trees */
+.choice-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.choice-button {
+  background: #f5f5f5;
+  color: #333;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.choice-button:hover {
+  background: #e8f4fd;
+  border-color: #2196f3;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+}
+
+.choice-button:focus {
+  outline: 2px solid #2196f3;
+  outline-offset: 2px;
+}
+
+.choice-button:active {
+  transform: translateX(2px);
+  background: #d0e9fa;
 }
 
 /* Transition animations */

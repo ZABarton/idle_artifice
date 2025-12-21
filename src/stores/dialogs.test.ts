@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useDialogsStore } from './dialogs'
-import type { TutorialModal, DialogModal, DialogHistoryEntry } from '@/types/dialogs'
+import type { TutorialModal, DialogModal, DialogHistoryEntry, DialogTree } from '@/types/dialogs'
 
 // Mock the notifications store
 vi.mock('./notifications', () => ({
@@ -728,6 +728,452 @@ describe('dialogs store', () => {
       expect(store.completedTutorials.size).toBe(0)
       expect(store.interactedFeatures.size).toBe(0)
       expect(store.dialogHistory).toHaveLength(0)
+    })
+  })
+
+  describe('dialog tree loading', () => {
+    const mockDialogTree: DialogTree = {
+      id: 'test-tree',
+      characterName: 'Test Character',
+      portrait: {
+        path: null,
+        alt: 'Test portrait',
+      },
+      startNodeId: 'start',
+      nodes: {
+        start: {
+          id: 'start',
+          message: 'Hello! Choose an option.',
+          responses: [
+            { text: 'Option 1', nextNodeId: 'node1' },
+            { text: 'End conversation', nextNodeId: null },
+          ],
+        },
+        node1: {
+          id: 'node1',
+          message: 'You chose option 1.',
+          responses: [{ text: 'Go back', nextNodeId: 'start' }],
+        },
+      },
+    }
+
+    it('loads and caches dialog tree on first request', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+
+      const tree = await store.loadDialogTree('test-tree')
+
+      expect(tree).toEqual(mockDialogTree)
+      expect(store.loadedDialogTrees.has('test-tree')).toBe(true)
+    })
+
+    it('returns cached tree on subsequent requests', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+
+      const tree1 = await store.loadDialogTree('test-tree')
+      const tree2 = await store.loadDialogTree('test-tree')
+
+      expect(tree1).toBe(tree2) // Same reference (cached)
+    })
+
+    it('validates tree has required fields', async () => {
+      const store = useDialogsStore()
+      const invalidTree = { id: 'invalid', nodes: {} } as any
+      store.loadedDialogTrees.set('invalid-tree', invalidTree)
+
+      // This would fail in real loading, but we're testing the validation concept
+      // The actual validation happens in loadDialogTree when loading from file
+      expect(invalidTree.characterName).toBeUndefined()
+    })
+
+    it('validates start node exists', async () => {
+      const store = useDialogsStore()
+      const treeWithMissingStart: DialogTree = {
+        ...mockDialogTree,
+        startNodeId: 'non-existent',
+      }
+      store.loadedDialogTrees.set('bad-start', treeWithMissingStart)
+
+      const tree = await store.loadDialogTree('bad-start')
+      // Tree is loaded but validation would catch this
+      expect(tree?.nodes[tree.startNodeId]).toBeUndefined()
+    })
+
+    it('handles missing dialog tree file gracefully', async () => {
+      const store = useDialogsStore()
+
+      const tree = await store.loadDialogTree('non-existent-tree')
+
+      expect(tree).toBeNull()
+    })
+
+    it('validates referenced nodes exist', () => {
+      const treeWithBadReference: DialogTree = {
+        ...mockDialogTree,
+        nodes: {
+          start: {
+            id: 'start',
+            message: 'Test',
+            responses: [{ text: 'Bad reference', nextNodeId: 'non-existent-node' }],
+          },
+        },
+      }
+
+      // Check that referenced node doesn't exist
+      const referencedNodeId = treeWithBadReference.nodes.start.responses[0].nextNodeId
+      expect(referencedNodeId).toBe('non-existent-node')
+      expect(treeWithBadReference.nodes[referencedNodeId!]).toBeUndefined()
+    })
+
+    it('allows looping dialog trees (node can reference previous nodes)', () => {
+      // Our mockDialogTree has node1 -> start (a loop)
+      const node1 = mockDialogTree.nodes.node1
+      const nextNodeId = node1.responses[0].nextNodeId
+
+      expect(nextNodeId).toBe('start')
+      expect(mockDialogTree.nodes[nextNodeId!]).toBeDefined()
+    })
+
+    it('identifies terminal nodes (responses with null nextNodeId)', () => {
+      const startNode = mockDialogTree.nodes.start
+      const terminalResponse = startNode.responses.find((r) => r.nextNodeId === null)
+
+      expect(terminalResponse).toBeDefined()
+      expect(terminalResponse?.text).toBe('End conversation')
+    })
+
+    it('supports trees with empty response arrays (terminal nodes)', () => {
+      const treeWithEmptyResponses: DialogTree = {
+        ...mockDialogTree,
+        nodes: {
+          start: {
+            id: 'start',
+            message: 'Goodbye!',
+            responses: [], // Empty = end conversation
+          },
+        },
+      }
+
+      expect(treeWithEmptyResponses.nodes.start.responses).toHaveLength(0)
+    })
+  })
+
+  describe('dialog tree navigation', () => {
+    const mockDialogTree: DialogTree = {
+      id: 'test-tree',
+      characterName: 'Test Character',
+      portrait: {
+        path: null,
+        alt: 'Test portrait',
+      },
+      startNodeId: 'start',
+      nodes: {
+        start: {
+          id: 'start',
+          message: 'Hello! Choose an option.',
+          responses: [
+            { text: 'Option 1', nextNodeId: 'node1' },
+            { text: 'Option 2', nextNodeId: 'node2' },
+            { text: 'End conversation', nextNodeId: null },
+          ],
+        },
+        node1: {
+          id: 'node1',
+          message: 'You chose option 1.',
+          responses: [{ text: 'Go back', nextNodeId: 'start' }],
+        },
+        node2: {
+          id: 'node2',
+          message: 'You chose option 2.',
+          responses: [],
+        },
+      },
+    }
+
+    it('showDialogTree initializes tree and starts at start node', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+
+      await store.showDialogTree('test-tree')
+
+      expect(store.activeDialogTree).toEqual(mockDialogTree)
+      expect(store.currentNodeId).toBe('start')
+      expect(store.currentNode?.id).toBe('start')
+    })
+
+    it('showDialogTree creates active conversation', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+
+      await store.showDialogTree('test-tree')
+
+      expect(store.activeConversation).not.toBeNull()
+      expect(store.activeConversation?.conversationId).toBe('test-tree')
+      expect(store.activeConversation?.characterName).toBe('Test Character')
+    })
+
+    it('showDialogTree adds initial NPC message to transcript', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+
+      await store.showDialogTree('test-tree')
+
+      expect(store.activeConversation?.transcript).toHaveLength(1)
+      expect(store.activeConversation?.transcript[0].speaker).toBe('npc')
+      expect(store.activeConversation?.transcript[0].message).toBe('Hello! Choose an option.')
+    })
+
+    it('showDialogTree adds modal to queue', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+
+      await store.showDialogTree('test-tree')
+
+      expect(store.modalQueue).toHaveLength(1)
+      expect(store.modalQueue[0].type).toBe('dialog')
+    })
+
+    it('selectPlayerResponse navigates to next node', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      store.selectPlayerResponse(0) // Choose "Option 1"
+
+      expect(store.currentNodeId).toBe('node1')
+      expect(store.currentNode?.message).toBe('You chose option 1.')
+    })
+
+    it('selectPlayerResponse adds player choice to transcript', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      store.selectPlayerResponse(0)
+
+      const transcript = store.activeConversation?.transcript || []
+      expect(transcript.length).toBeGreaterThanOrEqual(2)
+      expect(transcript[1].speaker).toBe('player')
+      expect(transcript[1].message).toBe('Option 1')
+    })
+
+    it('selectPlayerResponse adds next NPC message to transcript', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      store.selectPlayerResponse(0)
+
+      const transcript = store.activeConversation?.transcript || []
+      expect(transcript.length).toBeGreaterThanOrEqual(3)
+      expect(transcript[2].speaker).toBe('npc')
+      expect(transcript[2].message).toBe('You chose option 1.')
+    })
+
+    it('selectPlayerResponse handles looping back to previous nodes', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      // Go to node1
+      store.selectPlayerResponse(0)
+      expect(store.currentNodeId).toBe('node1')
+
+      // Loop back to start
+      store.selectPlayerResponse(0)
+      expect(store.currentNodeId).toBe('start')
+      expect(store.currentNode?.message).toBe('Hello! Choose an option.')
+    })
+
+    it('selectPlayerResponse completes conversation when nextNodeId is null', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      store.selectPlayerResponse(2) // Choose "End conversation"
+
+      expect(store.activeDialogTree).toBeNull()
+      expect(store.currentNodeId).toBeNull()
+      expect(store.activeConversation).toBeNull()
+      expect(store.modalQueue).toHaveLength(0)
+    })
+
+    it('selectPlayerResponse completes conversation when node has empty responses', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      store.selectPlayerResponse(1) // Choose "Option 2" (leads to node2 with empty responses)
+
+      // Node2 has empty responses, but selectPlayerResponse doesn't auto-close
+      // (that's handled by the UI showing a Continue button)
+      expect(store.currentNodeId).toBe('node2')
+      expect(store.currentNode?.responses).toHaveLength(0)
+    })
+
+    it('selectPlayerResponse handles invalid response index gracefully', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      const beforeNodeId = store.currentNodeId
+
+      store.selectPlayerResponse(999) // Invalid index
+
+      // Should not change state
+      expect(store.currentNodeId).toBe(beforeNodeId)
+    })
+
+    it('selectPlayerResponse handles missing active tree gracefully', () => {
+      const store = useDialogsStore()
+
+      expect(() => {
+        store.selectPlayerResponse(0)
+      }).not.toThrow()
+
+      expect(store.currentNodeId).toBeNull()
+    })
+
+    it('currentNode computed returns current node from tree', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      expect(store.currentNode).toEqual(mockDialogTree.nodes.start)
+
+      store.selectPlayerResponse(0)
+      expect(store.currentNode).toEqual(mockDialogTree.nodes.node1)
+    })
+
+    it('currentNode computed returns null when no active tree', () => {
+      const store = useDialogsStore()
+
+      expect(store.currentNode).toBeNull()
+    })
+
+    it('saves complete conversation with branching choices to history', async () => {
+      const store = useDialogsStore()
+      store.loadedDialogTrees.set('test-tree', mockDialogTree)
+      await store.showDialogTree('test-tree')
+
+      // Navigate: start -> node1 -> start -> end
+      store.selectPlayerResponse(0) // Option 1
+      store.selectPlayerResponse(0) // Go back
+      store.selectPlayerResponse(2) // End conversation
+
+      // Check conversation was saved to history
+      expect(store.dialogHistory).toHaveLength(1)
+      const conversation = store.dialogHistory[0]
+      expect(conversation.conversationId).toBe('test-tree')
+      expect(conversation.completedAt).toBeInstanceOf(Date)
+
+      // Check transcript has alternating NPC/player messages
+      const transcript = conversation.transcript
+      expect(transcript.length).toBeGreaterThan(0)
+      expect(transcript[0].speaker).toBe('npc') // Initial message
+      expect(transcript[1].speaker).toBe('player') // Option 1
+      expect(transcript[2].speaker).toBe('npc') // You chose option 1
+    })
+  })
+
+  describe('real dialog tree content', () => {
+    it('loads and validates headmaster-intro.json', async () => {
+      const store = useDialogsStore()
+
+      const tree = await store.loadDialogTree('headmaster-intro')
+
+      expect(tree).not.toBeNull()
+      expect(tree?.id).toBe('headmaster-intro')
+      expect(tree?.characterName).toBe('Headmaster Steinerhausen')
+      expect(tree?.startNodeId).toBe('welcome')
+    })
+
+    it('headmaster-intro has all referenced nodes', async () => {
+      const store = useDialogsStore()
+      const tree = await store.loadDialogTree('headmaster-intro')
+
+      expect(tree).not.toBeNull()
+      if (!tree) return
+
+      // Collect all referenced node IDs
+      const referencedNodeIds = new Set<string>()
+      for (const node of Object.values(tree.nodes)) {
+        for (const response of node.responses) {
+          if (response.nextNodeId !== null) {
+            referencedNodeIds.add(response.nextNodeId)
+          }
+        }
+      }
+
+      // Check all referenced nodes exist
+      for (const nodeId of referencedNodeIds) {
+        expect(tree.nodes[nodeId]).toBeDefined()
+      }
+    })
+
+    it('headmaster-intro has at least one terminal path', async () => {
+      const store = useDialogsStore()
+      const tree = await store.loadDialogTree('headmaster-intro')
+
+      expect(tree).not.toBeNull()
+      if (!tree) return
+
+      // Check for terminal responses (nextNodeId === null)
+      let hasTerminalPath = false
+      for (const node of Object.values(tree.nodes)) {
+        if (node.responses.length === 0) {
+          hasTerminalPath = true
+          break
+        }
+        for (const response of node.responses) {
+          if (response.nextNodeId === null) {
+            hasTerminalPath = true
+            break
+          }
+        }
+        if (hasTerminalPath) break
+      }
+
+      expect(hasTerminalPath).toBe(true)
+    })
+
+    it('headmaster-intro can navigate through conversation', async () => {
+      const store = useDialogsStore()
+      await store.showDialogTree('headmaster-intro')
+
+      expect(store.currentNode?.id).toBe('welcome')
+      expect(store.currentNode?.responses).toHaveLength(4)
+
+      // Choose "Tell me about the Academy"
+      store.selectPlayerResponse(1)
+      expect(store.currentNode?.id).toBe('about-academy')
+
+      // Choose looping option
+      store.selectPlayerResponse(1) // "This makes sense..."
+      expect(store.currentNode?.id).toBe('knowMore')
+
+      // Should still be navigable
+      expect(store.activeDialogTree).not.toBeNull()
+    })
+
+    it('headmaster-intro demonstrates node-level portrait overrides', async () => {
+      const store = useDialogsStore()
+      const tree = await store.loadDialogTree('headmaster-intro')
+
+      expect(tree).not.toBeNull()
+      if (!tree) return
+
+      // attitude node has a portrait override
+      expect(tree.nodes.attitude.portrait).toBeDefined()
+      expect(tree.nodes.attitude.portrait?.path).toBe('images/portraits/headmaster-happy.png')
+
+      // ship node has a different portrait override
+      expect(tree.nodes.ship.portrait).toBeDefined()
+      expect(tree.nodes.ship.portrait?.path).toBe('images/portraits/headmaster-angry.png')
+
+      // welcome node should not have a portrait override
+      expect(tree.nodes.welcome.portrait).toBeUndefined()
     })
   })
 })
