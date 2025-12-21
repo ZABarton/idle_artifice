@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type {
   TutorialModal,
   DialogModal,
+  DialogTree,
   ModalQueueItem,
   DialogHistoryRecord,
   DialogHistoryEntry,
@@ -28,6 +29,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
   const dialogHistory = ref<DialogHistoryRecord[]>([])
   const loadedTutorials = ref<Map<string, TutorialModal>>(new Map())
   const loadedDialogs = ref<Map<string, DialogModal>>(new Map())
+  const loadedDialogTrees = ref<Map<string, DialogTree>>(new Map())
   const activeConversation = ref<DialogHistoryRecord | null>(null)
   const interactedFeatures = ref<Set<string>>(new Set())
 
@@ -238,6 +240,132 @@ export const useDialogsStore = defineStore('dialogs', () => {
   }
 
   /**
+   * Validate dialog tree structure
+   *
+   * Checks for common content authoring errors:
+   * - Missing start node
+   * - Referenced nodes that don't exist
+   * - No terminal nodes (all paths loop infinitely)
+   * - Empty response arrays with non-null nextNodeId
+   *
+   * @param tree - The dialog tree to validate
+   * @param _treeId - The tree ID (reserved for future error messages)
+   * @returns Array of error messages (empty if valid)
+   */
+  function validateDialogTree(tree: DialogTree, _treeId: string): string[] {
+    const errors: string[] = []
+
+    // Check start node exists
+    if (!tree.nodes[tree.startNodeId]) {
+      errors.push(`Start node "${tree.startNodeId}" not found in nodes`)
+      return errors // Can't continue validation without start node
+    }
+
+    // Collect all node IDs for reference checking
+    const nodeIds = new Set(Object.keys(tree.nodes))
+
+    // Track nodes that can potentially end the conversation
+    let hasTerminalPath = false
+
+    // Validate each node
+    for (const [nodeId, node] of Object.entries(tree.nodes)) {
+      // Check node ID matches key
+      if (node.id !== nodeId) {
+        errors.push(
+          `Node key "${nodeId}" doesn't match node.id "${node.id}". These should match.`
+        )
+      }
+
+      // Check if node has terminal responses (ends conversation)
+      if (node.responses.length === 0 || node.responses.some((r) => r.nextNodeId === null)) {
+        hasTerminalPath = true
+      }
+
+      // Validate each response
+      node.responses.forEach((response, idx) => {
+        // Check for empty response text
+        if (!response.text || response.text.trim() === '') {
+          errors.push(`Node "${nodeId}" response ${idx} has empty text`)
+        }
+
+        // Check referenced node exists (if not terminal)
+        if (response.nextNodeId !== null && !nodeIds.has(response.nextNodeId)) {
+          errors.push(
+            `Node "${nodeId}" references non-existent node "${response.nextNodeId}"`
+          )
+        }
+      })
+    }
+
+    // Warn if no way to exit conversation (all paths loop)
+    if (!hasTerminalPath) {
+      errors.push(
+        'No terminal paths found - all conversation paths loop infinitely. ' +
+          'Add at least one response with nextNodeId: null or empty responses array.'
+      )
+    }
+
+    return errors
+  }
+
+  /**
+   * Load a dialog tree by ID (lazy loading)
+   *
+   * Dialog trees are loaded on-demand rather than at startup to reduce
+   * initial app load time. Once loaded, trees are cached in memory.
+   *
+   * Validates tree structure and provides helpful error messages for
+   * content creators.
+   *
+   * @param treeId - The dialog tree ID (must match filename in src/content/dialog-trees/)
+   * @returns The dialog tree data, or null if loading/validation failed
+   */
+  async function loadDialogTree(treeId: string): Promise<DialogTree | null> {
+    // Check cache first to avoid redundant file loads
+    if (loadedDialogTrees.value.has(treeId)) {
+      return loadedDialogTrees.value.get(treeId)!
+    }
+
+    try {
+      // Dynamically import the dialog tree file by ID
+      // File must exist at: src/content/dialog-trees/{treeId}.json
+      const module = await import(`../content/dialog-trees/${treeId}.json`)
+      const tree = module.default as DialogTree
+
+      // Validate tree has required fields
+      if (!tree.id || !tree.characterName || !tree.startNodeId || !tree.nodes) {
+        console.error(`Invalid dialog tree ${treeId}: missing required fields`)
+        const notificationsStore = useNotificationsStore()
+        notificationsStore.showError('Dialog Tree Error', `Invalid tree: ${treeId}`, 8000)
+        return null
+      }
+
+      // Validate tree structure
+      const validationErrors = validateDialogTree(tree, treeId)
+      if (validationErrors.length > 0) {
+        console.error(`Dialog tree ${treeId} validation failed:`)
+        validationErrors.forEach((error) => console.error(`  - ${error}`))
+        const notificationsStore = useNotificationsStore()
+        notificationsStore.showError(
+          'Dialog Tree Error',
+          `Tree ${treeId} has ${validationErrors.length} validation error(s). Check console.`,
+          10000
+        )
+        return null
+      }
+
+      // Cache the loaded dialog tree for future use
+      loadedDialogTrees.value.set(treeId, tree)
+      return tree
+    } catch (error) {
+      console.error(`Failed to load dialog tree ${treeId}:`, error)
+      const notificationsStore = useNotificationsStore()
+      notificationsStore.showError('Dialog Tree Error', `Missing tree: ${treeId}`, 8000)
+      return null
+    }
+  }
+
+  /**
    * Show a tutorial modal (adds to queue if not already seen)
    */
   function showTutorial(tutorialId: string): void {
@@ -417,6 +545,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
     dialogHistory,
     loadedTutorials,
     loadedDialogs,
+    loadedDialogTrees,
     activeConversation,
     interactedFeatures,
     // Getters
@@ -428,6 +557,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
     showTutorial,
     replayTutorial,
     showDialog,
+    loadDialogTree,
     addDialogEntry,
     completeConversation,
     closeCurrentModal,
