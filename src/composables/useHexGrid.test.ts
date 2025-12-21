@@ -5,39 +5,62 @@ describe('useHexGrid', () => {
   const hexGrid = useHexGrid()
 
   describe('generateInitialMap', () => {
-    it('should generate 7 hexagons (1 center + 6 surrounding)', () => {
+    it('should generate 10 hexagons for first gameplay loop', () => {
       const tiles = hexGrid.generateInitialMap()
-      expect(tiles).toHaveLength(7)
+      expect(tiles).toHaveLength(10)
     })
 
-    it('should have center hex at origin (0, 0) as academy', () => {
+    it('should have academy at origin (0, 0)', () => {
       const tiles = hexGrid.generateInitialMap()
-      const centerHex = tiles.find((tile) => tile.q === 0 && tile.r === 0)
+      const academy = tiles.find((tile) => tile.q === 0 && tile.r === 0)
 
-      expect(centerHex).toBeDefined()
-      expect(centerHex?.explorationStatus).toBe('explored')
-      expect(centerHex?.type).toBe('academy')
+      expect(academy).toBeDefined()
+      expect(academy?.explorationStatus).toBe('explored')
+      expect(academy?.type).toBe('academy')
+      expect(academy?.clickable).toBe(true)
     })
 
-    it('should have 6 surrounding hexes that are unexplored', () => {
+    it('should have harbor at (-1, 0)', () => {
       const tiles = hexGrid.generateInitialMap()
-      const surroundingHexes = tiles.filter((tile) => !(tile.q === 0 && tile.r === 0))
+      const harbor = tiles.find((tile) => tile.q === -1 && tile.r === 0)
 
-      expect(surroundingHexes).toHaveLength(6)
-      surroundingHexes.forEach((hex) => {
-        expect(hex.explorationStatus).toBe('unexplored')
+      expect(harbor).toBeDefined()
+      expect(harbor?.explorationStatus).toBe('explored')
+      expect(harbor?.type).toBe('harbor')
+      expect(harbor?.clickable).toBe(true)
+    })
+
+    it('should have 5 ocean hexes that are explored but not clickable', () => {
+      const tiles = hexGrid.generateInitialMap()
+      const oceanHexes = tiles.filter((tile) => tile.type === 'ocean')
+
+      expect(oceanHexes).toHaveLength(5)
+      oceanHexes.forEach((hex) => {
+        expect(hex.explorationStatus).toBe('explored')
+        expect(hex.clickable).toBe(false)
+      })
+    })
+
+    it('should have 3 unexplored land hexes', () => {
+      const tiles = hexGrid.generateInitialMap()
+      const unexploredHexes = tiles.filter((tile) => tile.explorationStatus === 'unexplored')
+
+      expect(unexploredHexes).toHaveLength(3)
+      unexploredHexes.forEach((hex) => {
         expect(hex.type).toBeUndefined()
       })
     })
 
-    it('should generate hexes adjacent to center (distance = 1)', () => {
+    it('should have unexplored hexes at (1, -1), (1, 0), and (0, 1)', () => {
       const tiles = hexGrid.generateInitialMap()
-      const surroundingHexes = tiles.filter((tile) => !(tile.q === 0 && tile.r === 0))
 
-      surroundingHexes.forEach((hex) => {
-        const distance = hexGrid.getDistance(0, 0, hex.q, hex.r)
-        expect(distance).toBe(1)
-      })
+      const unexplored1 = tiles.find((tile) => tile.q === 1 && tile.r === -1)
+      const unexplored2 = tiles.find((tile) => tile.q === 1 && tile.r === 0)
+      const unexplored3 = tiles.find((tile) => tile.q === 0 && tile.r === 1)
+
+      expect(unexplored1?.explorationStatus).toBe('unexplored')
+      expect(unexplored2?.explorationStatus).toBe('unexplored')
+      expect(unexplored3?.explorationStatus).toBe('unexplored')
     })
   })
 

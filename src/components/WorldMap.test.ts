@@ -11,14 +11,14 @@ describe('WorldMap Component', () => {
   })
 
   describe('Hexagon Rendering', () => {
-    it('should render 7 hexagon polygons (1 center + 6 surrounding)', () => {
+    it('should render 10 hexagon polygons for first gameplay loop', () => {
       const wrapper = mount(WorldMap)
       const polygons = wrapper.findAll('polygon')
 
-      // Each hex has 2 polygons (main tile + border layer), so 7 * 2 = 14
-      // But border layer only shows for clicked hexes, so we should have 7 visible polygons
+      // Each hex has 2 polygons (main tile + border layer), so 10 * 2 = 20
+      // But border layer only shows for clicked hexes, so we should have 10 visible polygons
       const mainPolygons = polygons.filter((p) => !p.classes('hex-border-layer'))
-      expect(mainPolygons.length).toBe(7)
+      expect(mainPolygons.length).toBe(10)
     })
 
     it('should render hexagons with flat-top orientation', () => {
@@ -60,18 +60,23 @@ describe('WorldMap Component', () => {
       })
     })
 
-    it('should render explored tiles with green fill and unexplored with gray fill', () => {
+    it('should render explored tiles with appropriate fill colors and unexplored with gray fill', () => {
       const wrapper = mount(WorldMap)
       const store = useWorldMapStore()
 
       const polygons = wrapper.findAll('.hex-tile polygon')
 
-      // Count explored vs unexplored by fill color
-      const exploredPolygons = polygons.filter((p) => p.attributes('fill') === '#90EE90')
+      // Count by fill color
+      // Explored tiles can be green (#90EE90 for land) or blue (#87CEEB for ocean)
+      const greenPolygons = polygons.filter((p) => p.attributes('fill') === '#90EE90')
+      const bluePolygons = polygons.filter((p) => p.attributes('fill') === '#87CEEB')
       const unexploredPolygons = polygons.filter((p) => p.attributes('fill') === '#CCCCCC')
 
-      expect(exploredPolygons.length).toBe(store.exploredTiles.length)
+      // 2 green tiles (academy + harbor), 5 blue tiles (ocean), 3 gray (unexplored)
+      expect(greenPolygons.length).toBe(2)
+      expect(bluePolygons.length).toBe(5)
       expect(unexploredPolygons.length).toBe(store.unexploredTiles.length)
+      expect(unexploredPolygons.length).toBe(3)
     })
   })
 
@@ -128,7 +133,7 @@ describe('WorldMap Component', () => {
       }
 
       // If we got here, no errors were thrown
-      expect(polygons.length).toBe(7)
+      expect(polygons.length).toBe(10)
     })
 
     it('should not emit event if drag occurred before click', async () => {
