@@ -160,6 +160,12 @@ export interface DialogNode {
    * Empty array = end conversation (no choices)
    */
   responses: PlayerResponse[]
+  /**
+   * Optional portrait override for this specific node
+   * If not provided, uses the tree-level portrait
+   * Useful for changing character expressions or showing different speakers
+   */
+  portrait?: CharacterPortrait
 }
 
 /**

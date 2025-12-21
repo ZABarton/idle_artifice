@@ -60,6 +60,13 @@ const hexGrid = useHexGrid()
       </button>
       <button @click="worldMapStore.resetMap()">Reset Map</button>
     </div>
+
+    <div class="verification-section">
+      <h2>Development Tools</h2>
+      <router-link to="/dev/dialog-editor">
+        <button>Dialog Tree Editor</button>
+      </router-link>
+    </div>
   </div>
 </template>
 

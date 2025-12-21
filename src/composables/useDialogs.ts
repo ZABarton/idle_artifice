@@ -49,10 +49,10 @@ export function useDialogs() {
    * Trigger a dialog when an objective status changes
    * Useful for showing character reactions when objectives are completed
    *
-   * @param objectiveId - ID of the objective that changed
+   * @param _objectiveId - ID of the objective that changed
    * @param dialogId - ID of the dialog to show
    */
-  async function triggerObjectiveDialog(objectiveId: string, dialogId: string): Promise<void> {
+  async function triggerObjectiveDialog(_objectiveId: string, dialogId: string): Promise<void> {
     await dialogsStore.showDialog(dialogId)
   }
 
@@ -60,10 +60,10 @@ export function useDialogs() {
    * Trigger a dialog from a game event
    * Generic method for event-based dialog triggers
    *
-   * @param eventId - ID of the event that occurred
+   * @param _eventId - ID of the event that occurred
    * @param dialogId - ID of the dialog to show
    */
-  async function triggerEventDialog(eventId: string, dialogId: string): Promise<void> {
+  async function triggerEventDialog(_eventId: string, dialogId: string): Promise<void> {
     await dialogsStore.showDialog(dialogId)
   }
 

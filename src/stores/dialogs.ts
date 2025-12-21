@@ -33,6 +33,10 @@ export const useDialogsStore = defineStore('dialogs', () => {
   const activeConversation = ref<DialogHistoryRecord | null>(null)
   const interactedFeatures = ref<Set<string>>(new Set())
 
+  // Dialog tree navigation state
+  const activeDialogTree = ref<DialogTree | null>(null)
+  const currentNodeId = ref<string | null>(null)
+
   // Getters
 
   /**
@@ -61,6 +65,32 @@ export const useDialogsStore = defineStore('dialogs', () => {
    */
   const conversationHistory = computed(() => {
     return [...dialogHistory.value].reverse() // Most recent first
+  })
+
+  /**
+   * Get the current node in the active dialog tree
+   */
+  const currentNode = computed(() => {
+    if (!activeDialogTree.value || !currentNodeId.value) {
+      return null
+    }
+    return activeDialogTree.value.nodes[currentNodeId.value] || null
+  })
+
+  /**
+   * Get the current portrait for the active dialog tree
+   * Uses node-level portrait if available, otherwise falls back to tree-level
+   */
+  const currentPortrait = computed(() => {
+    if (!activeDialogTree.value) {
+      return null
+    }
+    // Check if current node has a portrait override
+    if (currentNode.value?.portrait) {
+      return currentNode.value.portrait
+    }
+    // Fall back to tree-level portrait
+    return activeDialogTree.value.portrait
   })
 
   // Actions
@@ -483,6 +513,126 @@ export const useDialogsStore = defineStore('dialogs', () => {
   }
 
   /**
+   * Show a dialog tree (branching conversation with player choices)
+   *
+   * Loads the dialog tree, starts tracking conversation history, and
+   * begins navigation at the start node.
+   *
+   * @param treeId - The dialog tree ID (must match filename in src/content/dialog-trees/)
+   */
+  async function showDialogTree(treeId: string): Promise<void> {
+    const tree = await loadDialogTree(treeId)
+    if (!tree) {
+      return
+    }
+
+    // Set active dialog tree and start at the beginning
+    activeDialogTree.value = tree
+    currentNodeId.value = tree.startNodeId
+
+    // Start new conversation for this dialog tree
+    activeConversation.value = {
+      conversationId: tree.id,
+      characterName: tree.characterName,
+      transcript: [],
+      startedAt: new Date(),
+    }
+
+    // Add the first NPC message to conversation transcript
+    const startNode = tree.nodes[tree.startNodeId]
+    if (startNode) {
+      addDialogEntry({
+        speaker: 'npc',
+        speakerName: tree.characterName,
+        message: startNode.message,
+        timestamp: new Date(),
+      })
+    }
+
+    // Add a placeholder to the modal queue to trigger display
+    // The UI will check for activeDialogTree and display the tree instead
+    modalQueue.value.push({
+      type: 'dialog',
+      modal: {
+        id: tree.id,
+        characterName: tree.characterName,
+        portrait: tree.portrait,
+        message: startNode.message,
+        conversationId: tree.id,
+      },
+    })
+  }
+
+  /**
+   * Handle player selecting a response in a dialog tree
+   *
+   * Records the player's choice, navigates to the next node,
+   * and updates the conversation transcript.
+   *
+   * @param responseIndex - Index of the response the player selected
+   */
+  function selectPlayerResponse(responseIndex: number): void {
+    if (!activeDialogTree.value || !currentNodeId.value) {
+      console.warn('No active dialog tree to navigate')
+      return
+    }
+
+    const node = activeDialogTree.value.nodes[currentNodeId.value]
+    if (!node) {
+      console.error(`Current node ${currentNodeId.value} not found in tree`)
+      return
+    }
+
+    const response = node.responses[responseIndex]
+    if (!response) {
+      console.error(`Response ${responseIndex} not found in node ${currentNodeId.value}`)
+      return
+    }
+
+    // Add player's choice to conversation transcript
+    addDialogEntry({
+      speaker: 'player',
+      speakerName: 'You',
+      message: response.text,
+      timestamp: new Date(),
+    })
+
+    // Check if conversation ends (nextNodeId is null)
+    if (response.nextNodeId === null) {
+      // End the conversation
+      completeConversation()
+      activeDialogTree.value = null
+      currentNodeId.value = null
+      // Close the modal
+      modalQueue.value.shift()
+      return
+    }
+
+    // Navigate to next node
+    currentNodeId.value = response.nextNodeId
+    const nextNode = activeDialogTree.value.nodes[response.nextNodeId]
+
+    if (!nextNode) {
+      console.error(`Next node ${response.nextNodeId} not found in tree`)
+      return
+    }
+
+    // Add next NPC message to conversation transcript
+    addDialogEntry({
+      speaker: 'npc',
+      speakerName: activeDialogTree.value.characterName,
+      message: nextNode.message,
+      timestamp: new Date(),
+    })
+
+    // Update the modal queue with new message (for UI reactivity)
+    // Keep the modal in queue but update its content
+    if (modalQueue.value.length > 0 && modalQueue.value[0].type === 'dialog') {
+      modalQueue.value[0].modal.message = nextNode.message
+    }
+  }
+
+  /**
    * Close the current modal and handle completion
    *
    * This is called when the user dismisses a modal (clicks "Got it!" or "Continue").
@@ -548,16 +698,22 @@ export const useDialogsStore = defineStore('dialogs', () => {
     loadedDialogTrees,
     activeConversation,
     interactedFeatures,
+    activeDialogTree,
+    currentNodeId,
     // Getters
     currentModal,
     hasSeenTutorial,
     hasInteractedWithFeature,
     conversationHistory,
+    currentNode,
+    currentPortrait,
     // Actions
     showTutorial,
     replayTutorial,
     showDialog,
+    showDialogTree,
     loadDialogTree,
+    selectPlayerResponse,
     addDialogEntry,
     completeConversation,
     closeCurrentModal,
