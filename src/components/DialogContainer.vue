@@ -268,6 +268,7 @@ function handleModalClick(event: MouseEvent) {
 .dialog-modal {
   width: 700px;
   max-width: 90%;
+  min-height: 500px;
   display: flex;
   flex-direction: row;
   gap: 0;
