@@ -1,0 +1,57 @@
+{
+  "id": "headmaster-intro",
+  "characterName": "Headmaster",
+  "portrait": {
+    "path": null,
+    "alt": "Headmaster portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "Greetings! I'm the Headmaster of this Academy. I'm glad you've arrived - we have much work to do.\n\nWhat would you like to know?",
+      "responses": [
+        {
+          "text": "Tell me about the Academy",
+          "nextNodeId": "about-academy"
+        },
+        {
+          "text": "What's beyond our borders?",
+          "nextNodeId": "about-wilderness"
+        },
+        {
+          "text": "I'm ready to begin",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "about-academy": {
+      "id": "about-academy",
+      "message": "This Academy has long been a center for creating magical items. Our workshops and foundries produce equipment that helps explorers venture into the unknown.\n\nWith your expertise, we can push the boundaries of what's possible.",
+      "responses": [
+        {
+          "text": "What else can you tell me?",
+          "nextNodeId": "welcome"
+        },
+        {
+          "text": "I understand. Let's get started.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "about-wilderness": {
+      "id": "about-wilderness",
+      "message": "The wilderness is vast and largely uncharted. Strange creatures roam there, and ancient secrets wait to be discovered.\n\nOur explorers will need the best equipment we can craft to survive out there.",
+      "responses": [
+        {
+          "text": "Tell me more",
+          "nextNodeId": "welcome"
+        },
+        {
+          "text": "Sounds dangerous. I'm ready.",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

@@ -62,7 +62,10 @@ export interface CharacterPortrait {
 
 /**
  * Represents a dialog modal with an NPC character
- * Currently supports simple linear dialogs (future: branching dialog trees)
+ *
+ * Use this for simple, linear one-off dialogs (single message, no choices).
+ * For branching conversations with player choices, use DialogTree instead
+ * and reference it via the optional conversationId field.
  */
 export interface DialogModal {
   /** Unique identifier for this dialog */
@@ -73,7 +76,7 @@ export interface DialogModal {
   portrait: CharacterPortrait
   /** Dialog message content (supports markdown formatting) */
   message: string
-  /** Optional ID linking to a conversation/dialog tree (for future branching support) */
+  /** Optional ID linking to a DialogTree for branching conversations */
   conversationId?: string
 }
 
@@ -130,4 +133,48 @@ export interface DialogHistoryRecord {
   startedAt: Date
   /** Timestamp when conversation ended */
   completedAt?: Date
+}
+
+/**
+ * Represents a player response option in a dialog tree
+ * Links to the next node in the conversation or ends it
+ */
+export interface PlayerResponse {
+  /** Text displayed to the player for this choice */
+  text: string
+  /** ID of the next dialog node (null = end conversation) */
+  nextNodeId: string | null
+}
+
+/**
+ * Represents a single node in a branching dialog tree
+ * Contains an NPC message and player response options
+ */
+export interface DialogNode {
+  /** Unique identifier for this node within the tree */
+  id: string
+  /** NPC message content (supports markdown formatting) */
+  message: string
+  /**
+   * Available player response options (2-4 recommended for UX)
+   * Empty array = end conversation (no choices)
+   */
+  responses: PlayerResponse[]
+}
+
+/**
+ * Represents a complete branching dialog tree structure
+ * Enables complex conversations with player choices and looping
+ */
+export interface DialogTree {
+  /** Unique identifier for this conversation */
+  id: string
+  /** Name of the character in this conversation */
+  characterName: string
+  /** Character portrait information */
+  portrait: CharacterPortrait
+  /** ID of the starting node */
+  startNodeId: string
+  /** Map of all nodes in this tree (key = node ID) */
+  nodes: Record<string, DialogNode>
 }
