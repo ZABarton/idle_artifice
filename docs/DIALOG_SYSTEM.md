@@ -627,15 +627,330 @@ The system includes built-in error handling:
 - Missing required fields are logged with details
 - LocalStorage failures show warning notification (once per session)
 
+## Dialog Trees (Branching Conversations)
+
+Dialog trees enable branching conversations with player choices, allowing for interactive narrative experiences where player decisions shape the conversation flow.
+
+### Overview
+
+Unlike simple linear dialogs, dialog trees support:
+- **Player choices**: Multiple response options at each conversation point
+- **Branching paths**: Different choices lead to different conversation branches
+- **Looping**: Choices can return to previous nodes (e.g., "Tell me again about...")
+- **Multiple endings**: Different paths can lead to different conversation conclusions
+- **Dynamic portraits**: Character portraits can change per node to show different expressions
+
+### File Format
+
+Dialog tree files are stored in `src/content/dialog-trees/` and loaded lazily when first requested.
+
+```json
+{
+  "id": "headmaster-intro",
+  "characterName": "Headmaster Steinerhausen",
+  "portrait": {
+    "path": "images/portraits/headmaster.png",
+    "alt": "Headmaster portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "Hello! What would you like to know?",
+      "responses": [
+        {
+          "text": "Tell me about the Academy",
+          "nextNodeId": "about-academy"
+        },
+        {
+          "text": "What's outside camp?",
+          "nextNodeId": "about-wilderness"
+        },
+        {
+          "text": "I'm ready to begin",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "about-academy": {
+      "id": "about-academy",
+      "message": "This Academy creates magical items to help explorers.",
+      "responses": [
+        {
+          "text": "Tell me more",
+          "nextNodeId": "welcome"
+        },
+        {
+          "text": "That's all I need",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "about-wilderness": {
+      "id": "about-wilderness",
+      "message": "The wilderness is vast and dangerous.",
+      "portrait": {
+        "path": "images/portraits/headmaster-serious.png",
+        "alt": "Headmaster serious expression"
+      },
+      "responses": [
+        {
+          "text": "Understood",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}
+```
+
+### Field Descriptions
+
+#### Tree-Level Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique identifier for this dialog tree. Must match filename. |
+| `characterName` | string | Yes | Name of the character speaking (displayed in header). |
+| `portrait` | object | Yes | Default portrait for all nodes (can be overridden per-node). |
+| `portrait.path` | string \| null | Yes | Path to portrait image (null = use placeholder). |
+| `portrait.alt` | string | Yes | Alt text for accessibility. |
+| `startNodeId` | string | Yes | ID of the first node in the conversation. |
+| `nodes` | object | Yes | Map of all conversation nodes (key = node ID). |
+
+#### Node-Level Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique identifier for this node (must match key in `nodes` object). |
+| `message` | string | Yes | NPC message displayed to player. Supports markdown and `\n` line breaks. |
+| `responses` | array | Yes | Player response options. Empty array = terminal node (conversation ends). |
+| `portrait` | object | No | Optional portrait override for this specific node (e.g., different expression). |
+
+#### Response Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text displayed to player for this choice button. |
+| `nextNodeId` | string \| null | Yes | ID of next node to navigate to. `null` = end conversation. |
+
+### Common Patterns
+
+#### Simple Branching
+
+```json
+{
+  "startNodeId": "greeting",
+  "nodes": {
+    "greeting": {
+      "id": "greeting",
+      "message": "How can I help you?",
+      "responses": [
+        { "text": "Browse your wares", "nextNodeId": "shop" },
+        { "text": "Just saying hi", "nextNodeId": "goodbye" }
+      ]
+    },
+    "shop": {
+      "id": "shop",
+      "message": "Here's what I have available...",
+      "responses": []
+    },
+    "goodbye": {
+      "id": "goodbye",
+      "message": "Come back anytime!",
+      "responses": []
+    }
+  }
+}
+```
+
+#### Looping ("Tell Me Again")
+
+Allow player to revisit information:
+
+```json
+{
+  "startNodeId": "menu",
+  "nodes": {
+    "menu": {
+      "id": "menu",
+      "message": "What do you want to know?",
+      "responses": [
+        { "text": "About crafting", "nextNodeId": "crafting-info" },
+        { "text": "About exploring", "nextNodeId": "explore-info" },
+        { "text": "That's all", "nextNodeId": null }
+      ]
+    },
+    "crafting-info": {
+      "id": "crafting-info",
+      "message": "Crafting combines resources into items...",
+      "responses": [
+        { "text": "Tell me more", "nextNodeId": "menu" }
+      ]
+    },
+    "explore-info": {
+      "id": "explore-info",
+      "message": "Exploring reveals new areas...",
+      "responses": [
+        { "text": "Ask something else", "nextNodeId": "menu" }
+      ]
+    }
+  }
+}
+```
+
+#### Portrait Changes
+
+Show different expressions based on conversation:
+
+```json
+{
+  "portrait": {
+    "path": "images/portraits/character-neutral.png",
+    "alt": "Character portrait"
+  },
+  "nodes": {
+    "happy-news": {
+      "id": "happy-news",
+      "message": "Great job! I'm so proud!",
+      "portrait": {
+        "path": "images/portraits/character-happy.png",
+        "alt": "Character smiling"
+      },
+      "responses": [...]
+    },
+    "bad-news": {
+      "id": "bad-news",
+      "message": "This is... concerning.",
+      "portrait": {
+        "path": "images/portraits/character-worried.png",
+        "alt": "Character worried"
+      },
+      "responses": [...]
+    }
+  }
+}
+```
+
+### Best Practices
+
+**Node IDs**
+- Use kebab-case: `welcome`, `about-academy`, `ship-question`
+- Keep descriptive but concise
+- IDs are permanent (difficult to rename after creation)
+
+**Messages**
+- Keep under 1000 characters for readability
+- Use `\n` for paragraph breaks
+- Consider markdown support for emphasis
+
+**Responses**
+- Limit to 2-4 options per node (UX recommendation)
+- Keep response text under 200 characters
+- Use clear, distinct phrasing for each choice
+- First response often continues main conversation
+- Last response often exits or loops back
+
+**Conversation Flow**
+- Always include at least one path to end the conversation (`nextNodeId: null`)
+- Avoid infinite loops unless intentional (validation warns about this)
+- Test all branches to ensure logical flow
+- Use portrait overrides sparingly for key emotional moments
+
+**File Organization**
+```
+src/content/dialog-trees/
+├── headmaster-intro.json     # Main character introduction
+├── merchant-greeting.json    # Shop NPC conversation
+├── tutorial-basics.json      # Repeatable info menu
+└── quest-giver.json          # Quest dialog
+```
+
+### Validation
+
+Dialog trees are validated when loaded:
+
+**Errors (block loading):**
+- Missing or invalid start node
+- Response references non-existent node
+- Empty response text or node message
+- Node ID mismatch (key doesn't match `node.id`)
+
+**Warnings (logged but allowed):**
+- Orphaned nodes (unreachable from start)
+- No terminal paths (infinite loops)
+- Response text > 200 characters
+- Message text > 1000 characters
+- More than 4 responses per node
+
+All validation errors are logged to console with specific details to help fix issues.
+
+### Using Dialog Trees in Code
+
+#### Trigger a Dialog Tree
+
+```typescript
+import { useDialogsStore } from '@/stores/dialogs'
+
+const dialogsStore = useDialogsStore()
+
+// Show a dialog tree
+await dialogsStore.showDialogTree('headmaster-intro')
+```
+
+#### Check if Tree is Active
+
+```typescript
+// Check if player is currently in a dialog tree
+if (dialogsStore.activeDialogTree) {
+  console.log('Current node:', dialogsStore.currentNode?.id)
+  console.log('Available choices:', dialogsStore.currentNode?.responses)
+}
+```
+
+#### Access Conversation History
+
+Dialog trees save full conversation transcripts including player choices:
+
+```typescript
+// View all completed conversations
+const history = dialogsStore.conversationHistory
+
+history.forEach(conversation => {
+  console.log(`${conversation.characterName} (${conversation.conversationId})`)
+  conversation.transcript.forEach(entry => {
+    console.log(`${entry.speaker}: ${entry.message}`)
+  })
+})
+```
+
+### Visual Editor
+
+A visual dialog tree editor is available for creating and editing dialog trees:
+
+1. Navigate to `/debug` in your browser
+2. Click "Dialog Tree Editor" under Development Tools
+3. Or go directly to `/dev/dialog-editor`
+
+**Features:**
+- Interactive node graph with drag-and-drop
+- Visual validation feedback (errors/warnings highlighted on nodes)
+- Auto-layout algorithm for organizing nodes
+- Live editing of messages, responses, and portraits
+- Direct file saving to `src/content/dialog-trees/`
+- Import/export JSON
+
+See `src/components/dialog-editor/README.md` for detailed editor documentation.
+
 ## Future Enhancements
 
 The dialog system is designed to support future features:
 
-1. **Branching Dialog Trees** - `conversationId` field supports linking multiple dialogs
-2. **Player Responses** - Dialog history structure includes player entries
-3. **Conditional Dialogs** - Similar trigger system could be added to dialogs
-4. **Portrait Animations** - Portrait structure supports future animation paths
-5. **Voice Acting** - Dialog structure could include audio file paths
+1. **Conditional Dialogs** - Similar trigger system could be added to dialogs (show based on game state)
+2. **Portrait Animations** - Portrait structure supports future animation paths
+3. **Voice Acting** - Dialog structure could include audio file paths
+4. **Choice Conditions** - Responses could be shown/hidden based on player state (inventory, completed quests, etc.)
+5. **Timed Choices** - Optional timer for urgent decision points
 
 ## Examples Directory
 
@@ -652,6 +967,9 @@ See these files for complete working examples:
 - `src/content/dialogs/foundry-master-tips.json` - Feature-based dialog
 - `src/content/dialogs/shop-keeper-greeting.json` - Shop NPC dialog
 - `src/content/dialogs/workshop-master-intro.json` - Workshop NPC dialog
+
+**Dialog Trees:**
+- `src/content/dialog-trees/headmaster-intro.json` - Complex branching conversation with looping, portrait overrides, and multiple endings
 
 **Code Examples:**
 - `src/composables/useTutorials.ts` - Tutorial composable implementation
