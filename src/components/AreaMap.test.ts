@@ -7,6 +7,8 @@ import { useAreaMapStore } from '@/stores/areaMap'
 
 describe('AreaMap', () => {
   beforeEach(() => {
+    // Clear localStorage before each test to ensure clean state
+    localStorage.clear()
     setActivePinia(createPinia())
     const areaMapStore = useAreaMapStore()
 

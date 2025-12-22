@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useWorldMapStore } from '@/stores/worldMap'
 import { useAreaMapStore } from '@/stores/areaMap'
+import { useDialogsStore } from '@/stores/dialogs'
 import FeatureCard from './FeatureCard.vue'
 import FoundryFeature from './features/FoundryFeature.vue'
 import ShopFeature from './features/ShopFeature.vue'
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 
 const worldMapStore = useWorldMapStore()
 const areaMapStore = useAreaMapStore()
+const dialogsStore = useDialogsStore()
 
 // Get the tile data for this area
 const tile = computed(() => worldMapStore.getTileAt(props.q, props.r))
@@ -107,6 +109,11 @@ onMounted(() => {
     } else if (tile.value?.type === 'harbor') {
       areaMapStore.initializeHarbor(props.q, props.r)
     }
+  }
+
+  // Trigger dialog on first Harbor visit
+  if (tile.value?.type === 'harbor' && tile.value.visitCount === 1) {
+    dialogsStore.showDialogTree('harbormaster-intro')
   }
 
   // Add resize listener

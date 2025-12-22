@@ -4,6 +4,8 @@ import { useWorldMapStore } from './worldMap'
 
 describe('useWorldMapStore', () => {
   beforeEach(() => {
+    // Clear localStorage before each test to ensure clean state
+    localStorage.clear()
     // Create a fresh pinia instance for each test
     setActivePinia(createPinia())
   })

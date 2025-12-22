@@ -11,6 +11,8 @@ import { useResourcesStore } from '@/stores/resources'
 
 describe('Integration Tests', () => {
   beforeEach(() => {
+    // Clear localStorage before each test to ensure clean state
+    localStorage.clear()
     setActivePinia(createPinia())
   })
 

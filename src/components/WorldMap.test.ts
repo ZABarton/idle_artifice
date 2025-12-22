@@ -7,6 +7,8 @@ import type { HexTile } from '@/types/hex'
 
 describe('WorldMap Component', () => {
   beforeEach(() => {
+    // Clear localStorage before each test to ensure clean state
+    localStorage.clear()
     setActivePinia(createPinia())
   })
 
