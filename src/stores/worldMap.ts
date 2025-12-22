@@ -1,7 +1,32 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { HexTile } from '@/types/hex'
 import { useHexGrid } from '@/composables/useHexGrid'
+
+// LocalStorage key
+const STORAGE_KEY_HEX_TILES = 'idle-artifice-hex-tiles'
+
+// Track if we've shown storage warning to avoid spam
+let hasShownStorageWarning = false
+
+/**
+ * Load hex tiles from localStorage
+ * Returns saved tiles if available, otherwise generates initial map
+ */
+function loadHexTiles(): HexTile[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_HEX_TILES)
+    if (stored) {
+      return JSON.parse(stored) as HexTile[]
+    }
+  } catch (error) {
+    console.error('Failed to load hex tiles from localStorage:', error)
+  }
+
+  // Return initial map if no saved data or error
+  const { generateInitialMap } = useHexGrid()
+  return generateInitialMap()
+}
 
 /**
  * World Map Store
@@ -11,7 +36,7 @@ export const useWorldMapStore = defineStore('worldMap', () => {
   const { generateInitialMap } = useHexGrid()
 
   // State
-  const hexTiles = ref<HexTile[]>(generateInitialMap())
+  const hexTiles = ref<HexTile[]>(loadHexTiles())
 
   // Getters
   const exploredTiles = computed(() =>
@@ -27,6 +52,33 @@ export const useWorldMapStore = defineStore('worldMap', () => {
   })
 
   const academyTile = computed(() => hexTiles.value.find((tile) => tile.type === 'academy'))
+
+  // LocalStorage helpers
+  /**
+   * Save hex tiles to localStorage
+   */
+  function saveHexTiles() {
+    try {
+      localStorage.setItem(STORAGE_KEY_HEX_TILES, JSON.stringify(hexTiles.value))
+    } catch (error) {
+      console.error('Failed to save hex tiles to localStorage:', error)
+
+      // Show warning once per session
+      if (!hasShownStorageWarning) {
+        console.warn('Unable to save world map progress. Check browser storage settings.')
+        hasShownStorageWarning = true
+      }
+    }
+  }
+
+  // Watch for changes and auto-save to localStorage
+  watch(
+    hexTiles,
+    () => {
+      saveHexTiles()
+    },
+    { deep: true }
+  )
 
   // Actions
   function exploreTile(q: number, r: number) {
@@ -53,6 +105,12 @@ export const useWorldMapStore = defineStore('worldMap', () => {
 
   function resetMap() {
     hexTiles.value = generateInitialMap()
+    // Clear localStorage when resetting (watch will save the new initial map)
+    try {
+      localStorage.removeItem(STORAGE_KEY_HEX_TILES)
+    } catch (error) {
+      console.error('Failed to clear hex tiles from localStorage:', error)
+    }
   }
 
   return {

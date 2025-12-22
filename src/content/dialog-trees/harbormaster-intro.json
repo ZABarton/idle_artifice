@@ -1,0 +1,133 @@
+{
+  "id": "harbormaster-intro",
+  "characterName": "Unnamed Harbor Master",
+  "portrait": {
+    "path": "images/portraits/harbormaster.png",
+    "alt": "Harbormaster portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "Ah, you've arrived. Welcome to Camp Sagora. It's not much, but it's home.",
+      "responses": [
+        {
+          "text": "Camp Sagora?",
+          "nextNodeId": "about-camp"
+        },
+        {
+          "text": "Who are you?",
+          "nextNodeId": "harbormaster"
+        }
+      ]
+    },
+    "about-camp": {
+      "id": "about-camp",
+      "message": "Camp Sagora. I mean, that's what King Sagora wanted us to call it. But he's not bloody here, and since we're the ones sent out here to explore it and most likely die, there's really nothing stopping us from calling it whatever we want. Got any ideas, boss?",
+      "responses": [
+        {
+          "text": "Sorry, did you say we're most likely going to die?",
+          "nextNodeId": "die"
+        },
+        {
+          "text": "Sorry, did you just call me boss?",
+          "nextNodeId": "boss"
+        },
+        {
+          "text": "Yeah, actually...",
+          "nextNodeId": "rename-camp"
+        },
+        {
+          "text": "Camp Sagora sounds fine. At least when we all die, they'll know who to blame.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "harbormaster": {
+      "id": "harbormaster",
+      "message": "Unnamed Harbormaster, at your service, boss. Came in on the first ship to settle camp, and been minding the harbor getting ready for the next one. Which, as it turns out, was your vessel there.",
+      "responses": [
+        {
+          "text": "<Keep listening>",
+          "nextNodeId": "harbormaster-2"
+        }
+      ]
+    },
+    "ending": {
+      "id": "ending",
+      "message": "Steinhauser, the Head Swordfellow who's been getting this place set up in your absence, will be expecting you. He's up ahead at the main encampment. Don't let the gruff exterior fool you - he's going to be very happy you're finally here.",
+      "responses": [
+        {
+          "text": "Thanks for the heads up.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "die": {
+      "id": "die",
+      "message": "Probably! Maybe not, now that you're here. Truth be told, we haven't done much exploring since we got here so we're not sure what else is out there. We've had our hands full just getting this encampment set up. Now that you, and your ship's supplies are here, we should be able to start building this place out in earnest",
+      "responses": [
+        {
+          "text": "You don't know anything about what's out there?",
+          "nextNodeId": "island"
+        },
+        {
+          "text": "Well, hopefully this is all worth it.",
+          "nextNodeId": "ending"
+        }
+      ]
+    },
+    "boss": {
+      "id": "boss",
+      "message": "Yeah. On account of you being the new overseer and all. Remember? We're the advance party to find a suitable beachhead to settle up, and you're the one to follow up and either find a pile of corpses or a thriving camp. I wouldn't say we're thriving yet, but we ain't corpses either, so at least that's something",
+      "responses": [
+        {
+          "text": "What do you know about this place?",
+          "nextNodeId": "island"
+        },
+        {
+          "text": "Yes. Of course. I am the boss. I should probably go do, you know, boss things.",
+          "nextNodeId": "ending"
+        }
+      ]
+    },
+    "harbormaster-2": {
+      "id": "harbormaster-2",
+      "message": "We've done the best we can with our initial supplies, but we've been waiting for you and your resupply so we can really start to establish a foothold here.",
+      "responses": [
+        {
+          "text": "Where is here, anyway?",
+          "nextNodeId": "about-camp"
+        },
+        {
+          "text": "Waiting for me?",
+          "nextNodeId": "boss"
+        },
+        {
+          "text": "Well, now I'm here - let's get to work.",
+          "nextNodeId": "ending"
+        }
+      ]
+    },
+    "island": {
+      "id": "island",
+      "message": "We've had our hands full just trying to survive on this beach. Hell, we had to scuttle our ship just to get enough material to build shelter and a wall. When we get established, we'll be able to start heading inland and hopefully find something that makes all this worth it.",
+      "responses": [
+        {
+          "text": "I hope so too.",
+          "nextNodeId": "ending"
+        }
+      ]
+    },
+    "rename-camp": {
+      "id": "rename-camp",
+      "message": "Hey look, I actually don't know how to store and retrieve variables yet. This is awkward. You should probably, uh, just go.",
+      "responses": [
+        {
+          "text": "Oh. Sure.",
+          "nextNodeId": "ending"
+        }
+      ]
+    }
+  }
+}

@@ -924,6 +924,200 @@ history.forEach(conversation => {
 })
 ```
 
+### Wiring Up Automatic Dialog Triggers
+
+Dialog trees can be automatically triggered based on game events and conditions. Common triggers include first-time location visits, feature unlocks, objective completion, or custom game state changes.
+
+#### First Visit Triggers
+
+The most common pattern is triggering a dialog tree when a player first visits a location (e.g., meeting an NPC at the Harbor for the first time).
+
+**Example: Harbor First Visit**
+
+1. **Create the dialog tree file** in `src/content/dialog-trees/`:
+
+```json
+// src/content/dialog-trees/harbormaster-intro.json
+{
+  "id": "harbormaster-intro",
+  "characterName": "Harbormaster",
+  "portrait": {
+    "path": "images/portraits/harbormaster.png",
+    "alt": "Harbormaster portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "Welcome to the Harbor!",
+      "responses": [
+        { "text": "Thanks!", "nextNodeId": null }
+      ]
+    }
+  }
+}
+```
+
+2. **Wire up the trigger** in the location component (e.g., `AreaMap.vue`):
+
+```typescript
+import { useWorldMapStore } from '@/stores/worldMap'
+import { useDialogsStore } from '@/stores/dialogs'
+
+const worldMapStore = useWorldMapStore()
+const dialogsStore = useDialogsStore()
+const tile = computed(() => worldMapStore.getTileAt(props.q, props.r))
+
+onMounted(() => {
+  // Increment visit count first (this is critical!)
+  worldMapStore.incrementVisitCount(props.q, props.r)
+
+  // Check if this is the first visit to this specific location
+  if (tile.value?.type === 'harbor' && tile.value.visitCount === 1) {
+    dialogsStore.showDialogTree('harbormaster-intro')
+  }
+})
+```
+
+**Important Notes:**
+- Always increment `visitCount` BEFORE checking it (visit count starts at 0, becomes 1 on first visit)
+- Use `tile.value.visitCount === 1` to check for first visit
+- Subsequent visits will have `visitCount > 1` and won't trigger the dialog
+- The `visitCount` is persisted in the worldMapStore and tracked across game sessions
+
+#### Feature Unlock Triggers
+
+Trigger a dialog when a feature becomes unlocked:
+
+```typescript
+import { watch } from 'vue'
+import { useAreaMapStore } from '@/stores/areaMap'
+import { useDialogsStore } from '@/stores/dialogs'
+
+const areaMapStore = useAreaMapStore()
+const dialogsStore = useDialogsStore()
+
+// Watch for workshop unlock
+const workshopFeature = computed(() => areaMapStore.getFeatureById('academy-workshop'))
+
+watch(() => workshopFeature.value?.state, (newState, oldState) => {
+  if (oldState === 'locked' && newState === 'unlocked') {
+    dialogsStore.showDialogTree('workshop-master-intro')
+  }
+})
+```
+
+#### Objective Completion Triggers
+
+Trigger a dialog when specific objectives are completed:
+
+```typescript
+import { useObjectivesStore } from '@/stores/objectives'
+import { useDialogsStore } from '@/stores/dialogs'
+
+const objectivesStore = useObjectivesStore()
+const dialogsStore = useDialogsStore()
+
+// In your objective completion handler
+function handleObjectiveComplete(objectiveId: string) {
+  objectivesStore.completeObjective(objectiveId)
+
+  // Trigger specific dialogs based on objective
+  if (objectiveId === 'craft-first-item') {
+    dialogsStore.showDialogTree('headmaster-congratulations')
+  } else if (objectiveId === 'explore-forest') {
+    dialogsStore.showDialogTree('forest-ranger-greeting')
+  }
+}
+```
+
+#### Custom Condition Triggers
+
+For more complex trigger conditions:
+
+```typescript
+import { computed, watch } from 'vue'
+import { useDialogsStore } from '@/stores/dialogs'
+import { useResourcesStore } from '@/stores/resources'
+
+const dialogsStore = useDialogsStore()
+const resourcesStore = useResourcesStore()
+
+// Trigger when player has collected enough resources
+const hasEnoughResources = computed(() =>
+  resourcesStore.getResourceAmount('wood') >= 50 &&
+  resourcesStore.getResourceAmount('stone') >= 30
+)
+
+let hasTriggered = false
+
+watch(hasEnoughResources, (isReady) => {
+  if (isReady && !hasTriggered) {
+    dialogsStore.showDialogTree('quartermaster-new-options')
+    hasTriggered = true
+  }
+})
+```
+
+#### Dialog Sequences
+
+Chain multiple dialogs together for longer story sequences:
+
+```typescript
+import { useDialogsStore } from '@/stores/dialogs'
+
+const dialogsStore = useDialogsStore()
+
+async function startIntroSequence() {
+  // First dialog tree
+  await dialogsStore.showDialogTree('arrival-part-1')
+
+  // Wait for player to complete first tree, then show second
+  // Note: showDialogTree returns when the dialog is closed
+  await dialogsStore.showDialogTree('arrival-part-2')
+
+  // Finally show a simple conclusion dialog
+  await dialogsStore.showDialog('headmaster-welcome')
+}
+```
+
+#### One-Time vs Repeatable Dialogs
+
+**One-Time Dialogs** (recommended for story/intro dialogs):
+- Check visit count: `tile.value.visitCount === 1`
+- Check feature interaction: `!dialogsStore.hasInteractedWithFeature(featureId)`
+- Use a custom flag in your store
+
+**Repeatable Dialogs** (for help/info NPCs):
+```typescript
+// Always show when clicking NPC, regardless of previous interactions
+function talkToNPC() {
+  dialogsStore.showDialogTree('merchant-trade-menu')
+}
+```
+
+#### Testing Dialog Triggers
+
+During development, you may need to test first-visit dialogs multiple times:
+
+```typescript
+// Temporarily override visit count check for testing
+if (import.meta.env.DEV) {
+  console.log('DEV MODE: Triggering dialog tree for testing')
+  dialogsStore.showDialogTree('harbormaster-intro')
+} else if (tile.value?.type === 'harbor' && tile.value.visitCount === 1) {
+  dialogsStore.showDialogTree('harbormaster-intro')
+}
+```
+
+Or reset the world map to clear visit counts:
+```typescript
+import { useWorldMapStore } from '@/stores/worldMap'
+
+const worldMapStore = useWorldMapStore()
+worldMapStore.resetMap() // Resets all visit counts and exploration state
+```
+
 ### Visual Editor
 
 A visual dialog tree editor is available for creating and editing dialog trees:
