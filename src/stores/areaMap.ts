@@ -149,6 +149,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
           id: 'academy-foundry',
           type: 'foundry',
           name: 'Foundry',
+          description: 'Craft equipment for your explorers.',
           icon: '🔨', // Placeholder emoji icon
           position: { x: -130, y: -110 }, // Top-left, centered 2x2 grid with 20-unit gaps
           state: 'unlocked',
@@ -156,48 +157,26 @@ export const useAreaMapStore = defineStore('areaMap', () => {
           interactionType: 'navigation',
         },
         {
-          id: 'academy-workshop',
-          type: 'workshop',
-          name: 'Workshop',
-          icon: '🔧', // Placeholder emoji icon
+          id: 'academy-quartermaster',
+          type: 'quartermaster',
+          name: 'Quartermaster',
+          description: "Manage your camp's supplies.",
+          icon: '📦', // Placeholder emoji icon
           position: { x: 10, y: -110 }, // Top-right, centered 2x2 grid with 20-unit gaps
-          state: 'locked',
-          isActive: false,
-          prerequisites: [
-            {
-              type: 'feature',
-              id: 'academy-foundry',
-              description: 'Complete Foundry tutorial',
-            },
-          ],
-          interactionType: 'navigation',
-        },
-        {
-          id: 'academy-alchemist',
-          type: 'alchemist',
-          name: 'Alchemist',
-          icon: '⚗️', // Placeholder emoji icon
-          position: { x: -130, y: 10 }, // Bottom-left, centered 2x2 grid with 20-unit gaps
-          state: 'locked',
-          isActive: false,
-          prerequisites: [
-            {
-              type: 'resource',
-              id: 'mystical-essence',
-              description: 'Gather mystical essence',
-            },
-          ],
-          interactionType: 'navigation',
-        },
-        {
-          id: 'academy-shop',
-          type: 'shop',
-          name: 'Shop',
-          icon: '🏪', // Placeholder emoji icon
-          position: { x: 10, y: 10 }, // Bottom-right, centered 2x2 grid with 20-unit gaps
           state: 'unlocked',
           isActive: false,
           interactionType: 'inline',
+        },
+        {
+          id: 'academy-tavern',
+          type: 'tavern',
+          name: 'Tavern',
+          description: "Manage your camp's explorers.",
+          icon: '🍺', // Placeholder emoji icon
+          position: { x: -130, y: 10 }, // Bottom-left, centered 2x2 grid with 20-unit gaps
+          state: 'unlocked',
+          isActive: false,
+          interactionType: 'navigation',
         },
       ],
     }

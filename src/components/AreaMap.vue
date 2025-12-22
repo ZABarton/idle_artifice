@@ -9,6 +9,8 @@ import ShopFeature from './features/ShopFeature.vue'
 import WorkshopFeature from './features/WorkshopFeature.vue'
 import AlchemistFeature from './features/AlchemistFeature.vue'
 import WharfFeature from './features/WharfFeature.vue'
+import TavernFeature from './features/TavernFeature.vue'
+import QuartermasterFeature from './features/QuartermasterFeature.vue'
 import type { Feature, FeatureType } from '@/types/feature'
 
 /**
@@ -69,13 +71,8 @@ const viewBoxHeight = computed(() => (layoutMode.value === '2x2' ? 300 : 500))
 const canvasWidth = computed(() => (layoutMode.value === '2x2' ? 1600 : 1000))
 const canvasHeight = computed(() => (layoutMode.value === '2x2' ? 1200 : 2000))
 
-// Feature position order for vertical stacking (upper-left, upper-right, lower-left, lower-right)
-const featureStackOrder = [
-  'academy-foundry',
-  'academy-workshop',
-  'academy-alchemist',
-  'academy-shop',
-]
+// Feature position order for vertical stacking (upper-left, upper-right, lower-left)
+const featureStackOrder = ['academy-foundry', 'academy-quartermaster', 'academy-tavern']
 
 // Get dynamic position based on layout mode
 const getFeaturePosition = (feature: Feature) => {
@@ -140,12 +137,16 @@ const featureComponents: Record<
   | typeof WorkshopFeature
   | typeof AlchemistFeature
   | typeof WharfFeature
+  | typeof TavernFeature
+  | typeof QuartermasterFeature
 > = {
   foundry: FoundryFeature,
   shop: ShopFeature,
   workshop: WorkshopFeature,
   alchemist: AlchemistFeature,
   wharf: WharfFeature,
+  tavern: TavernFeature,
+  quartermaster: QuartermasterFeature,
 }
 
 // Get component for a specific feature

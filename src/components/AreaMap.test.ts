@@ -137,23 +137,20 @@ describe('AreaMap', () => {
       expect(areaMapStore.activeFeatureId).toBe('academy-foundry')
     })
 
-    it('does not activate locked features', async () => {
-      const areaMapStore = useAreaMapStore()
+    it('renders all unlocked Academy features', async () => {
       const wrapper = mount(AreaMap, {
         props: { q: 0, r: 0 },
       })
 
-      // Find and click a locked feature (Workshop)
+      // Academy should have 3 unlocked features
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
-      const workshopCard = featureCards.find(
-        (card) => card.props('feature').id === 'academy-workshop'
-      )
+      expect(featureCards.length).toBe(3)
 
-      expect(workshopCard).toBeDefined()
-      await workshopCard!.trigger('click')
-
-      // Should not be activated (stays null)
-      expect(areaMapStore.activeFeatureId).toBeNull()
+      // Verify all expected features are present
+      const featureIds = featureCards.map((card) => card.props('feature').id)
+      expect(featureIds).toContain('academy-foundry')
+      expect(featureIds).toContain('academy-quartermaster')
+      expect(featureIds).toContain('academy-tavern')
     })
 
     it('toggles feature active state on repeated clicks', async () => {

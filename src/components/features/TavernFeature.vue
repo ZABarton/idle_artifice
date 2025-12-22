@@ -3,54 +3,39 @@ import { onMounted } from 'vue'
 import { useTutorials } from '@/composables/useTutorials'
 
 /**
- * FoundryFeature Component
- * Complex feature with navigation to dedicated Foundry screen
+ * TavernFeature Component
+ * Complex feature with navigation to dedicated Tavern screen
  * For now, shows description and button that will navigate when implemented
  */
 
 interface Emits {
-  /** Emitted when user wants to open the Foundry screen */
+  /** Emitted when user wants to open the Tavern screen */
   (e: 'navigate'): void
 }
 
 const emit = defineEmits<Emits>()
 
-// Mock resource data - will come from resource store in future
-const mockResources = {
-  wood: 25,
-  stone: 12,
-}
-
-const handleOpenFoundry = () => {
+const handleOpenTavern = () => {
   emit('navigate')
 }
 
 // Trigger tutorials on first interaction with this feature
 const { triggerFeatureTutorial } = useTutorials()
 onMounted(() => {
-  triggerFeatureTutorial('foundry')
+  triggerFeatureTutorial('tavern')
 })
 </script>
 
 <template>
-  <div class="foundry-feature">
-    <p class="description">Craft magical items by solving grid-based puzzles.</p>
+  <div class="tavern-feature">
+    <p class="description">Manage your camp's explorers.</p>
 
-    <div class="resources">
-      <div class="resources__title">Available resources:</div>
-      <div class="resources__list">
-        <span v-for="(amount, resource) in mockResources" :key="resource" class="resource-item">
-          {{ resource }}: {{ amount }}
-        </span>
-      </div>
-    </div>
-
-    <button class="open-button" @click="handleOpenFoundry">Enter Foundry</button>
+    <button class="open-button" @click="handleOpenTavern">Enter Tavern</button>
   </div>
 </template>
 
 <style scoped>
-.foundry-feature {
+.tavern-feature {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -74,31 +59,8 @@ onMounted(() => {
   overflow-wrap: break-word;
 }
 
-.resources {
-  margin: 1px 0;
-}
-
-.resources__title {
-  font-size: 0.9em;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 1px;
-}
-
-.resources__list {
-  display: flex;
-  gap: 2px;
-  font-size: 0.9em;
-  color: #666;
-  flex-wrap: wrap;
-}
-
-.resource-item {
-  white-space: nowrap;
-}
-
 .open-button {
-  margin-top: 1px;
+  margin-top: auto;
   padding: 2px 3px;
   background-color: #4a90e2;
   color: white;

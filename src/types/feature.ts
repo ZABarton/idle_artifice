@@ -17,7 +17,14 @@ export type FeatureInteractionType = 'inline' | 'navigation'
 /**
  * Feature type identifier - represents different feature types
  */
-export type FeatureType = 'foundry' | 'workshop' | 'alchemist' | 'shop' | 'wharf'
+export type FeatureType =
+  | 'foundry'
+  | 'workshop'
+  | 'alchemist'
+  | 'shop'
+  | 'wharf'
+  | 'tavern'
+  | 'quartermaster'
 
 /**
  * Position within the Area Map SVG canvas
@@ -52,6 +59,8 @@ export interface Feature {
   type: FeatureType
   /** Display name of the feature */
   name: string
+  /** Description of the feature's purpose */
+  description?: string
   /** Icon identifier (SVG path or emoji placeholder) */
   icon: string
   /** Position on the Area Map canvas */
