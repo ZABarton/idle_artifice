@@ -7,6 +7,7 @@ import FoundryFeature from './features/FoundryFeature.vue'
 import ShopFeature from './features/ShopFeature.vue'
 import WorkshopFeature from './features/WorkshopFeature.vue'
 import AlchemistFeature from './features/AlchemistFeature.vue'
+import WharfFeature from './features/WharfFeature.vue'
 import type { Feature, FeatureType } from '@/types/feature'
 
 /**
@@ -44,6 +45,7 @@ const areaTitle = computed(() => {
   if (area.value?.areaType === 'academy') return 'Academy'
   if (area.value?.areaType === 'forest') return 'Forest'
   if (area.value?.areaType === 'mountain') return 'Mountain'
+  if (area.value?.areaType === 'harbor') return 'Harbor'
   return 'Area Map'
 })
 
@@ -100,9 +102,10 @@ onMounted(() => {
 
   // Initialize area data if not already loaded
   if (!area.value) {
-    // For now, only Academy is implemented
     if (tile.value?.type === 'academy' || (props.q === 0 && props.r === 0)) {
       areaMapStore.initializeAcademy(props.q, props.r)
+    } else if (tile.value?.type === 'harbor') {
+      areaMapStore.initializeHarbor(props.q, props.r)
     }
   }
 
@@ -123,11 +126,19 @@ const handleBackClick = () => {
 }
 
 // Map feature types to components
-const featureComponents: Record<FeatureType, any> = {
+const featureComponents: Record<
+  FeatureType,
+  | typeof FoundryFeature
+  | typeof ShopFeature
+  | typeof WorkshopFeature
+  | typeof AlchemistFeature
+  | typeof WharfFeature
+> = {
   foundry: FoundryFeature,
   shop: ShopFeature,
   workshop: WorkshopFeature,
   alchemist: AlchemistFeature,
+  wharf: WharfFeature,
 }
 
 // Get component for a specific feature
