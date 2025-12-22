@@ -1,0 +1,141 @@
+{
+  "id": "tavern-keeper-intro",
+  "characterName": "Camille Adai",
+  "portrait": {
+    "path": "images/portraits/ranger.png",
+    "alt": "Camille Adai portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "It's about time. My people are dying out there.",
+      "responses": [
+        {
+          "text": "Hello, nice to meet you too.",
+          "nextNodeId": "ranger"
+        },
+        {
+          "text": "Why do your people keep dying out there?",
+          "nextNodeId": "scouts"
+        },
+        {
+          "text": "Maybe this is a bad time...",
+          "nextNodeId": "unhappy"
+        }
+      ]
+    },
+    "ranger": {
+      "id": "ranger",
+      "message": "I'm sorry. I'm glad you're finally here. Truly. But my scouts aren't equipped to survive outside of the camp for too long. I don't know enough about what's happening out there, but I do know that it's too dangerous to keep exploring. So I've pulled everyone back, and now there's nothing to do but drink whatever swill this is while I wait.",
+      "responses": [
+        {
+          "text": "What can I do to help?",
+          "nextNodeId": "help"
+        },
+        {
+          "text": "You're in charge of the scouts?",
+          "nextNodeId": "intro"
+        },
+        {
+          "text": "Hey, I happen to like that swill.",
+          "nextNodeId": "sarcasm"
+        }
+      ]
+    },
+    "scouts": {
+      "id": "scouts",
+      "message": "Honestly? Probably bears, or something just as sharp and pointy. But the problem is, nobody comes back to tell us about it. We're pretty short staffed here at camp, so I've made the executive decision to halt further exploration until we can get better equipped for the wilderness.",
+      "responses": [
+        {
+          "text": "You're in charge of all the explorers?",
+          "nextNodeId": "intro"
+        },
+        {
+          "text": "What can I do to help?",
+          "nextNodeId": "help"
+        },
+        {
+          "text": "You think this place has a bear problem?",
+          "nextNodeId": "bears"
+        }
+      ]
+    },
+    "unhappy": {
+      "id": "unhappy",
+      "message": "Let's be honest - more often than not, it's a bad time at Sagora. Sorry for killing the mood. I'm in charge of the scouting expedition here, and it's not going well, in that none of my scouts are coming back.",
+      "responses": [
+        {
+          "text": "What's happening outside of camp, you think?",
+          "nextNodeId": "scouts"
+        },
+        {
+          "text": "How can I help?",
+          "nextNodeId": "help"
+        }
+      ]
+    },
+    "help": {
+      "id": "help",
+      "message": "The best thing you can do for us, Overseer, is to get our camp in order so we can spare some materials to get our scouts back out into the field and able to return in one piece. Don't worry - when I feel it's safe to resume scouting expeditions, I'll let you know.",
+      "responses": [
+        {
+          "text": "I'll see what I can do.",
+          "nextNodeId": null
+        },
+        {
+          "text": "Maybe I should get a drink first?",
+          "nextNodeId": "drink-ending"
+        }
+      ]
+    },
+    "drink-ending": {
+      "id": "drink-ending",
+      "message": "Great. You do that, and I'll tell what's left of my scouts that we can't go back out there because the Overseer wants to drink.",
+      "responses": [
+        {
+          "text": "On second thought, I have a lot of work to do.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "bears": {
+      "id": "bears",
+      "message": "I would be thrilled if this place only had a bear problem.",
+      "responses": [
+        {
+          "text": "How can I help?",
+          "nextNodeId": "help"
+        }
+      ]
+    },
+    "sarcasm": {
+      "id": "sarcasm",
+      "message": "Well I hope you start making better choices, for all of our sakes.",
+      "responses": [
+        {
+          "text": "I'll do my best!",
+          "nextNodeId": null
+        },
+        {
+          "text": "No promises.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "intro": {
+      "id": "intro",
+      "message": "Yes. Name's Camille. Those are my people out there and I've lost too many good ones. So we're holed up here until we're better equipped. If you're here to help, I'm happy to see you. If you're here to drink, I think we're both going to end up disappointed.",
+      "responses": [
+        {
+          "text": "I'm here to help!",
+          "nextNodeId": "help"
+        },
+        {
+          "text": "I was here to help, but maybe I'm also here to drink first.",
+          "nextNodeId": "drink-ending"
+        }
+      ]
+    }
+  }
+}

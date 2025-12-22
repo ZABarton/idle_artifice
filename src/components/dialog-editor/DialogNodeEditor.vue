@@ -83,6 +83,12 @@ function handleDeleteResponse(index: number) {
   }
 }
 
+function handleMoveResponse(index: number, direction: 'up' | 'down') {
+  if (store.selectedNodeId) {
+    store.moveResponse(store.selectedNodeId, index, direction)
+  }
+}
+
 function handleCreateNodeFromResponse(index: number) {
   const newNodeId = prompt('Enter new node ID:')
   if (newNodeId && store.selectedNodeId) {
@@ -155,7 +161,27 @@ const availableNodeIds = computed(() => {
           :key="index"
           class="response-item"
         >
-          <div class="response-header">Response {{ index + 1 }}</div>
+          <div class="response-header">
+            <span>Response {{ index + 1 }}</span>
+            <div class="reorder-buttons">
+              <button
+                @click="handleMoveResponse(index, 'up')"
+                :disabled="index === 0"
+                class="btn-reorder"
+                title="Move up"
+              >
+                ▲
+              </button>
+              <button
+                @click="handleMoveResponse(index, 'down')"
+                :disabled="index === store.selectedNode.responses.length - 1"
+                class="btn-reorder"
+                title="Move down"
+              >
+                ▼
+              </button>
+            </div>
+          </div>
 
           <label class="field-label">Text</label>
           <input
@@ -312,6 +338,40 @@ select:focus {
   font-weight: 600;
   color: #666;
   margin-bottom: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reorder-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.btn-reorder {
+  padding: 0.25rem 0.5rem;
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-reorder:hover:not(:disabled) {
+  background-color: #2196f3;
+  color: white;
+}
+
+.btn-reorder:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .response-text {

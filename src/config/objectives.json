@@ -29,13 +29,13 @@
           "completed": false
         },
         {
-          "id": "visit-shop",
-          "description": "Visit the Shop",
+          "id": "visit-quartermaster",
+          "description": "Visit the Quartermaster",
           "completed": false
         },
         {
-          "id": "visit-workshop",
-          "description": "Visit the Workshop",
+          "id": "visit-tavern",
+          "description": "Visit the Tavern",
           "completed": false
         }
       ]

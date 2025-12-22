@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useDialogEditorStore } from '@/stores/dialogEditor'
+import { useDialogsStore } from '@/stores/dialogs'
 import { useRouter } from 'vue-router'
 import DialogTreeSelector from '@/components/dialog-editor/DialogTreeSelector.vue'
 import DialogEditorCanvas from '@/components/dialog-editor/DialogEditorCanvas.vue'
 import DialogNodeEditor from '@/components/dialog-editor/DialogNodeEditor.vue'
 import ValidationPanel from '@/components/dialog-editor/ValidationPanel.vue'
+import DialogContainer from '@/components/DialogContainer.vue'
 
 const store = useDialogEditorStore()
+const dialogsStore = useDialogsStore()
 const router = useRouter()
 
 const showExportModal = ref(false)
@@ -48,6 +51,31 @@ async function handleSave() {
   } else {
     alert(`Save failed: ${result.message}`)
   }
+}
+
+function handlePreview() {
+  // Check for tree
+  if (!store.activeTree) {
+    alert('No tree to preview')
+    return
+  }
+
+  // Validate first
+  if (store.hasValidationErrors) {
+    alert('Cannot preview: fix validation errors first')
+    return
+  }
+
+  if (store.hasValidationWarnings) {
+    const confirmed = confirm(
+      `Preview with ${store.validationWarnings.length} warnings?\n\n` +
+        store.validationWarnings.map((w) => `- ${w.message}`).join('\n')
+    )
+    if (!confirmed) return
+  }
+
+  // Preview the current tree
+  dialogsStore.previewDialogTree(store.activeTree)
 }
 
 function handleExport() {
@@ -122,6 +150,9 @@ onBeforeUnmount(() => {
         <span v-if="store.isDirty" class="dirty-indicator">*</span>
       </div>
       <div class="header-actions">
+        <button @click="handlePreview" :disabled="!store.activeTree" class="btn-preview">
+          Preview
+        </button>
         <button @click="handleSave" :disabled="isSaving || !store.activeTree" class="btn-save">
           {{ isSaving ? 'Saving...' : 'Save' }}
         </button>
@@ -181,6 +212,9 @@ onBeforeUnmount(() => {
         <button @click="showSaveSuccessModal = false" class="btn-primary">OK</button>
       </div>
     </div>
+
+    <!-- Dialog preview container -->
+    <DialogContainer />
   </div>
 </template>
 
@@ -243,6 +277,20 @@ button {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.btn-preview {
+  background-color: #9c27b0;
+  color: white;
+}
+
+.btn-preview:hover:not(:disabled) {
+  background-color: #7b1fa2;
+}
+
+.btn-preview:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 .btn-save {

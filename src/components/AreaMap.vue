@@ -108,6 +108,11 @@ onMounted(() => {
     }
   }
 
+  // Trigger dialog on first Academy visit
+  if (tile.value?.type === 'academy' && tile.value.visitCount === 1) {
+    dialogsStore.showDialogTree('headmaster-intro')
+  }
+
   // Trigger dialog on first Harbor visit
   if (tile.value?.type === 'harbor' && tile.value.visitCount === 1) {
     dialogsStore.showDialogTree('harbormaster-intro')

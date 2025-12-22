@@ -1,0 +1,21 @@
+{
+  "id": "foundry-master-intro",
+  "characterName": "Jethro of the Anvil",
+  "portrait": {
+    "path": "images/portraits/foundry-master.png",
+    "alt": "Jethro of the Anvil portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "Placeholder dialog - fill in with dialog editor",
+      "responses": [
+        {
+          "text": "Thanks",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "quartermaster-intro",
+  "characterName": "Theodore Creach",
+  "portrait": {
+    "path": "images/portraits/quartermaster.png",
+    "alt": "Theodore Creach portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "Placeholder dialog - fill in with dialog editor",
+      "responses": [
+        {
+          "text": "Thanks",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

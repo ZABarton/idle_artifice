@@ -9,6 +9,7 @@ import type {
   DialogHistoryEntry,
 } from '@/types/dialogs'
 import { useNotificationsStore } from './notifications'
+import { useObjectivesStore } from './objectives'
 
 // LocalStorage keys
 const STORAGE_KEY_COMPLETED_TUTORIALS = 'idle-artifice-completed-tutorials'
@@ -51,6 +52,13 @@ export const useDialogsStore = defineStore('dialogs', () => {
    */
   const hasSeenTutorial = computed(() => (tutorialId: string) => {
     return completedTutorials.value.has(tutorialId)
+  })
+
+  /**
+   * Check if a dialog tree has been completed
+   */
+  const hasCompletedDialogTree = computed(() => (treeId: string) => {
+    return dialogHistory.value.some((record) => record.conversationId === treeId)
   })
 
   /**
@@ -502,11 +510,23 @@ export const useDialogsStore = defineStore('dialogs', () => {
     // Finalize conversation
     activeConversation.value.completedAt = new Date()
 
+    const conversationId = activeConversation.value.conversationId
+
     // Add to history
     dialogHistory.value.push(activeConversation.value)
 
     // Save to localStorage
     saveToLocalStorage(STORAGE_KEY_DIALOG_HISTORY, dialogHistory.value)
+
+    // Update objectives based on completed dialog tree
+    const objectivesStore = useObjectivesStore()
+    if (conversationId === 'foundry-master-intro') {
+      objectivesStore.updateSubtask('explore-features', 'visit-foundry', true)
+    } else if (conversationId === 'quartermaster-intro') {
+      objectivesStore.updateSubtask('explore-features', 'visit-quartermaster', true)
+    } else if (conversationId === 'tavern-keeper-intro') {
+      objectivesStore.updateSubtask('explore-features', 'visit-tavern', true)
+    }
 
     // Clear active conversation
     activeConversation.value = null
@@ -526,6 +546,30 @@ export const useDialogsStore = defineStore('dialogs', () => {
       return
     }
 
+    startDialogTree(tree)
+  }
+
+  /**
+   * Preview a dialog tree (for use in dialog editor)
+   *
+   * Directly displays a dialog tree object without loading from file.
+   * Used by the dialog editor dev tool to preview trees being edited.
+   *
+   * @param tree - The dialog tree object to preview
+   */
+  function previewDialogTree(tree: DialogTree): void {
+    startDialogTree(tree)
+  }
+
+  /**
+   * Internal helper to start a dialog tree conversation
+   *
+   * Sets up the active tree, conversation tracking, and displays the modal.
+   * Used by both showDialogTree (from file) and previewDialogTree (direct object).
+   *
+   * @param tree - The dialog tree to start
+   */
+  function startDialogTree(tree: DialogTree): void {
     // Set active dialog tree and start at the beginning
     activeDialogTree.value = tree
     currentNodeId.value = tree.startNodeId
@@ -703,6 +747,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
     // Getters
     currentModal,
     hasSeenTutorial,
+    hasCompletedDialogTree,
     hasInteractedWithFeature,
     conversationHistory,
     currentNode,
@@ -712,6 +757,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
     replayTutorial,
     showDialog,
     showDialogTree,
+    previewDialogTree,
     loadDialogTree,
     selectPlayerResponse,
     addDialogEntry,

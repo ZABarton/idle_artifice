@@ -75,7 +75,7 @@
     },
     "about-academy": {
       "id": "about-academy",
-      "message": "We set up camp here and scuttled our ship to establish what we got. It's piss poor, to be sure, but that's what you're here for, innit?\n\nWe have the basics set up - a Foundry for crafting what we can and a Quartermaster to dole out what supplies we have. You'll need to get to work right away if we're going to survive out here.",
+      "message": "We set up camp here and scuttled our ship to establish what we got. It's piss poor, to be sure, but that's what you're here for, innit?\n\nWe have the basics set up - a Foundry for crafting what we can, a Quartermaster to dole out what supplies we have, and a Tavern where the crew gathers. You'll need to get to work right away if we're going to survive out here.",
       "responses": [
         {
           "text": "Scuttled the ship? How are we supposed to get back?",

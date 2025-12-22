@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useTutorials } from '@/composables/useTutorials'
+import { useDialogsStore } from '@/stores/dialogs'
 
 /**
  * FoundryFeature Component
@@ -14,6 +15,7 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
+const dialogsStore = useDialogsStore()
 
 // Mock resource data - will come from resource store in future
 const mockResources = {
@@ -22,6 +24,10 @@ const mockResources = {
 }
 
 const handleOpenFoundry = () => {
+  // Trigger Foundry Master dialog on first click
+  if (!dialogsStore.hasCompletedDialogTree('foundry-master-intro')) {
+    dialogsStore.showDialogTree('foundry-master-intro')
+  }
   emit('navigate')
 }
 

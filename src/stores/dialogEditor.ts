@@ -244,6 +244,28 @@ export const useDialogEditorStore = defineStore('dialogEditor', () => {
   }
 
   /**
+   * Move a response up or down in the list
+   */
+  function moveResponse(nodeId: string, responseIndex: number, direction: 'up' | 'down') {
+    if (!activeTree.value || !activeTree.value.nodes[nodeId]) return
+    const node = activeTree.value.nodes[nodeId]
+    if (responseIndex < 0 || responseIndex >= node.responses.length) return
+
+    const newIndex = direction === 'up' ? responseIndex - 1 : responseIndex + 1
+
+    // Check bounds
+    if (newIndex < 0 || newIndex >= node.responses.length) return
+
+    // Swap responses
+    const temp = node.responses[responseIndex]
+    node.responses[responseIndex] = node.responses[newIndex]
+    node.responses[newIndex] = temp
+
+    isDirty.value = true
+    validateTree()
+  }
+
+  /**
    * Validate the current dialog tree
    */
   function validateTree() {
@@ -535,6 +557,7 @@ export const useDialogEditorStore = defineStore('dialogEditor', () => {
     addResponse,
     updateResponse,
     deleteResponse,
+    moveResponse,
     validateTree,
     exportTree,
     saveTree,
