@@ -205,6 +205,30 @@ export const useAreaMapStore = defineStore('areaMap', () => {
     initializeArea(academyArea)
   }
 
+  // Initialize Harbor area with starter data
+  // This will be moved to JSON config in a future milestone
+  function initializeHarbor(q: number, r: number) {
+    const harborArea: AreaMap = {
+      areaType: 'harbor',
+      coordinates: { q, r },
+      background: '#d3d3d3', // Light gray
+      features: [
+        {
+          id: 'harbor-wharf',
+          type: 'wharf',
+          name: 'The Wharf',
+          icon: '⚓', // Anchor emoji icon
+          position: { x: 0, y: 0 }, // Centered
+          state: 'locked',
+          isActive: false,
+          interactionType: 'navigation',
+        },
+      ],
+    }
+
+    initializeArea(harborArea)
+  }
+
   return {
     // State
     areas,
@@ -220,6 +244,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
     checkPrerequisites,
     tryUnlockFeature,
     initializeAcademy,
+    initializeHarbor,
     reset,
   }
 })

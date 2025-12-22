@@ -7,7 +7,7 @@ import type { Feature } from './feature'
 /**
  * Area type identifier - determines the theme and background of an area
  */
-export type AreaType = 'academy' | 'forest' | 'mountain'
+export type AreaType = 'academy' | 'forest' | 'mountain' | 'harbor'
 
 /**
  * ViewBox dimensions for the Area Map SVG canvas

@@ -1,7 +1,6 @@
 import {
   defineHex,
   Grid,
-  spiral,
   distance,
   neighborOf,
   Direction,
