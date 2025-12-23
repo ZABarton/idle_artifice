@@ -1,0 +1,12 @@
+{
+  "id": "world-map-camera-controls",
+  "title": "World Map Camera Controls",
+  "content": "Placeholder content - fill in with tutorial editor or manually.\n\nThis tutorial should explain how to pan the camera by dragging.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "First time viewing World Map (manually triggered)"
+    }
+  ],
+  "showOnce": true
+}
