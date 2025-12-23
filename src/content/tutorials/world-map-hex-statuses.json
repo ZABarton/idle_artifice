@@ -1,0 +1,12 @@
+{
+  "id": "world-map-hex-statuses",
+  "title": "Hex Statuses",
+  "content": "Placeholder content - fill in with tutorial editor or manually.\n\nThis tutorial should explain the difference between explored hexes (green) and unexplored hexes (gray).",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Second tutorial in World Map sequence (manually triggered)"
+    }
+  ],
+  "showOnce": true
+}

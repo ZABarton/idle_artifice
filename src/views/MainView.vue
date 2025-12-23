@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import WorldMap from '@/components/WorldMap.vue'
 import AreaMap from '@/components/AreaMap.vue'
 import ObjectivesView from '@/views/ObjectivesView.vue'
@@ -9,14 +9,34 @@ import StatusColumn from '@/components/StatusColumn.vue'
 import NotificationContainer from '@/components/NotificationContainer.vue'
 import DialogContainer from '@/components/DialogContainer.vue'
 import { useNavigationStore } from '@/stores/navigation'
+import { useDialogsStore } from '@/stores/dialogs'
 import type { HexTile } from '@/types/hex'
 
 const navigationStore = useNavigationStore()
+const dialogsStore = useDialogsStore()
 
 const currentView = computed(() => navigationStore.currentView)
 const selectedHex = computed(() => navigationStore.selectedHex)
 const showDebugPanel = ref(false)
 const showHelpView = ref(false)
+
+// Trigger World Map tutorial sequence on first visit
+watch(
+  currentView,
+  (newView) => {
+    if (newView === 'world-map') {
+      // Check if we've already seen the first World Map tutorial
+      if (!dialogsStore.hasSeenTutorial('world-map-camera-controls')) {
+        // Trigger all three tutorials in sequence
+        // They will be added to the modal queue and displayed one at a time
+        dialogsStore.showTutorial('world-map-camera-controls')
+        dialogsStore.showTutorial('world-map-hex-statuses')
+        dialogsStore.showTutorial('world-map-hex-selection')
+      }
+    }
+  },
+  { immediate: true } // Check on mount as well
+)
 
 const handleHexSelected = (tile: HexTile) => {
   navigationStore.navigateToAreaMap(tile.q, tile.r, tile.type)

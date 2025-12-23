@@ -1,0 +1,12 @@
+{
+  "id": "world-map-hex-selection",
+  "title": "Selecting Hexes",
+  "content": "Placeholder content - fill in with tutorial editor or manually.\n\nThis tutorial should explain how to click on the Academy hex to visit it and view its area map.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Third tutorial in World Map sequence (manually triggered)"
+    }
+  ],
+  "showOnce": true
+}
