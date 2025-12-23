@@ -1,0 +1,12 @@
+{
+  "id": "opening-story-3",
+  "title": "Your Mission",
+  "content": "You're here to change that.\n\nReopen the workshops. Restore the foundries. Recruit new explorers and send them into the frontier to uncover its secrets.\n\nThe wilderness holds mysteries—resources unlike anything found in civilized lands, creatures of legend, ruins of forgotten civilizations. And perhaps, answers to what happened here.\n\nTime to get to work.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Third tutorial in opening story sequence"
+    }
+  ],
+  "showOnce": true
+}
