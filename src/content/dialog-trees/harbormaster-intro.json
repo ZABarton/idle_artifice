@@ -34,7 +34,7 @@
           "nextNodeId": "boss"
         },
         {
-          "text": "Yeah, actually...",
+          "text": "Yeah, actually! What if we called it Camp...",
           "nextNodeId": "rename-camp"
         },
         {
@@ -121,10 +121,38 @@
     },
     "rename-camp": {
       "id": "rename-camp",
-      "message": "Hey look, I actually don't know how to store and retrieve variables yet. This is awkward. You should probably, uh, just go.",
+      "message": "Wait, wait. I didn't mean to imply that I actually cared what we called this place. How about you get started on making this something, anything, more than a blood-stained dot on the edge of the king's map, and once that's settled, we can call it whatever you want.",
       "responses": [
         {
           "text": "Oh. Sure.",
+          "nextNodeId": "harbormaster-2"
+        },
+        {
+          "text": "I'm beginning to get the feeling you're not a big supporter of the king.",
+          "nextNodeId": "dislike"
+        }
+      ]
+    },
+    "dislike": {
+      "id": "dislike",
+      "message": "Sharp eye ye got there. Ye'd make a fine sailor yourself",
+      "responses": [
+        {
+          "text": "Really? Because I always thought...",
+          "nextNodeId": "dislike2"
+        },
+        {
+          "text": "Sorry. I should be off.",
+          "nextNodeId": "ending"
+        }
+      ]
+    },
+    "dislike2": {
+      "id": "dislike2",
+      "message": "Ye keep doing this thing where you think I'm interested in what you're saying.",
+      "responses": [
+        {
+          "text": "Oh. Yeah, I do that sometimes.",
           "nextNodeId": "ending"
         }
       ]

@@ -1,18 +1,108 @@
 {
   "id": "foundry-master-intro",
-  "characterName": "Jethro of the Anvil",
+  "characterName": "Anton DeCassieur",
   "portrait": {
-    "path": "images/portraits/foundry-master.png",
-    "alt": "Jethro of the Anvil portrait"
+    "path": "images/portraits/smith.png",
+    "alt": "Anton DeCassieur Portrait"
   },
   "startNodeId": "welcome",
   "nodes": {
     "welcome": {
       "id": "welcome",
-      "message": "Placeholder dialog - fill in with dialog editor",
+      "message": "Ah, yes, hello there. I am Anton DeCassieur, at your service. I oversee the forge and the foundry, the very heart of this camp, and as such, I keep its life flowing, not with blood and sweat but with precious oil and steel...and also, the sweat. My sweat.\n\nAnd who might you be?",
       "responses": [
         {
-          "text": "Thanks",
+          "text": "If this forge be the heart of camp, then consider me nothing less than its brain. All the decisions of this camp, whether geared towards self-preservation to the complex operations needed to thrive, they flow through me. From me.",
+          "nextNodeId": "verbose-intro"
+        },
+        {
+          "text": "Uh. <cough> I'm your boss?",
+          "nextNodeId": "tired"
+        }
+      ]
+    },
+    "verbose-intro": {
+      "id": "verbose-intro",
+      "message": "Ah, well met, Overseer! You truly are everything I hoped you would be. And count me among the first to welcome you to our humble home. This Foundry has built us but a skeleton of a settlement. You and your supplies shall be its muscle and its flesh.",
+      "responses": [
+        {
+          "text": "You're running low on supplies?",
+          "nextNodeId": "supplies-1"
+        },
+        {
+          "text": "And...that would make the tavern...the mouth? And the quartermaster its...gall..bladder?",
+          "nextNodeId": "pity"
+        }
+      ]
+    },
+    "tired": {
+      "id": "tired",
+      "message": "Ah. I see. You must be tired from your arduous journey. Surely the words will yet come to you. When you are ready to discuss plans for our expansion, I shall be here, awaiting your command.",
+      "responses": [
+        {
+          "text": "Wait, I did actually want to ask you some things",
+          "nextNodeId": "questions-root"
+        },
+        {
+          "text": "I'll bring a thesaurus next time.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "questions-root": {
+      "id": "questions-root",
+      "message": "By all means, what words of information can I supply?",
+      "responses": [
+        {
+          "text": "<TBD> How's the supply chain looking?",
+          "nextNodeId": null
+        },
+        {
+          "text": "<TBD> What do you think about camp?",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "supplies-1": {
+      "id": "supplies-1",
+      "message": "Indeed. Our coffers have been running low, and although Camille has potentially identified natural resources nearby, we're ever so grateful for your timely delivery of raw metals and wood, not to mention yourself!",
+      "responses": [
+        {
+          "text": "But our cargo hold was only full of metals...",
+          "nextNodeId": "wood"
+        },
+        {
+          "text": "You flatter me, but I must start to get to work.",
+          "nextNodeId": "exit"
+        }
+      ]
+    },
+    "pity": {
+      "id": "pity",
+      "message": "<Anton motions politely for you to stop before you embarrass yourself, although his smile indicates that he truly does appreciate the effort.>",
+      "responses": [
+        {
+          "text": "Right. So...",
+          "nextNodeId": "questions-root"
+        }
+      ]
+    },
+    "wood": {
+      "id": "wood",
+      "message": "<As you're about to finish your thought, you hear a loud crack in the distance. You spin around just in time to see the main mast of your sailing vessel topple to the ground.>",
+      "responses": [
+        {
+          "text": "Right. Wood.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "exit": {
+      "id": "exit",
+      "message": "I shall be awaiting your next command with bated breath!",
+      "responses": [
+        {
+          "text": "I'll try not to keep you waiting.",
           "nextNodeId": null
         }
       ]

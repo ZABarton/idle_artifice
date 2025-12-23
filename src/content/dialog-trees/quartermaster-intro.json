@@ -9,10 +9,10 @@
   "nodes": {
     "welcome": {
       "id": "welcome",
-      "message": "Placeholder dialog - fill in with dialog editor",
+      "message": "I'm Theodore Creach! Hallo! I'm in charge of keeping what supplies we do have safe and sound! Don't try to take anything you shouldn't. I'd hate to have to stab you! Hah ha!",
       "responses": [
         {
-          "text": "Thanks",
+          "text": "Um...",
           "nextNodeId": null
         }
       ]

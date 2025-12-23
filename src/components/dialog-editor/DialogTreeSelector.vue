@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useDialogEditorStore } from '@/stores/dialogEditor'
 import type { DialogTree } from '@/types/dialogs'
+import { getPublicImagePath } from '@/utils/imageHelpers'
 
 const store = useDialogEditorStore()
 
@@ -198,6 +199,17 @@ function createNewTree() {
             "
           />
         </div>
+        <div v-if="store.activeTree.portrait.path" class="metadata-row">
+          <label>Portrait Preview:</label>
+          <div class="portrait-preview-container">
+            <img
+              :src="getPublicImagePath(store.activeTree.portrait.path)"
+              :alt="store.activeTree.portrait.alt"
+              @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+              class="portrait-preview-image"
+            />
+          </div>
+        </div>
         <div class="metadata-row">
           <label>Start Node:</label>
           <span class="readonly-value">{{ store.activeTree.startNodeId }}</span>
@@ -328,5 +340,23 @@ input[type='text']:focus {
   border-radius: 4px;
   font-size: 0.9rem;
   color: #333;
+}
+
+.portrait-preview-container {
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.5rem;
+  background-color: #f9f9f9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+}
+
+.portrait-preview-image {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 </style>

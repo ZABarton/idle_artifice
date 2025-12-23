@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useDialogEditorStore } from '@/stores/dialogEditor'
+import { getPublicImagePath } from '@/utils/imageHelpers'
 
 const store = useDialogEditorStore()
 
@@ -142,11 +143,24 @@ const availableNodeIds = computed(() => {
           v-model="localPortraitPath"
           @blur="savePortrait"
           type="text"
-          placeholder="images/portraits/character.png"
+          placeholder="images/portraits/character.png (or /images/portraits/character.png)"
         />
 
         <label class="field-label">Alt Text</label>
         <input v-model="localPortraitAlt" @blur="savePortrait" type="text" placeholder="Portrait description" />
+
+        <!-- Image Preview -->
+        <div v-if="localPortraitPath" class="portrait-preview">
+          <label class="field-label">Preview</label>
+          <div class="preview-container">
+            <img
+              :src="getPublicImagePath(localPortraitPath)"
+              :alt="localPortraitAlt || 'Portrait preview'"
+              @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+              class="preview-image"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -315,6 +329,31 @@ select:focus {
   flex-direction: column;
   gap: 0.5rem;
   padding-left: 1.5rem;
+}
+
+.portrait-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.preview-container {
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.5rem;
+  background-color: #f9f9f9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 150px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .responses-list {
