@@ -1,0 +1,12 @@
+{
+  "id": "opening-story-1",
+  "title": "The Journey's End",
+  "content": "After weeks of travel through dense wilderness, you finally arrive at the clearing. The Academy looms before you—its once-grand towers now weathered, windows dark, gates hanging loose on rusted hinges.\n\nThis was supposed to be a prestigious posting. The letters never mentioned it had been abandoned.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "First tutorial in opening story sequence"
+    }
+  ],
+  "showOnce": true
+}

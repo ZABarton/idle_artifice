@@ -1,0 +1,12 @@
+{
+  "id": "opening-story-2",
+  "title": "The Academy's Purpose",
+  "content": "Your orders were clear, even if the situation wasn't: The Frontier Academy was established generations ago to study the wilderness and craft magical items from its resources.\n\nExplorers would venture into unknown territories, returning with rare materials. Artificers would transform those materials into wonders.\n\nBut something happened. The explorers stopped returning. The artificers departed. The wilderness crept closer.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Second tutorial in opening story sequence"
+    }
+  ],
+  "showOnce": true
+}
