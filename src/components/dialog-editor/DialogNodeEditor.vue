@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useDialogEditorStore } from '@/stores/dialogEditor'
+import { getPublicImagePath } from '@/utils/imageHelpers'
 
 const store = useDialogEditorStore()
 
@@ -83,6 +84,12 @@ function handleDeleteResponse(index: number) {
   }
 }
 
+function handleMoveResponse(index: number, direction: 'up' | 'down') {
+  if (store.selectedNodeId) {
+    store.moveResponse(store.selectedNodeId, index, direction)
+  }
+}
+
 function handleCreateNodeFromResponse(index: number) {
   const newNodeId = prompt('Enter new node ID:')
   if (newNodeId && store.selectedNodeId) {
@@ -136,11 +143,24 @@ const availableNodeIds = computed(() => {
           v-model="localPortraitPath"
           @blur="savePortrait"
           type="text"
-          placeholder="images/portraits/character.png"
+          placeholder="images/portraits/character.png (or /images/portraits/character.png)"
         />
 
         <label class="field-label">Alt Text</label>
         <input v-model="localPortraitAlt" @blur="savePortrait" type="text" placeholder="Portrait description" />
+
+        <!-- Image Preview -->
+        <div v-if="localPortraitPath" class="portrait-preview">
+          <label class="field-label">Preview</label>
+          <div class="preview-container">
+            <img
+              :src="getPublicImagePath(localPortraitPath)"
+              :alt="localPortraitAlt || 'Portrait preview'"
+              @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
+              class="preview-image"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -155,7 +175,27 @@ const availableNodeIds = computed(() => {
           :key="index"
           class="response-item"
         >
-          <div class="response-header">Response {{ index + 1 }}</div>
+          <div class="response-header">
+            <span>Response {{ index + 1 }}</span>
+            <div class="reorder-buttons">
+              <button
+                @click="handleMoveResponse(index, 'up')"
+                :disabled="index === 0"
+                class="btn-reorder"
+                title="Move up"
+              >
+                ▲
+              </button>
+              <button
+                @click="handleMoveResponse(index, 'down')"
+                :disabled="index === store.selectedNode.responses.length - 1"
+                class="btn-reorder"
+                title="Move down"
+              >
+                ▼
+              </button>
+            </div>
+          </div>
 
           <label class="field-label">Text</label>
           <input
@@ -291,6 +331,31 @@ select:focus {
   padding-left: 1.5rem;
 }
 
+.portrait-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.preview-container {
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.5rem;
+  background-color: #f9f9f9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 150px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
 .responses-list {
   display: flex;
   flex-direction: column;
@@ -312,6 +377,40 @@ select:focus {
   font-weight: 600;
   color: #666;
   margin-bottom: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.reorder-buttons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.btn-reorder {
+  padding: 0.25rem 0.5rem;
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-reorder:hover:not(:disabled) {
+  background-color: #2196f3;
+  color: white;
+}
+
+.btn-reorder:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .response-text {

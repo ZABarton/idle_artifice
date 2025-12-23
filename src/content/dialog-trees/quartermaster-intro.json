@@ -1,0 +1,21 @@
+{
+  "id": "quartermaster-intro",
+  "characterName": "Theodore Creach",
+  "portrait": {
+    "path": "images/portraits/quartermaster.png",
+    "alt": "Theodore Creach portrait"
+  },
+  "startNodeId": "welcome",
+  "nodes": {
+    "welcome": {
+      "id": "welcome",
+      "message": "I'm Theodore Creach! Hallo! I'm in charge of keeping what supplies we do have safe and sound! Don't try to take anything you shouldn't. I'd hate to have to stab you! Hah ha!",
+      "responses": [
+        {
+          "text": "Um...",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

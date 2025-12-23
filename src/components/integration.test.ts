@@ -106,17 +106,19 @@ describe('Integration Tests', () => {
       await academyPolygon!.trigger('click')
       await wrapper.vm.$nextTick()
 
-      // Find and click Shop feature (inline)
+      // Find and click Quartermaster feature (inline)
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
-      const shopCard = featureCards.find((card) => card.props('feature').id === 'academy-shop')
+      const quartermasterCard = featureCards.find(
+        (card) => card.props('feature').id === 'academy-quartermaster'
+      )
 
-      await shopCard!.trigger('click')
+      await quartermasterCard!.trigger('click')
       await wrapper.vm.$nextTick()
 
-      // Shop should be active
-      const shopFeature = areaMapStore.getFeatureById('academy-shop')
-      expect(shopFeature?.isActive).toBe(true)
-      expect(areaMapStore.activeFeatureId).toBe('academy-shop')
+      // Quartermaster should be active
+      const quartermasterFeature = areaMapStore.getFeatureById('academy-quartermaster')
+      expect(quartermasterFeature?.isActive).toBe(true)
+      expect(areaMapStore.activeFeatureId).toBe('academy-quartermaster')
     })
 
     it('shows navigation feature content when clicked', async () => {
@@ -155,11 +157,13 @@ describe('Integration Tests', () => {
 
       // Activate a feature
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
-      const shopCard = featureCards.find((card) => card.props('feature').id === 'academy-shop')
-      await shopCard!.trigger('click')
+      const quartermasterCard = featureCards.find(
+        (card) => card.props('feature').id === 'academy-quartermaster'
+      )
+      await quartermasterCard!.trigger('click')
       await wrapper.vm.$nextTick()
 
-      expect(areaMapStore.activeFeatureId).toBe('academy-shop')
+      expect(areaMapStore.activeFeatureId).toBe('academy-quartermaster')
 
       // Navigate back
       await wrapper.find('.area-map-header__close').trigger('click')

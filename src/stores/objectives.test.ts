@@ -245,8 +245,8 @@ describe('useObjectivesStore', () => {
       store.completeObjective('visit-academy')
 
       store.updateSubtask('explore-features', 'visit-foundry', true)
-      store.updateSubtask('explore-features', 'visit-shop', true)
-      store.updateSubtask('explore-features', 'visit-workshop', true)
+      store.updateSubtask('explore-features', 'visit-quartermaster', true)
+      store.updateSubtask('explore-features', 'visit-tavern', true)
 
       const objective = store.getObjectiveById('explore-features')
       expect(objective?.status).toBe('completed')

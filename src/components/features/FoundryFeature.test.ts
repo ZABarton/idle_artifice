@@ -34,7 +34,7 @@ describe('FoundryFeature', () => {
 
       const button = wrapper.find('.open-button')
       expect(button.exists()).toBe(true)
-      expect(button.text()).toBe('Open Foundry Puzzle')
+      expect(button.text()).toBe('Enter Foundry')
     })
   })
 

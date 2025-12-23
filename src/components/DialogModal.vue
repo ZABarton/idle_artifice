@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useDialogsStore } from '@/stores/dialogs'
+import { getPublicImagePath } from '@/utils/imageHelpers'
 
 const dialogsStore = useDialogsStore()
 
@@ -27,7 +28,7 @@ function handleModalClick(event: MouseEvent) {
         <div class="dialog-portrait">
           <img
             v-if="currentModal.portrait.path"
-            :src="currentModal.portrait.path"
+            :src="getPublicImagePath(currentModal.portrait.path)"
             :alt="currentModal.portrait.alt"
             class="portrait-image"
           />
