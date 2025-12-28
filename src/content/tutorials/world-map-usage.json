@@ -1,0 +1,12 @@
+{
+  "id": "world-map-usage",
+  "title": "Using the World Map",
+  "content": "This is the **World Map**, showing all explored areas around Camp Sagora.\n\n**Green hexes** are areas you can visit. Click on the **Academy hex** to the east to view your main base and begin building up your facilities.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Triggered on first World Map view"
+    }
+  ],
+  "showOnce": true
+}

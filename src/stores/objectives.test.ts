@@ -18,29 +18,29 @@ describe('useObjectivesStore', () => {
 
     it('should auto-track first unfinished main objective', () => {
       const store = useObjectivesStore()
-      expect(store.trackedObjectiveId).toBe('visit-academy')
+      expect(store.trackedObjectiveId).toBe('talk-to-harbormaster')
       expect(store.getTrackedObjective?.category).toBe('main')
       expect(store.getTrackedObjective?.status).not.toBe('completed')
     })
 
     it('should have correct objective data structure', () => {
       const store = useObjectivesStore()
-      const visitAcademy = store.getObjectiveById('visit-academy')
+      const talkToHarbormaster = store.getObjectiveById('talk-to-harbormaster')
 
-      expect(visitAcademy).toBeDefined()
-      expect(visitAcademy?.title).toBe('Visit the Academy')
-      expect(visitAcademy?.status).toBe('active')
-      expect(visitAcademy?.category).toBe('main')
-      expect(visitAcademy?.order).toBe(1)
+      expect(talkToHarbormaster).toBeDefined()
+      expect(talkToHarbormaster?.title).toBe('Talk to the Harbormaster')
+      expect(talkToHarbormaster?.status).toBe('active')
+      expect(talkToHarbormaster?.category).toBe('main')
+      expect(talkToHarbormaster?.order).toBe(1)
     })
   })
 
   describe('getObjectiveById', () => {
     it('should return objective by ID', () => {
       const store = useObjectivesStore()
-      const objective = store.getObjectiveById('visit-academy')
+      const objective = store.getObjectiveById('talk-to-harbormaster')
       expect(objective).toBeDefined()
-      expect(objective?.id).toBe('visit-academy')
+      expect(objective?.id).toBe('talk-to-harbormaster')
     })
 
     it('should return undefined for non-existent objective', () => {
@@ -160,10 +160,11 @@ describe('useObjectivesStore', () => {
   describe('setTrackedObjective', () => {
     it('should set tracked objective by ID', () => {
       const store = useObjectivesStore()
-      const result = store.setTrackedObjective('gather-wood')
+      // Use an active objective instead of hidden one
+      const result = store.setTrackedObjective('talk-to-harbormaster')
 
       expect(result).toBe(true)
-      expect(store.trackedObjectiveId).toBe('gather-wood')
+      expect(store.trackedObjectiveId).toBe('talk-to-harbormaster')
     })
 
     it('should return false for hidden objective', () => {
@@ -279,17 +280,17 @@ describe('useObjectivesStore', () => {
 
     it('should trigger discovery condition evaluation', () => {
       const store = useObjectivesStore()
-      store.completeObjective('visit-academy')
+      store.completeObjective('talk-to-harbormaster')
 
-      // explore-features should be revealed
-      const objective = store.getObjectiveById('explore-features')
+      // visit-academy should be revealed
+      const objective = store.getObjectiveById('visit-academy')
       expect(objective?.status).toBe('active')
     })
 
     it('should return false for already completed objective', () => {
       const store = useObjectivesStore()
-      store.completeObjective('visit-academy')
-      const result = store.completeObjective('visit-academy')
+      store.completeObjective('talk-to-harbormaster')
+      const result = store.completeObjective('talk-to-harbormaster')
       expect(result).toBe(false)
     })
 
@@ -383,43 +384,50 @@ describe('useObjectivesStore', () => {
     it('should reveal objectives when all conditions are met', () => {
       const store = useObjectivesStore()
 
-      const exploreFeaturesObjective = store.getObjectiveById('explore-features')
-      expect(exploreFeaturesObjective?.status).toBe('hidden')
+      const visitAcademyObjective = store.getObjectiveById('visit-academy')
+      expect(visitAcademyObjective?.status).toBe('hidden')
 
-      store.completeObjective('visit-academy')
+      store.completeObjective('talk-to-harbormaster')
 
-      expect(exploreFeaturesObjective?.status).toBe('active')
+      expect(visitAcademyObjective?.status).toBe('active')
     })
 
     it('should not reveal objectives if conditions are not met', () => {
       const store = useObjectivesStore()
 
-      const craftItemsObjective = store.getObjectiveById('craft-first-items')
-      expect(craftItemsObjective?.status).toBe('hidden')
+      const gatherWoodObjective = store.getObjectiveById('gather-wood')
+      expect(gatherWoodObjective?.status).toBe('hidden')
 
-      // Only complete visit-academy, not explore-features
-      store.completeObjective('visit-academy')
+      // Only complete talk-to-harbormaster, not resource-creation
+      store.completeObjective('talk-to-harbormaster')
 
       // Should still be hidden
-      expect(craftItemsObjective?.status).toBe('hidden')
+      expect(gatherWoodObjective?.status).toBe('hidden')
     })
 
     it('should handle multiple discovery conditions (AND logic)', () => {
       const store = useObjectivesStore()
 
-      // Complete first condition
+      // Complete objectives in sequence to reveal explore-features
+      store.completeObjective('talk-to-harbormaster')
+      store.objectives.find((o) => o.id === 'visit-academy')!.status = 'active'
       store.completeObjective('visit-academy')
+      store.objectives.find((o) => o.id === 'talk-to-headmaster')!.status = 'active'
+      store.completeObjective('talk-to-headmaster')
 
-      const craftItemsObjective = store.getObjectiveById('craft-first-items')
-      expect(craftItemsObjective?.status).toBe('hidden')
-
-      // Complete second condition
+      // Complete explore-features to reveal resource-creation
       const exploreFeaturesObjective = store.getObjectiveById('explore-features')
       exploreFeaturesObjective!.status = 'active'
       store.completeObjective('explore-features')
 
-      // Now should be revealed
-      expect(craftItemsObjective?.status).toBe('active')
+      const resourceCreationObjective = store.getObjectiveById('resource-creation')
+      expect(resourceCreationObjective?.status).toBe('active')
+
+      // Complete resource-creation to reveal gather-wood
+      store.completeObjective('resource-creation')
+
+      const gatherWoodObjective = store.getObjectiveById('gather-wood')
+      expect(gatherWoodObjective?.status).toBe('active')
     })
   })
 })
