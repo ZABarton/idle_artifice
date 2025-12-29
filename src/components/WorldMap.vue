@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useWorldMapStore } from '@/stores/worldMap'
+import { useNavigationStore } from '@/stores/navigation'
+import { useDialogsStore } from '@/stores/dialogs'
 import { useHexGrid } from '@/composables/useHexGrid'
 import type { HexTile } from '@/types/hex'
 
 const worldMapStore = useWorldMapStore()
+const navigationStore = useNavigationStore()
+const dialogsStore = useDialogsStore()
 const { hexToPixel } = useHexGrid()
 
 const emit = defineEmits<{
@@ -223,6 +227,12 @@ const handleKeyPress = (event: KeyboardEvent) => {
 // Set up keyboard listener on mount
 onMounted(() => {
   window.addEventListener('keypress', handleKeyPress)
+
+  // Trigger world-map-usage tutorial on first view
+  if (!navigationStore.hasViewedWorldMap) {
+    navigationStore.markWorldMapViewed()
+    dialogsStore.showTutorial('world-map-usage')
+  }
 })
 
 // Clean up on unmount

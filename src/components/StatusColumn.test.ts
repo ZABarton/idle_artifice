@@ -99,12 +99,12 @@ describe('StatusColumn', () => {
   describe('Current Objective Section', () => {
     it('displays tracked objective when one is set', () => {
       const objectivesStore = useObjectivesStore()
-      objectivesStore.setTrackedObjective('visit-academy')
+      objectivesStore.setTrackedObjective('talk-to-harbormaster')
 
       const wrapper = mount(StatusColumn)
 
       expect(wrapper.find('.objective-card').exists()).toBe(true)
-      expect(wrapper.find('.objective-title').text()).toBe('Visit the Academy')
+      expect(wrapper.find('.objective-title').text()).toBe('Talk to the Harbormaster')
     })
 
     it('displays "No Objectives Tracked" when no objective is tracked', () => {
@@ -121,7 +121,7 @@ describe('StatusColumn', () => {
     it('navigates to objectives view when objective card is clicked', async () => {
       const objectivesStore = useObjectivesStore()
       const navigationStore = useNavigationStore()
-      objectivesStore.setTrackedObjective('visit-academy')
+      objectivesStore.setTrackedObjective('talk-to-harbormaster')
 
       const wrapper = mount(StatusColumn)
 
@@ -145,8 +145,12 @@ describe('StatusColumn', () => {
 
     it('displays progress for subtask-based objectives', () => {
       const objectivesStore = useObjectivesStore()
-      // First reveal the objective by completing its prerequisite
+      // Reveal explore-features by completing the prerequisite chain
+      objectivesStore.completeObjective('talk-to-harbormaster')
+      objectivesStore.objectives.find((o) => o.id === 'visit-academy')!.status = 'active'
       objectivesStore.completeObjective('visit-academy')
+      objectivesStore.objectives.find((o) => o.id === 'talk-to-headmaster')!.status = 'active'
+      objectivesStore.completeObjective('talk-to-headmaster')
       objectivesStore.setTrackedObjective('explore-features')
 
       const wrapper = mount(StatusColumn)

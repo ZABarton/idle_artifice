@@ -10,6 +10,7 @@ import type {
 } from '@/types/dialogs'
 import { useNotificationsStore } from './notifications'
 import { useObjectivesStore } from './objectives'
+import { useWorldMapStore } from './worldMap'
 
 // LocalStorage keys
 const STORAGE_KEY_COMPLETED_TUTORIALS = 'idle-artifice-completed-tutorials'
@@ -520,7 +521,16 @@ export const useDialogsStore = defineStore('dialogs', () => {
 
     // Update objectives based on completed dialog tree
     const objectivesStore = useObjectivesStore()
-    if (conversationId === 'foundry-master-intro') {
+    if (conversationId === 'harbormaster-intro') {
+      objectivesStore.completeObjective('talk-to-harbormaster')
+      // Unlock Academy hex and reveal surrounding hexes
+      const worldMapStore = useWorldMapStore()
+      worldMapStore.exploreTile(0, 0) // Academy at (0, 0)
+      // Trigger tutorial for navigating to World Map
+      showTutorial('area-to-world')
+    } else if (conversationId === 'headmaster-intro') {
+      objectivesStore.completeObjective('talk-to-headmaster')
+    } else if (conversationId === 'foundry-master-intro') {
       objectivesStore.updateSubtask('explore-features', 'visit-foundry', true)
     } else if (conversationId === 'quartermaster-intro') {
       objectivesStore.updateSubtask('explore-features', 'visit-quartermaster', true)

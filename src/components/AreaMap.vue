@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useWorldMapStore } from '@/stores/worldMap'
 import { useAreaMapStore } from '@/stores/areaMap'
 import { useDialogsStore } from '@/stores/dialogs'
+import { useObjectivesStore } from '@/stores/objectives'
 import FeatureCard from './FeatureCard.vue'
 import FoundryFeature from './features/FoundryFeature.vue'
 import ShopFeature from './features/ShopFeature.vue'
@@ -34,6 +35,7 @@ const emit = defineEmits<{
 const worldMapStore = useWorldMapStore()
 const areaMapStore = useAreaMapStore()
 const dialogsStore = useDialogsStore()
+const objectivesStore = useObjectivesStore()
 
 // Get the tile data for this area
 const tile = computed(() => worldMapStore.getTileAt(props.q, props.r))
@@ -111,6 +113,8 @@ onMounted(() => {
   // Trigger dialog on first Academy visit
   if (tile.value?.type === 'academy' && tile.value.visitCount === 1) {
     dialogsStore.showDialogTree('headmaster-intro')
+    // Complete visit-academy objective
+    objectivesStore.completeObjective('visit-academy')
   }
 
   // Trigger dialog on first Harbor visit

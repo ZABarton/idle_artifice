@@ -1,25 +1,55 @@
 {
   "objectives": [
     {
-      "id": "visit-academy",
-      "title": "Visit the Academy",
-      "description": "Navigate to the Academy hex on the World Map to begin your journey.",
+      "id": "talk-to-harbormaster",
+      "title": "Talk to the Harbormaster",
+      "description": "Speak with the Harbormaster to learn about Camp Sagora.",
       "status": "active",
       "category": "main",
       "order": 1
     },
     {
-      "id": "explore-features",
-      "title": "Explore the Academy Features",
-      "description": "Interact with each feature in the Academy to understand your facilities.",
+      "id": "visit-academy",
+      "title": "Visit the Academy",
+      "description": "Navigate to the Academy hex on the World Map to begin building your base.",
       "status": "hidden",
       "category": "main",
       "order": 2,
       "discoveryConditions": [
         {
           "type": "objective",
+          "id": "talk-to-harbormaster",
+          "description": "Complete 'Talk to the Harbormaster'"
+        }
+      ]
+    },
+    {
+      "id": "talk-to-headmaster",
+      "title": "Talk to the Headmaster",
+      "description": "Speak with Headmaster Steinerhausen to learn about the Academy facilities.",
+      "status": "hidden",
+      "category": "main",
+      "order": 3,
+      "discoveryConditions": [
+        {
+          "type": "objective",
           "id": "visit-academy",
           "description": "Complete 'Visit the Academy'"
+        }
+      ]
+    },
+    {
+      "id": "explore-features",
+      "title": "Inspect Academy Features",
+      "description": "Familiarize yourself with the Academy facilities.",
+      "status": "hidden",
+      "category": "main",
+      "order": 4,
+      "discoveryConditions": [
+        {
+          "type": "objective",
+          "id": "talk-to-headmaster",
+          "description": "Complete 'Talk to the Headmaster'"
         }
       ],
       "subtasks": [
@@ -41,19 +71,17 @@
       ]
     },
     {
-      "id": "craft-first-items",
-      "title": "Craft Items at the Foundry",
-      "description": "Use the Foundry to craft your first magical items.",
+      "id": "resource-creation",
+      "title": "Resource Generation",
+      "description": "Learn about generating resources for your Academy.",
       "status": "hidden",
       "category": "main",
-      "order": 3,
-      "currentProgress": 0,
-      "maxProgress": 5,
+      "order": 5,
       "discoveryConditions": [
         {
           "type": "objective",
           "id": "explore-features",
-          "description": "Complete 'Explore the Academy Features'"
+          "description": "Complete 'Inspect Academy Features'"
         }
       ]
     },
@@ -61,11 +89,18 @@
       "id": "gather-wood",
       "title": "Gather Wood Resources",
       "description": "Collect wood to fuel your crafting operations.",
-      "status": "active",
+      "status": "hidden",
       "category": "secondary",
       "order": 1,
       "currentProgress": 0,
-      "maxProgress": 50
+      "maxProgress": 50,
+      "discoveryConditions": [
+        {
+          "type": "objective",
+          "id": "resource-creation",
+          "description": "Complete 'Resource Generation'"
+        }
+      ]
     }
   ]
 }

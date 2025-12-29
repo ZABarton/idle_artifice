@@ -27,6 +27,7 @@ export const useNavigationStore = defineStore('navigation', () => {
   const previousView = ref<ViewType>('world-map')
   const selectedHex = ref<{ q: number; r: number } | null>(null)
   const recentLocations = ref<RecentLocation[]>([])
+  const hasViewedWorldMap = ref<boolean>(false)
 
   // Actions
   /**
@@ -48,6 +49,13 @@ export const useNavigationStore = defineStore('navigation', () => {
     previousView.value = currentView.value
     currentView.value = 'world-map'
     // Keep selectedHex for potential breadcrumb or history features
+  }
+
+  /**
+   * Mark the World Map as viewed (for first-time tutorial triggers)
+   */
+  function markWorldMapViewed() {
+    hasViewedWorldMap.value = true
   }
 
   /**
@@ -102,6 +110,7 @@ export const useNavigationStore = defineStore('navigation', () => {
     currentView.value = 'world-map'
     selectedHex.value = null
     recentLocations.value = []
+    hasViewedWorldMap.value = false
   }
 
   return {
@@ -110,12 +119,14 @@ export const useNavigationStore = defineStore('navigation', () => {
     previousView,
     selectedHex,
     recentLocations,
+    hasViewedWorldMap,
     // Actions
     navigateToAreaMap,
     navigateToWorldMap,
     navigateToObjectivesView,
     navigateToPreviousView,
     addRecentLocation,
+    markWorldMapViewed,
     reset,
   }
 })

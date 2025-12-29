@@ -13,14 +13,14 @@ describe('WorldMap Component', () => {
   })
 
   describe('Hexagon Rendering', () => {
-    it('should render 10 hexagon polygons for first gameplay loop', () => {
+    it('should render 7 hexagon polygons for initial state', () => {
       const wrapper = mount(WorldMap)
       const polygons = wrapper.findAll('polygon')
 
-      // Each hex has 2 polygons (main tile + border layer), so 10 * 2 = 20
-      // But border layer only shows for clicked hexes, so we should have 10 visible polygons
+      // Each hex has 2 polygons (main tile + border layer), so 7 * 2 = 14
+      // But border layer only shows for clicked hexes, so we should have 7 visible polygons
       const mainPolygons = polygons.filter((p) => !p.classes('hex-border-layer'))
-      expect(mainPolygons.length).toBe(10)
+      expect(mainPolygons.length).toBe(7)
     })
 
     it('should render hexagons with flat-top orientation', () => {
@@ -74,11 +74,11 @@ describe('WorldMap Component', () => {
       const bluePolygons = polygons.filter((p) => p.attributes('fill') === '#87CEEB')
       const unexploredPolygons = polygons.filter((p) => p.attributes('fill') === '#CCCCCC')
 
-      // 2 green tiles (academy + harbor), 5 blue tiles (ocean), 3 gray (unexplored)
-      expect(greenPolygons.length).toBe(2)
+      // 1 green tile (harbor), 5 blue tiles (ocean), 1 gray (unexplored academy)
+      expect(greenPolygons.length).toBe(1)
       expect(bluePolygons.length).toBe(5)
       expect(unexploredPolygons.length).toBe(store.unexploredTiles.length)
-      expect(unexploredPolygons.length).toBe(3)
+      expect(unexploredPolygons.length).toBe(1)
     })
   })
 
@@ -87,18 +87,19 @@ describe('WorldMap Component', () => {
       const wrapper = mount(WorldMap)
       const store = useWorldMapStore()
 
-      // Find the explored academy tile polygon
-      const academyTile = store.academyTile
-      expect(academyTile).toBeDefined()
+      // Find the explored harbor tile polygon
+      const harborTile = store.getTileAt(-1, 0)
+      expect(harborTile).toBeDefined()
+      expect(harborTile?.explorationStatus).toBe('explored')
 
       const polygons = wrapper.findAll('.hex-tile polygon')
-      // Find the academy polygon (should be the first one with explored status)
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
+      // Find the harbor polygon (green, explored)
+      const harborPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
 
-      expect(academyPolygon).toBeDefined()
+      expect(harborPolygon).toBeDefined()
 
       // Click the polygon
-      await academyPolygon!.trigger('click')
+      await harborPolygon!.trigger('click')
 
       // Verify event was emitted
       expect(wrapper.emitted('hexSelected')).toBeDefined()
@@ -106,7 +107,7 @@ describe('WorldMap Component', () => {
 
       // Verify the emitted tile data
       const emittedTile = wrapper.emitted('hexSelected')![0][0]
-      expect(emittedTile).toEqual(academyTile)
+      expect(emittedTile).toEqual(harborTile)
     })
 
     it('should not emit hexSelected event when unexplored hex is clicked', async () => {
@@ -135,7 +136,7 @@ describe('WorldMap Component', () => {
       }
 
       // If we got here, no errors were thrown
-      expect(polygons.length).toBe(10)
+      expect(polygons.length).toBe(7)
     })
 
     it('should not emit event if drag occurred before click', async () => {
@@ -170,7 +171,7 @@ describe('WorldMap Component', () => {
       }))
 
       const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
+      const harborPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
 
       // Simulate drag: mousedown, mousemove with distance > 5px, mouseup
       await svg.trigger('mousedown', { clientX: 100, clientY: 100 })
@@ -178,7 +179,7 @@ describe('WorldMap Component', () => {
       await svg.trigger('mouseup')
 
       // Now click the hex
-      await academyPolygon!.trigger('click')
+      await harborPolygon!.trigger('click')
 
       // Event should not be emitted because drag distance was > 5px
       expect(wrapper.emitted('hexSelected')).toBeUndefined()
@@ -362,14 +363,14 @@ describe('WorldMap Component', () => {
       const wrapper = mount(WorldMap)
       const store = useWorldMapStore()
 
-      // Get the academy tile
-      const academyTile = store.academyTile!
+      // Get the harbor tile (explored)
+      const harborTile = store.getTileAt(-1, 0)!
 
-      // Find and click the academy polygon
+      // Find and click the harbor polygon
       const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
+      const harborPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
 
-      await academyPolygon!.trigger('click')
+      await harborPolygon!.trigger('click')
 
       // Verify the event contains all necessary data for view switching
       expect(wrapper.emitted('hexSelected')).toBeDefined()
@@ -380,10 +381,10 @@ describe('WorldMap Component', () => {
       expect(emittedData).toHaveProperty('explorationStatus')
       expect(emittedData).toHaveProperty('type')
 
-      expect(emittedData.q).toBe(academyTile.q)
-      expect(emittedData.r).toBe(academyTile.r)
+      expect(emittedData.q).toBe(harborTile.q)
+      expect(emittedData.r).toBe(harborTile.r)
       expect(emittedData.explorationStatus).toBe('explored')
-      expect(emittedData.type).toBe('academy')
+      expect(emittedData.type).toBe('harbor')
     })
   })
 })

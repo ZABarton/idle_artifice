@@ -31,8 +31,8 @@ describe('ObjectivesView', () => {
 
       await wrapper.find('.objectives-view-header__close').trigger('click')
 
-      // Should navigate to previous view (world-map is default)
-      expect(navigationStore.currentView).toBe('world-map')
+      // Should navigate to previous view (area-map is default since app starts at Harbor)
+      expect(navigationStore.currentView).toBe('area-map')
     })
 
     it('emits back event when close button is clicked', async () => {
@@ -72,8 +72,16 @@ describe('ObjectivesView', () => {
     it('renders active secondary objectives section when available', () => {
       const objectivesStore = useObjectivesStore()
 
-      // Complete visit-academy to reveal explore-features (secondary)
+      // Complete the chain to reveal gather-wood (secondary objective)
+      objectivesStore.completeObjective('talk-to-harbormaster')
+      objectivesStore.objectives.find((o) => o.id === 'visit-academy')!.status = 'active'
       objectivesStore.completeObjective('visit-academy')
+      objectivesStore.objectives.find((o) => o.id === 'talk-to-headmaster')!.status = 'active'
+      objectivesStore.completeObjective('talk-to-headmaster')
+      objectivesStore.objectives.find((o) => o.id === 'explore-features')!.status = 'active'
+      objectivesStore.completeObjective('explore-features')
+      objectivesStore.objectives.find((o) => o.id === 'resource-creation')!.status = 'active'
+      objectivesStore.completeObjective('resource-creation')
 
       const wrapper = mount(ObjectivesView)
 
@@ -322,15 +330,25 @@ describe('ObjectivesView', () => {
 
     it('updates tracked badge when tracked objective changes', async () => {
       const objectivesStore = useObjectivesStore()
-      objectivesStore.setTrackedObjective('visit-academy')
+      objectivesStore.setTrackedObjective('talk-to-harbormaster')
 
       const wrapper = mount(ObjectivesView)
 
       const trackedBadge = wrapper.find('.tracked-badge')
       expect(trackedBadge.exists()).toBe(true)
 
-      // Change tracked objective
+      // Complete the chain to reveal gather-wood
+      objectivesStore.completeObjective('talk-to-harbormaster')
+      objectivesStore.objectives.find((o) => o.id === 'visit-academy')!.status = 'active'
       objectivesStore.completeObjective('visit-academy')
+      objectivesStore.objectives.find((o) => o.id === 'talk-to-headmaster')!.status = 'active'
+      objectivesStore.completeObjective('talk-to-headmaster')
+      objectivesStore.objectives.find((o) => o.id === 'explore-features')!.status = 'active'
+      objectivesStore.completeObjective('explore-features')
+      objectivesStore.objectives.find((o) => o.id === 'resource-creation')!.status = 'active'
+      objectivesStore.completeObjective('resource-creation')
+
+      // Change tracked objective to gather-wood
       objectivesStore.setTrackedObjective('gather-wood')
 
       await wrapper.vm.$nextTick()

@@ -1,0 +1,13 @@
+{
+  "id": "resource-creation-intro",
+  "title": "Resource Generation",
+  "content": "You've familiarized yourself with the Academy facilities!\n\nIn future updates, you'll be able to generate resources and craft magical items to equip your explorers. For now, continue exploring the area and completing objectives.",
+  "triggerConditions": [
+    {
+      "type": "objective",
+      "id": "explore-features",
+      "description": "Triggered when explore-features objective completes"
+    }
+  ],
+  "showOnce": true
+}
