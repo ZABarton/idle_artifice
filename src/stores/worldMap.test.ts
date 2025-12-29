@@ -11,36 +11,35 @@ describe('useWorldMapStore', () => {
   })
 
   describe('initial state', () => {
-    it('should initialize with 10 hexagons', () => {
+    it('should initialize with 7 hexagons', () => {
       const store = useWorldMapStore()
-      expect(store.hexTiles).toHaveLength(10)
+      expect(store.hexTiles).toHaveLength(7)
     })
 
-    it('should have 7 explored tiles (academy, harbor, and 5 ocean)', () => {
+    it('should have 6 explored tiles (harbor and 5 ocean)', () => {
       const store = useWorldMapStore()
-      expect(store.exploredTiles).toHaveLength(7)
+      expect(store.exploredTiles).toHaveLength(6)
 
-      const academy = store.exploredTiles.find(tile => tile.type === 'academy')
       const harbor = store.exploredTiles.find(tile => tile.type === 'harbor')
       const oceanTiles = store.exploredTiles.filter(tile => tile.type === 'ocean')
 
-      expect(academy).toBeDefined()
       expect(harbor).toBeDefined()
       expect(oceanTiles).toHaveLength(5)
     })
 
-    it('should have 3 unexplored tiles', () => {
+    it('should have 1 unexplored tile (Academy)', () => {
       const store = useWorldMapStore()
-      expect(store.unexploredTiles).toHaveLength(3)
+      expect(store.unexploredTiles).toHaveLength(1)
+      expect(store.unexploredTiles[0].type).toBe('academy')
     })
 
-    it('should have academy tile at origin (0, 0)', () => {
+    it('should have academy tile at origin (0, 0) as unexplored', () => {
       const store = useWorldMapStore()
       expect(store.academyTile).toBeDefined()
       expect(store.academyTile?.q).toBe(0)
       expect(store.academyTile?.r).toBe(0)
-      expect(store.academyTile?.explorationStatus).toBe('explored')
-      expect(store.academyTile?.clickable).toBe(true)
+      expect(store.academyTile?.explorationStatus).toBe('unexplored')
+      expect(store.academyTile?.clickable).toBe(false)
     })
 
     it('should have harbor at (-1, 0)', () => {
@@ -80,17 +79,23 @@ describe('useWorldMapStore', () => {
   })
 
   describe('exploreTile', () => {
-    it('should mark a tile as explored', () => {
+    it('should mark a tile as explored and reveal surrounding hexes', () => {
       const store = useWorldMapStore()
-      const unexploredTile = store.unexploredTiles[0]
+      const academyTile = store.unexploredTiles[0]
 
-      expect(unexploredTile.explorationStatus).toBe('unexplored')
+      expect(academyTile.explorationStatus).toBe('unexplored')
+      expect(store.hexTiles).toHaveLength(7) // Initial state
 
-      store.exploreTile(unexploredTile.q, unexploredTile.r)
+      store.exploreTile(academyTile.q, academyTile.r)
 
-      expect(unexploredTile.explorationStatus).toBe('explored')
-      expect(store.exploredTiles).toHaveLength(8)
-      expect(store.unexploredTiles).toHaveLength(2)
+      expect(academyTile.explorationStatus).toBe('explored')
+      expect(academyTile.clickable).toBe(true)
+
+      // After exploring Academy (0, 0), surrounding hexes should be revealed
+      // Academy has 6 neighbors, but 3 already exist (Harbor, 2 ocean hexes)
+      // So 3 new unexplored hexes should be added
+      expect(store.hexTiles.length).toBeGreaterThan(7)
+      expect(store.exploredTiles).toHaveLength(7) // 6 original + Academy
     })
 
     it('should do nothing for non-existent tile', () => {
@@ -145,9 +150,9 @@ describe('useWorldMapStore', () => {
       store.resetMap()
 
       // Verify reset
-      expect(store.hexTiles).toHaveLength(10)
-      expect(store.exploredTiles).toHaveLength(7)
-      expect(store.unexploredTiles).toHaveLength(3)
+      expect(store.hexTiles).toHaveLength(7)
+      expect(store.exploredTiles).toHaveLength(6) // Harbor + 5 ocean
+      expect(store.unexploredTiles).toHaveLength(1) // Academy
     })
   })
 })

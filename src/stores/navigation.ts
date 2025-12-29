@@ -23,9 +23,9 @@ export interface RecentLocation {
  */
 export const useNavigationStore = defineStore('navigation', () => {
   // State
-  const currentView = ref<ViewType>('area-map')
-  const previousView = ref<ViewType>('area-map')
-  const selectedHex = ref<{ q: number; r: number } | null>({ q: -1, r: 0 }) // Start at Harbor
+  const currentView = ref<ViewType>('world-map')
+  const previousView = ref<ViewType>('world-map')
+  const selectedHex = ref<{ q: number; r: number } | null>(null)
   const recentLocations = ref<RecentLocation[]>([])
   const hasViewedWorldMap = ref<boolean>(false)
 
@@ -107,8 +107,8 @@ export const useNavigationStore = defineStore('navigation', () => {
    * Reset navigation state
    */
   function reset() {
-    currentView.value = 'area-map'
-    selectedHex.value = { q: -1, r: 0 } // Reset to Harbor
+    currentView.value = 'world-map'
+    selectedHex.value = null
     recentLocations.value = []
     hasViewedWorldMap.value = false
   }

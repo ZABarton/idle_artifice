@@ -31,29 +31,30 @@ export function useHexGrid() {
 
   /**
    * Generates the initial hexagon layout for the first gameplay loop
-   * Returns 10 hexes total:
-   * - Academy at (0, 0) - explored, clickable
+   * Returns 7 hexes total:
    * - Harbor at (-1, 0) - explored, clickable
+   * - Academy at (0, 0) - unexplored (visible because adjacent to Harbor)
    * - 5 ocean hexes surrounding Harbor - explored, NOT clickable
-   * - 3 unexplored land hexes to the NE, SE, and S of Academy
+   *
+   * The 3 land hexes around Academy (NE, SE, S) are added when Academy becomes explored
    */
   const generateInitialMap = (): HexTile[] => {
     return [
-      // Academy - origin point
-      {
-        q: 0,
-        r: 0,
-        explorationStatus: 'explored',
-        type: 'academy',
-        clickable: true,
-      },
-      // Harbor - NW of Academy
+      // Harbor - starting point, NW of Academy
       {
         q: -1,
         r: 0,
         explorationStatus: 'explored',
         type: 'harbor',
         clickable: true,
+      },
+      // Academy - origin point, initially unexplored (visible as neighbor of Harbor)
+      {
+        q: 0,
+        r: 0,
+        explorationStatus: 'unexplored',
+        type: 'academy',
+        clickable: false,
       },
       // Ocean hexes - all neighbors of Harbor except Academy
       // Harbor's N neighbor
@@ -95,25 +96,6 @@ export function useHexGrid() {
         explorationStatus: 'explored',
         type: 'ocean',
         clickable: false,
-      },
-      // Unexplored land hexes - NE, SE, S of Academy
-      // Academy's NE neighbor
-      {
-        q: 1,
-        r: -1,
-        explorationStatus: 'unexplored',
-      },
-      // Academy's SE neighbor
-      {
-        q: 1,
-        r: 0,
-        explorationStatus: 'unexplored',
-      },
-      // Academy's S neighbor
-      {
-        q: 0,
-        r: 1,
-        explorationStatus: 'unexplored',
       },
     ]
   }

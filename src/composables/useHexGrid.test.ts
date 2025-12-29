@@ -5,22 +5,22 @@ describe('useHexGrid', () => {
   const hexGrid = useHexGrid()
 
   describe('generateInitialMap', () => {
-    it('should generate 10 hexagons for first gameplay loop', () => {
+    it('should generate 7 hexagons for initial state', () => {
       const tiles = hexGrid.generateInitialMap()
-      expect(tiles).toHaveLength(10)
+      expect(tiles).toHaveLength(7)
     })
 
-    it('should have academy at origin (0, 0)', () => {
+    it('should have academy at origin (0, 0) as unexplored', () => {
       const tiles = hexGrid.generateInitialMap()
       const academy = tiles.find((tile) => tile.q === 0 && tile.r === 0)
 
       expect(academy).toBeDefined()
-      expect(academy?.explorationStatus).toBe('explored')
+      expect(academy?.explorationStatus).toBe('unexplored')
       expect(academy?.type).toBe('academy')
-      expect(academy?.clickable).toBe(true)
+      expect(academy?.clickable).toBe(false)
     })
 
-    it('should have harbor at (-1, 0)', () => {
+    it('should have harbor at (-1, 0) as explored', () => {
       const tiles = hexGrid.generateInitialMap()
       const harbor = tiles.find((tile) => tile.q === -1 && tile.r === 0)
 
@@ -41,26 +41,27 @@ describe('useHexGrid', () => {
       })
     })
 
-    it('should have 3 unexplored land hexes', () => {
+    it('should have 1 unexplored hex (the Academy)', () => {
       const tiles = hexGrid.generateInitialMap()
       const unexploredHexes = tiles.filter((tile) => tile.explorationStatus === 'unexplored')
 
-      expect(unexploredHexes).toHaveLength(3)
-      unexploredHexes.forEach((hex) => {
-        expect(hex.type).toBeUndefined()
-      })
+      expect(unexploredHexes).toHaveLength(1)
+      expect(unexploredHexes[0].q).toBe(0)
+      expect(unexploredHexes[0].r).toBe(0)
+      expect(unexploredHexes[0].type).toBe('academy')
     })
 
-    it('should have unexplored hexes at (1, -1), (1, 0), and (0, 1)', () => {
+    it('should not include land hexes around Academy initially', () => {
       const tiles = hexGrid.generateInitialMap()
 
-      const unexplored1 = tiles.find((tile) => tile.q === 1 && tile.r === -1)
-      const unexplored2 = tiles.find((tile) => tile.q === 1 && tile.r === 0)
-      const unexplored3 = tiles.find((tile) => tile.q === 0 && tile.r === 1)
+      // These hexes should NOT exist in the initial map
+      const landHex1 = tiles.find((tile) => tile.q === 1 && tile.r === -1)
+      const landHex2 = tiles.find((tile) => tile.q === 1 && tile.r === 0)
+      const landHex3 = tiles.find((tile) => tile.q === 0 && tile.r === 1)
 
-      expect(unexplored1?.explorationStatus).toBe('unexplored')
-      expect(unexplored2?.explorationStatus).toBe('unexplored')
-      expect(unexplored3?.explorationStatus).toBe('unexplored')
+      expect(landHex1).toBeUndefined()
+      expect(landHex2).toBeUndefined()
+      expect(landHex3).toBeUndefined()
     })
   })
 

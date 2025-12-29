@@ -10,6 +10,7 @@ import type {
 } from '@/types/dialogs'
 import { useNotificationsStore } from './notifications'
 import { useObjectivesStore } from './objectives'
+import { useWorldMapStore } from './worldMap'
 
 // LocalStorage keys
 const STORAGE_KEY_COMPLETED_TUTORIALS = 'idle-artifice-completed-tutorials'
@@ -522,6 +523,9 @@ export const useDialogsStore = defineStore('dialogs', () => {
     const objectivesStore = useObjectivesStore()
     if (conversationId === 'harbormaster-intro') {
       objectivesStore.completeObjective('talk-to-harbormaster')
+      // Unlock Academy hex and reveal surrounding hexes
+      const worldMapStore = useWorldMapStore()
+      worldMapStore.exploreTile(0, 0) // Academy at (0, 0)
       // Trigger tutorial for navigating to World Map
       showTutorial('area-to-world')
     } else if (conversationId === 'headmaster-intro') {

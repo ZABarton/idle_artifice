@@ -1,7 +1,7 @@
 {
   "id": "area-to-world",
   "title": "Navigating to the World Map",
-  "content": "To explore other areas, you'll need to return to the **World Map**.\n\nClick the **close button** (×) in the top-right corner of the screen to navigate back to the World Map and see the surrounding areas.",
+  "content": "To explore other areas, you'll need to return to the **World Map**.\n\nClick the **close button** (×) in the top-right corner of the screen to return to the World Map and keep exploring.",
   "triggerConditions": [
     {
       "type": "immediate",

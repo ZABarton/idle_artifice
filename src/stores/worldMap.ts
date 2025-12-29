@@ -85,7 +85,39 @@ export const useWorldMapStore = defineStore('worldMap', () => {
     const tile = hexTiles.value.find((t) => t.q === q && t.r === r)
     if (tile) {
       tile.explorationStatus = 'explored'
+      if (!tile.clickable) {
+        tile.clickable = true
+      }
+      // Reveal surrounding hexes when this hex is explored
+      revealSurroundingHexes(q, r)
     }
+  }
+
+  /**
+   * Reveal all 6 surrounding hexes for a newly explored tile
+   * Adds unexplored hexes for neighbors that don't already exist
+   * Following rule: "An explored hex should always show the six surrounding hexes"
+   */
+  function revealSurroundingHexes(q: number, r: number) {
+    const { getNeighbors } = useHexGrid()
+    const neighbors = getNeighbors(q, r)
+
+    neighbors.forEach((neighbor) => {
+      // Check if this neighbor already exists in the map
+      const existingTile = hexTiles.value.find((t) => t.q === neighbor.q && t.r === neighbor.r)
+
+      // If it doesn't exist, add it as an unexplored hex
+      if (!existingTile) {
+        // TODO: In the future, read from predefined map configuration to determine hex type
+        // For now, we add generic unexplored hexes
+        hexTiles.value.push({
+          q: neighbor.q,
+          r: neighbor.r,
+          explorationStatus: 'unexplored',
+          clickable: false,
+        })
+      }
+    })
   }
 
   function addTile(tile: HexTile) {
@@ -123,6 +155,7 @@ export const useWorldMapStore = defineStore('worldMap', () => {
     academyTile,
     // Actions
     exploreTile,
+    revealSurroundingHexes,
     addTile,
     incrementVisitCount,
     resetMap,
