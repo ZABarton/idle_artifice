@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import AreaMap from './AreaMap.vue'
 import { useWorldMapStore } from '@/stores/worldMap'
 import { useAreaMapStore } from '@/stores/areaMap'
+import { academyConfig } from '@/config/area-maps/academy'
 
 describe('AreaMap', () => {
   beforeEach(() => {
@@ -12,8 +13,8 @@ describe('AreaMap', () => {
     setActivePinia(createPinia())
     const areaMapStore = useAreaMapStore()
 
-    // Initialize academy area
-    areaMapStore.initializeAcademy(0, 0)
+    // Initialize academy area using config
+    areaMapStore.initializeAreaFromConfig(academyConfig, 0, 0)
   })
 
   describe('Rendering', () => {
