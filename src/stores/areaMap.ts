@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { AreaMap } from '@/types/areaMap'
 import type { Feature } from '@/types/feature'
+import type { AreaMapConfig } from '@/types/areaMapConfig'
 
 /**
  * Area Map Store
@@ -137,75 +138,40 @@ export const useAreaMapStore = defineStore('areaMap', () => {
     activeFeatureId.value = null
   }
 
-  // Initialize Academy area with starter data
-  // This will be moved to JSON config in a future milestone
-  function initializeAcademy(q: number, r: number) {
-    const academyArea: AreaMap = {
-      areaType: 'academy',
+  /**
+   * Initialize area from configuration
+   * Converts FeatureConfig to Feature and creates AreaMap
+   */
+  function initializeAreaFromConfig(config: AreaMapConfig, q: number, r: number) {
+    // Convert FeatureConfig to Feature by removing config-specific fields
+    const features: Feature[] = config.features.map((featureConfig) => {
+      // Use the first available position as the default position
+      // (actual position will be determined dynamically based on layout)
+      const defaultPosition = Object.values(featureConfig.positions)[0] || { x: 0, y: 0 }
+
+      return {
+        id: featureConfig.id,
+        type: featureConfig.type,
+        name: featureConfig.name,
+        description: featureConfig.description,
+        icon: featureConfig.icon,
+        position: defaultPosition,
+        state: featureConfig.state,
+        isActive: featureConfig.isActive,
+        prerequisites: featureConfig.prerequisites,
+        interactionType: featureConfig.interactionType,
+      }
+    })
+
+    const areaMap: AreaMap = {
+      areaType: config.areaType,
       coordinates: { q, r },
-      background: '#e8dcc4', // Light beige/stone color
-      features: [
-        {
-          id: 'academy-foundry',
-          type: 'foundry',
-          name: 'Foundry',
-          description: 'Craft equipment for your explorers.',
-          icon: '🔨', // Placeholder emoji icon
-          position: { x: -130, y: -110 }, // Top-left, centered 2x2 grid with 20-unit gaps
-          state: 'unlocked',
-          isActive: false,
-          interactionType: 'navigation',
-        },
-        {
-          id: 'academy-quartermaster',
-          type: 'quartermaster',
-          name: 'Quartermaster',
-          description: "Manage your camp's supplies.",
-          icon: '📦', // Placeholder emoji icon
-          position: { x: 10, y: -110 }, // Top-right, centered 2x2 grid with 20-unit gaps
-          state: 'unlocked',
-          isActive: false,
-          interactionType: 'inline',
-        },
-        {
-          id: 'academy-tavern',
-          type: 'tavern',
-          name: 'Tavern',
-          description: "Manage your camp's explorers.",
-          icon: '🍺', // Placeholder emoji icon
-          position: { x: -130, y: 10 }, // Bottom-left, centered 2x2 grid with 20-unit gaps
-          state: 'unlocked',
-          isActive: false,
-          interactionType: 'navigation',
-        },
-      ],
+      background: config.background,
+      backgroundImage: config.backgroundImage,
+      features,
     }
 
-    initializeArea(academyArea)
-  }
-
-  // Initialize Harbor area with starter data
-  // This will be moved to JSON config in a future milestone
-  function initializeHarbor(q: number, r: number) {
-    const harborArea: AreaMap = {
-      areaType: 'harbor',
-      coordinates: { q, r },
-      background: '#d3d3d3', // Light gray
-      features: [
-        {
-          id: 'harbor-wharf',
-          type: 'wharf',
-          name: 'The Wharf',
-          icon: '⚓', // Anchor emoji icon
-          position: { x: 0, y: 0 }, // Centered
-          state: 'locked',
-          isActive: false,
-          interactionType: 'navigation',
-        },
-      ],
-    }
-
-    initializeArea(harborArea)
+    initializeArea(areaMap)
   }
 
   return {
@@ -218,12 +184,11 @@ export const useAreaMapStore = defineStore('areaMap', () => {
     getFeatureById,
     // Actions
     initializeArea,
+    initializeAreaFromConfig,
     updateFeatureState,
     setActiveFeature,
     checkPrerequisites,
     tryUnlockFeature,
-    initializeAcademy,
-    initializeHarbor,
     reset,
   }
 })

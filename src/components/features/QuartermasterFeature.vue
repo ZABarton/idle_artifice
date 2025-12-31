@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useTutorials } from '@/composables/useTutorials'
-import { useDialogsStore } from '@/stores/dialogs'
 
 /**
  * QuartermasterFeature Component
@@ -9,13 +8,9 @@ import { useDialogsStore } from '@/stores/dialogs'
  * For now, shows description and dialog trigger button - controls will be added in future milestones
  */
 
-const dialogsStore = useDialogsStore()
-
 const handleTalkToQuartermaster = () => {
-  // Trigger Quartermaster dialog on first click
-  if (!dialogsStore.hasCompletedDialogTree('quartermaster-intro')) {
-    dialogsStore.showDialogTree('quartermaster-intro')
-  }
+  // Intro dialog is handled by area map trigger system (see academy.ts)
+  // Future: This will open quartermaster management UI
 }
 
 // Trigger tutorials on first interaction with this feature

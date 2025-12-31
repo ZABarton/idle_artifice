@@ -117,6 +117,128 @@ A hexagonal map representing the known world. Explored hexes have an icon design
 ### Area Map
 A map representing the individual hex that can be accessed by clicking on the hex. This has features and actions specific to that area.
 
+**Configuration-Driven Architecture:**
+- Area maps are completely data-driven via TypeScript configuration files
+- `AreaMap.vue` is a generic, area-agnostic component that loads configurations dynamically
+- Each area type has its own config file in `/src/config/area-maps/`
+- Configurations define features, layouts, triggers, and area-specific behavior
+
+**Creating a New Area Map Configuration:**
+
+1. **Create config file** at `/src/config/area-maps/{areaType}.ts`
+2. **Import feature components** and wrap them in `markRaw()` to avoid reactivity overhead
+3. **Define layout modes** (desktop, mobile, etc.) with viewBox and canvas dimensions
+4. **Define features** with positions for each layout mode
+5. **Define triggers** for events (onFirstVisit, onEnter, onExit, onFeatureInteract)
+6. **Register config** in `/src/config/area-maps/index.ts`
+
+**Example Configuration Structure:**
+```typescript
+import { markRaw } from 'vue'
+import type { AreaMapConfig } from '@/types/areaMapConfig'
+import FeatureComponent from '@/components/features/FeatureComponent.vue'
+
+export const myAreaConfig: AreaMapConfig = {
+  areaType: 'myarea',
+  background: '#hexcolor',
+
+  layouts: {
+    desktop: {
+      mode: '2x2',
+      viewBoxWidth: 300,
+      viewBoxHeight: 300,
+      canvasWidth: 1600,
+      canvasHeight: 1200,
+      minWidth: 1400,
+    },
+    mobile: {
+      mode: '1x4',
+      viewBoxWidth: 300,
+      viewBoxHeight: 500,
+      canvasWidth: 1000,
+      canvasHeight: 2000,
+      maxWidth: 1399,
+    },
+  },
+
+  features: [
+    {
+      id: 'myarea-feature',
+      type: 'featuretype',
+      component: markRaw(FeatureComponent),
+      name: 'Feature Name',
+      description: 'Feature description',
+      icon: '🎯',
+      positions: {
+        desktop: { x: -130, y: -110 },
+        mobile: { x: -60, y: -230 },
+      },
+      state: 'unlocked',
+      isActive: false,
+      interactionType: 'navigation',
+    },
+  ],
+
+  triggers: [
+    {
+      event: 'onFirstVisit',
+      description: 'Show intro dialog on first visit',
+      actions: [
+        { type: 'showDialogTree', dialogId: 'myarea-intro' },
+        { type: 'completeObjective', objectiveId: 'visit-myarea' },
+      ],
+    },
+    {
+      event: 'onFeatureInteract',
+      featureId: 'myarea-feature',
+      description: 'Show feature dialog on interaction',
+      callback: async (context) => {
+        const { dialogs } = context.stores
+        if (!dialogs.hasCompletedDialogTree('feature-intro')) {
+          await dialogs.showDialogTree('feature-intro')
+        }
+      },
+    },
+  ],
+}
+```
+
+**Trigger System:**
+
+Available trigger events:
+- `onFirstVisit`: Fires once on the first visit to this area
+- `onEnter`: Fires every time the player enters this area
+- `onExit`: Fires when the player leaves this area
+- `onFeatureInteract`: Fires when a specific feature is clicked
+
+Predefined trigger actions:
+- `showDialog`: Display a simple dialog modal
+- `showDialogTree`: Display a branching dialog tree
+- `showTutorial`: Display a tutorial modal
+- `completeObjective`: Mark an objective as complete
+- `unlockObjective`: Make an objective visible
+- `unlockFeature`: Unlock a feature
+- `hideFeature`: Hide a feature
+- `addResource`: Add resources to player inventory
+- `removeResource`: Remove resources from player inventory
+- `exploreTile`: Mark a world map tile as explored
+
+For complex logic, use the `callback` field with full access to stores:
+```typescript
+{
+  event: 'onEnter',
+  callback: async (context) => {
+    const { dialogs, objectives, resources, worldMap, areaMap } = context.stores
+    // Custom logic here
+  }
+}
+```
+
+**Future Expansion:**
+- Condition evaluation with AND/OR logic for complex trigger conditions
+- Cross-area dependencies for unlock conditions
+- More sophisticated layout modes and positioning strategies
+
 ### Features
 A UI element that lives in the Area Map.
 

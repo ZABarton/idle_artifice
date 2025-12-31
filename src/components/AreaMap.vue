@@ -4,15 +4,13 @@ import { useWorldMapStore } from '@/stores/worldMap'
 import { useAreaMapStore } from '@/stores/areaMap'
 import { useDialogsStore } from '@/stores/dialogs'
 import { useObjectivesStore } from '@/stores/objectives'
+import { useResourcesStore } from '@/stores/resources'
+import { useNotificationsStore } from '@/stores/notifications'
 import FeatureCard from './FeatureCard.vue'
-import FoundryFeature from './features/FoundryFeature.vue'
-import ShopFeature from './features/ShopFeature.vue'
-import WorkshopFeature from './features/WorkshopFeature.vue'
-import AlchemistFeature from './features/AlchemistFeature.vue'
-import WharfFeature from './features/WharfFeature.vue'
-import TavernFeature from './features/TavernFeature.vue'
-import QuartermasterFeature from './features/QuartermasterFeature.vue'
-import type { Feature, FeatureType } from '@/types/feature'
+import type { Feature } from '@/types/feature'
+import type { AreaMapConfig } from '@/types/areaMapConfig'
+import { getAreaConfigByCoords, getActiveLayout } from '@/config/area-maps'
+import { executeTriggers, createTriggerContext } from '@/services/areaTriggers'
 
 /**
  * AreaMap Component
@@ -36,9 +34,14 @@ const worldMapStore = useWorldMapStore()
 const areaMapStore = useAreaMapStore()
 const dialogsStore = useDialogsStore()
 const objectivesStore = useObjectivesStore()
+const resourcesStore = useResourcesStore()
+const notificationsStore = useNotificationsStore()
 
 // Get the tile data for this area
 const tile = computed(() => worldMapStore.getTileAt(props.q, props.r))
+
+// Area configuration loaded from config files
+const areaConfig = ref<AreaMapConfig | null>(null)
 
 // Get area data from areaMapStore
 const area = computed(() => areaMapStore.getArea(props.q, props.r))
@@ -48,48 +51,59 @@ const features = computed(() => areaMapStore.getFeatures(props.q, props.r))
 
 // Area title for header
 const areaTitle = computed(() => {
-  if (area.value?.areaType === 'academy') return 'Academy'
-  if (area.value?.areaType === 'forest') return 'Forest'
-  if (area.value?.areaType === 'mountain') return 'Mountain'
-  if (area.value?.areaType === 'harbor') return 'Harbor'
-  return 'Area Map'
+  if (!areaConfig.value) return 'Area Map'
+  const areaType = areaConfig.value.areaType
+  // Capitalize first letter
+  return areaType.charAt(0).toUpperCase() + areaType.slice(1)
 })
 
-// Background color from area data
-const backgroundColor = computed(() => area.value?.background ?? '#f5f5f5')
+// Background color from area config
+const backgroundColor = computed(() => areaConfig.value?.background ?? '#f5f5f5')
 
 // Responsive layout tracking
 const windowWidth = ref(window.innerWidth)
-const LAYOUT_BREAKPOINT = 1400
 
-// Layout mode: 2x2 grid or 1x4 vertical stack
-const layoutMode = computed(() => (windowWidth.value >= LAYOUT_BREAKPOINT ? '2x2' : '1x4'))
-
-// ViewBox dimensions
-const VIEWBOX_WIDTH = 300
-const viewBoxHeight = computed(() => (layoutMode.value === '2x2' ? 300 : 500))
-
-// Canvas dimensions (scales with viewBox and layout mode)
-const canvasWidth = computed(() => (layoutMode.value === '2x2' ? 1600 : 1000))
-const canvasHeight = computed(() => (layoutMode.value === '2x2' ? 1200 : 2000))
-
-// Feature position order for vertical stacking (upper-left, upper-right, lower-left)
-const featureStackOrder = ['academy-foundry', 'academy-quartermaster', 'academy-tavern']
-
-// Get dynamic position based on layout mode
-const getFeaturePosition = (feature: Feature) => {
-  if (layoutMode.value === '2x2') {
-    return feature.position // Use original 2x2 grid positions
-  } else {
-    // Calculate 1x4 vertical stack positions
-    const index = featureStackOrder.indexOf(feature.id)
-    if (index === -1) return feature.position // Fallback
-
+// Active layout based on window width and area config
+const activeLayout = computed(() => {
+  if (!areaConfig.value) {
+    // Fallback layout if config not loaded
     return {
-      x: -60, // Center horizontally (card width is 120, so -60 centers it)
-      y: -230 + index * 120, // Stack vertically with 20-unit gaps (100 card + 20 gap)
+      name: 'default',
+      config: {
+        mode: '2x2' as const,
+        viewBoxWidth: 300,
+        viewBoxHeight: 300,
+        canvasWidth: 1600,
+        canvasHeight: 1200,
+      },
     }
   }
+  return getActiveLayout(areaConfig.value, windowWidth.value)
+})
+
+// Layout dimensions from active layout config
+const viewBoxWidth = computed(() => activeLayout.value.config.viewBoxWidth)
+const viewBoxHeight = computed(() => activeLayout.value.config.viewBoxHeight)
+const canvasWidth = computed(() => activeLayout.value.config.canvasWidth)
+const canvasHeight = computed(() => activeLayout.value.config.canvasHeight)
+
+// Get dynamic position based on layout mode and config
+const getFeaturePosition = (feature: Feature) => {
+  if (!areaConfig.value) {
+    return feature.position // Fallback to feature's default position
+  }
+
+  // Find the feature config that matches this feature
+  const featureConfig = areaConfig.value.features.find((f) => f.id === feature.id)
+  if (!featureConfig) {
+    return feature.position // Fallback
+  }
+
+  // Get position for current layout
+  const layoutName = activeLayout.value.name
+  const position = featureConfig.positions[layoutName]
+
+  return position ?? feature.position // Fallback if position not defined for this layout
 }
 
 // Window resize handler
@@ -98,36 +112,74 @@ const handleResize = () => {
 }
 
 // Initialize area on mount
-onMounted(() => {
+onMounted(async () => {
+  // Load area configuration
+  const config = getAreaConfigByCoords(props.q, props.r, worldMapStore)
+  if (!config) {
+    console.error(`Failed to load area config for (${props.q}, ${props.r})`)
+    notificationsStore.showError(
+      'Area Load Error',
+      'Failed to load area configuration. This area may not be implemented yet.',
+      5000
+    )
+    return
+  }
+  areaConfig.value = config
+
+  // Increment visit count
   worldMapStore.incrementVisitCount(props.q, props.r)
+  const visitCount = tile.value?.visitCount || 0
 
   // Initialize area data if not already loaded
   if (!area.value) {
-    if (tile.value?.type === 'academy' || (props.q === 0 && props.r === 0)) {
-      areaMapStore.initializeAcademy(props.q, props.r)
-    } else if (tile.value?.type === 'harbor') {
-      areaMapStore.initializeHarbor(props.q, props.r)
-    }
+    areaMapStore.initializeAreaFromConfig(config, props.q, props.r)
   }
 
-  // Trigger dialog on first Academy visit
-  if (tile.value?.type === 'academy' && tile.value.visitCount === 1) {
-    dialogsStore.showDialogTree('headmaster-intro')
-    // Complete visit-academy objective
-    objectivesStore.completeObjective('visit-academy')
+  // Create trigger context
+  const triggerContext = createTriggerContext(
+    {
+      dialogs: dialogsStore,
+      objectives: objectivesStore,
+      resources: resourcesStore,
+      worldMap: worldMapStore,
+      areaMap: areaMapStore,
+      notifications: notificationsStore,
+    },
+    { q: props.q, r: props.r },
+    config.areaType
+  )
+
+  // Execute onFirstVisit triggers
+  if (visitCount === 1) {
+    await executeTriggers(config.triggers, 'onFirstVisit', triggerContext)
   }
 
-  // Trigger dialog on first Harbor visit
-  if (tile.value?.type === 'harbor' && tile.value.visitCount === 1) {
-    dialogsStore.showDialogTree('harbormaster-intro')
-  }
+  // Execute onEnter triggers (every visit)
+  await executeTriggers(config.triggers, 'onEnter', triggerContext)
 
   // Add resize listener
   window.addEventListener('resize', handleResize)
 })
 
 // Cleanup on unmount
-onUnmounted(() => {
+onUnmounted(async () => {
+  // Execute onExit triggers
+  if (areaConfig.value) {
+    const triggerContext = createTriggerContext(
+      {
+        dialogs: dialogsStore,
+        objectives: objectivesStore,
+        resources: resourcesStore,
+        worldMap: worldMapStore,
+        areaMap: areaMapStore,
+        notifications: notificationsStore,
+      },
+      { q: props.q, r: props.r },
+      areaConfig.value.areaType
+    )
+    await executeTriggers(areaConfig.value.triggers, 'onExit', triggerContext)
+  }
+
   window.removeEventListener('resize', handleResize)
 })
 
@@ -138,33 +190,16 @@ const handleBackClick = () => {
   emit('back')
 }
 
-// Map feature types to components
-const featureComponents: Record<
-  FeatureType,
-  | typeof FoundryFeature
-  | typeof ShopFeature
-  | typeof WorkshopFeature
-  | typeof AlchemistFeature
-  | typeof WharfFeature
-  | typeof TavernFeature
-  | typeof QuartermasterFeature
-> = {
-  foundry: FoundryFeature,
-  shop: ShopFeature,
-  workshop: WorkshopFeature,
-  alchemist: AlchemistFeature,
-  wharf: WharfFeature,
-  tavern: TavernFeature,
-  quartermaster: QuartermasterFeature,
-}
+// Get feature component from config
+const getFeatureComponent = (feature: Feature) => {
+  if (!areaConfig.value) return null
 
-// Get component for a specific feature
-const getFeatureComponent = (featureType: FeatureType) => {
-  return featureComponents[featureType]
+  const featureConfig = areaConfig.value.features.find((f) => f.id === feature.id)
+  return featureConfig?.component ?? null
 }
 
 // Handle feature card click
-const handleFeatureClick = (feature: Feature) => {
+const handleFeatureClick = async (feature: Feature) => {
   if (feature.state === 'locked') {
     // For locked features, could show a tooltip or modal with requirements
     return
@@ -175,6 +210,24 @@ const handleFeatureClick = (feature: Feature) => {
     areaMapStore.setActiveFeature(null)
   } else {
     areaMapStore.setActiveFeature(feature.id)
+  }
+
+  // Execute onFeatureInteract triggers
+  if (areaConfig.value) {
+    const triggerContext = createTriggerContext(
+      {
+        dialogs: dialogsStore,
+        objectives: objectivesStore,
+        resources: resourcesStore,
+        worldMap: worldMapStore,
+        areaMap: areaMapStore,
+        notifications: notificationsStore,
+      },
+      { q: props.q, r: props.r },
+      areaConfig.value.areaType,
+      feature.id // Pass feature ID for onFeatureInteract triggers
+    )
+    await executeTriggers(areaConfig.value.triggers, 'onFeatureInteract', triggerContext)
   }
 
   // For navigation-type features, this is where we would navigate to feature screen
@@ -215,15 +268,15 @@ const handleFeatureNavigate = (featureType: string) => {
           minWidth: `${canvasWidth}px`,
           minHeight: `${canvasHeight}px`,
         }"
-        :viewBox="`${-VIEWBOX_WIDTH / 2} ${-viewBoxHeight / 2} ${VIEWBOX_WIDTH} ${viewBoxHeight}`"
+        :viewBox="`${-viewBoxWidth / 2} ${-viewBoxHeight / 2} ${viewBoxWidth} ${viewBoxHeight}`"
         xmlns="http://www.w3.org/2000/svg"
       >
         <!-- Background -->
         <rect
-          :x="-VIEWBOX_WIDTH / 2"
-          :y="layoutMode === '2x2' ? -viewBoxHeight / 2 : -viewBoxHeight / 2 - 50"
-          :width="VIEWBOX_WIDTH"
-          :height="layoutMode === '2x2' ? viewBoxHeight : viewBoxHeight + 100"
+          :x="-viewBoxWidth / 2"
+          :y="-viewBoxHeight / 2"
+          :width="viewBoxWidth"
+          :height="viewBoxHeight"
           :fill="backgroundColor"
         />
 
@@ -234,9 +287,9 @@ const handleFeatureNavigate = (featureType: string) => {
           :feature="{ ...feature, position: getFeaturePosition(feature) }"
           @click="handleFeatureClick"
         >
-          <!-- Dynamic feature component based on feature type -->
+          <!-- Dynamic feature component from config -->
           <component
-            :is="getFeatureComponent(feature.type)"
+            :is="getFeatureComponent(feature)"
             @navigate="handleFeatureNavigate(feature.type)"
           />
         </FeatureCard>
