@@ -25,10 +25,18 @@ const isTutorial = computed(() => currentModal.value?.type === 'tutorial')
 const isDialog = computed(() => currentModal.value?.type === 'dialog')
 
 // Check if we're displaying a dialog tree (branching conversation)
-const isDialogTree = computed(() => dialogsStore.activeDialogTree !== null)
+const isDialogTree = computed(() => {
+  const result = dialogsStore.activeDialogTree !== null
+  console.log('[DialogContainer] isDialogTree:', result, 'activeDialogTree:', dialogsStore.activeDialogTree?.id)
+  return result
+})
 
 // Get the current node in the dialog tree
-const currentNode = computed(() => dialogsStore.currentNode)
+const currentNode = computed(() => {
+  const node = dialogsStore.currentNode
+  console.log('[DialogContainer] currentNode:', node?.id, 'responses:', node?.responses?.length)
+  return node
+})
 
 // Extract tutorial data with proper typing
 const tutorialData = computed(() => {

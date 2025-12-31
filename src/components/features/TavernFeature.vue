@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useTutorials } from '@/composables/useTutorials'
-import { useDialogsStore } from '@/stores/dialogs'
 
 /**
  * TavernFeature Component
@@ -15,13 +14,10 @@ interface Emits {
 }
 
 const emit = defineEmits<Emits>()
-const dialogsStore = useDialogsStore()
 
 const handleOpenTavern = () => {
-  // Trigger Tavern Keeper dialog on first click
-  if (!dialogsStore.hasCompletedDialogTree('tavern-keeper-intro')) {
-    dialogsStore.showDialogTree('tavern-keeper-intro')
-  }
+  // Intro dialog is handled by area map trigger system (see academy.ts)
+  // Just emit navigation event
   emit('navigate')
 }
 

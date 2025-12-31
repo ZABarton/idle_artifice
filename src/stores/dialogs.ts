@@ -580,9 +580,22 @@ export const useDialogsStore = defineStore('dialogs', () => {
    * @param tree - The dialog tree to start
    */
   function startDialogTree(tree: DialogTree): void {
+    console.log('[Dialog Tree] startDialogTree called for:', tree.id)
+    console.log('[Dialog Tree] activeDialogTree before:', activeDialogTree.value?.id)
+    console.log('[Dialog Tree] Queue length before:', modalQueue.value.length)
+    if (modalQueue.value.length > 0) {
+      const existingModal = modalQueue.value[0]
+      const modalId =
+        existingModal.type === 'tutorial' ? existingModal.modal.title : existingModal.modal.id
+      console.log('[Dialog Tree] Existing modal in queue:', existingModal.type, modalId)
+    }
+
     // Set active dialog tree and start at the beginning
     activeDialogTree.value = tree
     currentNodeId.value = tree.startNodeId
+
+    console.log('[Dialog Tree] activeDialogTree after:', activeDialogTree.value?.id)
+    console.log('[Dialog Tree] currentNodeId:', currentNodeId.value)
 
     // Start new conversation for this dialog tree
     activeConversation.value = {
@@ -615,6 +628,9 @@ export const useDialogsStore = defineStore('dialogs', () => {
         conversationId: tree.id,
       },
     })
+
+    console.log('[Dialog Tree] Queue length after push:', modalQueue.value.length)
+    console.log('[Dialog Tree] Modal pushed to queue with message:', startNode.message.substring(0, 50))
   }
 
   /**
@@ -653,12 +669,17 @@ export const useDialogsStore = defineStore('dialogs', () => {
 
     // Check if conversation ends (nextNodeId is null)
     if (response.nextNodeId === null) {
+      console.log('[Dialog Tree] Response ends conversation, clearing state')
       // End the conversation
       completeConversation()
+      // Close the modal FIRST before clearing tree state
+      // This prevents a brief render where isDialogTree=false but modal still in queue
+      modalQueue.value.shift()
+      console.log('[Dialog Tree] Queue after shift:', modalQueue.value.length)
+      // Now clear the dialog tree state
       activeDialogTree.value = null
       currentNodeId.value = null
-      // Close the modal
-      modalQueue.value.shift()
+      console.log('[Dialog Tree] Cleared activeDialogTree and currentNodeId')
       return
     }
 
@@ -692,7 +713,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
    * This is called when the user dismisses a modal (clicks "Got it!" or "Continue").
    * Handles different cleanup tasks based on modal type:
    * - Tutorial: Mark as completed and save to localStorage
-   * - Dialog: Save conversation to history
+   * - Dialog: Save conversation to history and clear dialog tree state if this modal is the active tree
    *
    * After cleanup, the modal is removed from the queue and the next modal
    * (if any) will automatically be displayed via the currentModal computed property.
@@ -702,6 +723,9 @@ export const useDialogsStore = defineStore('dialogs', () => {
     if (!current) {
       return
     }
+
+    const modalId = current.type === 'tutorial' ? current.modal.title : current.modal.id
+    console.log('[Modal] Closing modal:', current.type, modalId)
 
     // Handle tutorial completion tracking
     if (current.type === 'tutorial') {
@@ -713,9 +737,34 @@ export const useDialogsStore = defineStore('dialogs', () => {
       completeConversation()
     }
 
-    // Remove from queue (shift removes first element)
-    // The UI will reactively update to show the next modal in queue
+    console.log('[Modal] Before shift - queue length:', modalQueue.value.length, 'activeDialogTree:', activeDialogTree.value?.id)
+
+    // Remove from queue FIRST (shift removes first element)
+    // This must happen before clearing dialog tree state to prevent
+    // a brief render where isDialogTree=false but modal still in queue
     modalQueue.value.shift()
+
+    console.log('[Modal] After shift - queue length:', modalQueue.value.length)
+
+    // Only clear dialog tree state if THIS modal was the active dialog tree
+    // Check that we have an active tree and the modal we just closed matches it
+    if (
+      activeDialogTree.value !== null &&
+      current.type === 'dialog' &&
+      current.modal.id === activeDialogTree.value.id
+    ) {
+      console.log('[Modal] Clearing dialog tree state for:', activeDialogTree.value.id)
+      activeDialogTree.value = null
+      currentNodeId.value = null
+    } else if (activeDialogTree.value !== null) {
+      console.log(
+        '[Modal] NOT clearing dialog tree state - closed modal was not the active tree',
+        'closed:',
+        current.modal.id,
+        'active:',
+        activeDialogTree.value.id
+      )
+    }
   }
 
   /**

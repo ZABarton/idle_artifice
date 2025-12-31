@@ -116,7 +116,10 @@ async function executeAction(action: TriggerAction, context: TriggerContext): Pr
 
     case 'showDialogTree':
       if (action.dialogId) {
+        console.log('[Action] Showing dialog tree:', action.dialogId)
+        console.log('[Action] Modal queue before:', dialogs.modalQueue.length)
         await dialogs.showDialogTree(action.dialogId)
+        console.log('[Action] Modal queue after:', dialogs.modalQueue.length)
       } else {
         console.warn('[Action] showDialogTree: missing dialogId')
       }
