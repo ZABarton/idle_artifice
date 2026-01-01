@@ -79,7 +79,7 @@ describe('useWorldMapStore', () => {
   })
 
   describe('exploreTile', () => {
-    it('should mark a tile as explored and reveal surrounding hexes', () => {
+    it('should mark a tile as explored and reveal surrounding hexes from config', () => {
       const store = useWorldMapStore()
       const academyTile = store.unexploredTiles[0]
 
@@ -92,10 +92,27 @@ describe('useWorldMapStore', () => {
       expect(academyTile.clickable).toBe(true)
 
       // After exploring Academy (0, 0), surrounding hexes should be revealed
-      // Academy has 6 neighbors, but 3 already exist (Harbor, 2 ocean hexes)
-      // So 3 new unexplored hexes should be added
-      expect(store.hexTiles.length).toBeGreaterThan(7)
+      // Academy has 6 neighbors, but 3 already exist (Harbor at -1,0 and 2 ocean hexes)
+      // The 3 new hexes from config should be added: forest (1,-1), plains (1,0), mountain (0,1)
+      expect(store.hexTiles).toHaveLength(10) // 7 original + 3 new
       expect(store.exploredTiles).toHaveLength(7) // 6 original + Academy
+
+      // Verify the new hexes have correct types from config
+      const forest = store.getTileAt(1, -1)
+      const plains = store.getTileAt(1, 0)
+      const mountain = store.getTileAt(0, 1)
+
+      expect(forest).toBeDefined()
+      expect(forest?.type).toBe('forest')
+      expect(forest?.explorationStatus).toBe('unexplored')
+
+      expect(plains).toBeDefined()
+      expect(plains?.type).toBe('plains')
+      expect(plains?.explorationStatus).toBe('unexplored')
+
+      expect(mountain).toBeDefined()
+      expect(mountain?.type).toBe('mountain')
+      expect(mountain?.explorationStatus).toBe('unexplored')
     })
 
     it('should do nothing for non-existent tile', () => {
