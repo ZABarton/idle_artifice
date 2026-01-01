@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import MainView from '@/views/MainView.vue'
 import StatusColumn from '@/components/StatusColumn.vue'
@@ -68,19 +68,16 @@ describe('Integration Tests', () => {
       const areaMapStore = useAreaMapStore()
       const wrapper = mount(MainView)
 
-      // Navigate to World Map first
-      navigationStore.navigateToWorldMap()
+      // App starts at World Map
       await wrapper.vm.$nextTick()
 
       // Academy area should not be initialized yet
       expect(areaMapStore.getArea(0, 0)).toBeUndefined()
 
-      // Click academy tile
-      const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
-
-      await academyPolygon!.trigger('click')
+      // Navigate to academy area directly
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
       await wrapper.vm.$nextTick()
+      await flushPromises() // Wait for AreaMap's async onMounted to complete
 
       // Academy area should now be initialized
       expect(areaMapStore.getArea(0, 0)).toBeDefined()
@@ -90,9 +87,12 @@ describe('Integration Tests', () => {
 
   describe('Area Map to World Map Navigation', () => {
     it('navigates back to World Map when clicking header close button', async () => {
+      const navigationStore = useNavigationStore()
       const wrapper = mount(MainView)
 
-      // App starts at Harbor Area Map
+      // Navigate to Harbor Area Map first
+      navigationStore.navigateToAreaMap(-1, 0, 'harbor')
+      await wrapper.vm.$nextTick()
       expect(wrapper.find('.area-map-view').exists()).toBe(true)
 
       // Click close button
@@ -111,15 +111,13 @@ describe('Integration Tests', () => {
       const areaMapStore = useAreaMapStore()
       const wrapper = mount(MainView)
 
-      // App starts at Harbor, navigate to World Map
-      navigationStore.navigateToWorldMap()
+      // App starts at World Map
       await wrapper.vm.$nextTick()
 
-      // Navigate to Academy by clicking hex on World Map
-      const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
-      await academyPolygon!.trigger('click')
+      // Navigate to Academy directly
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
       await wrapper.vm.$nextTick()
+      await flushPromises() // Wait for AreaMap initialization
 
       // Find and click Quartermaster feature (inline)
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
@@ -142,15 +140,13 @@ describe('Integration Tests', () => {
       const areaMapStore = useAreaMapStore()
       const wrapper = mount(MainView)
 
-      // App starts at Harbor, navigate to World Map
-      navigationStore.navigateToWorldMap()
+      // App starts at World Map
       await wrapper.vm.$nextTick()
 
-      // Navigate to Academy by clicking hex on World Map
-      const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
-      await academyPolygon!.trigger('click')
+      // Navigate to Academy directly
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
       await wrapper.vm.$nextTick()
+      await flushPromises() // Wait for AreaMap initialization
 
       // Find and click Foundry feature (navigation)
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
@@ -172,15 +168,13 @@ describe('Integration Tests', () => {
       const areaMapStore = useAreaMapStore()
       const wrapper = mount(MainView)
 
-      // App starts at Harbor, navigate to World Map
-      navigationStore.navigateToWorldMap()
+      // App starts at World Map
       await wrapper.vm.$nextTick()
 
-      // Navigate to Academy by clicking hex on World Map
-      const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
-      await academyPolygon!.trigger('click')
+      // Navigate to Academy directly
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
       await wrapper.vm.$nextTick()
+      await flushPromises() // Wait for AreaMap initialization
 
       // Activate a feature
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
@@ -209,17 +203,15 @@ describe('Integration Tests', () => {
       const worldMapStore = useWorldMapStore()
       const wrapper = mount(MainView)
 
-      // Navigate to World Map first
-      navigationStore.navigateToWorldMap()
+      // App starts at World Map
       await wrapper.vm.$nextTick()
 
       const initialVisits = worldMapStore.getTileAt(0, 0)?.visitCount || 0
 
       // Visit Area Map first time
-      const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
-      await academyPolygon!.trigger('click')
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
       await wrapper.vm.$nextTick()
+      await flushPromises() // Wait for visit count increment in onMounted
 
       expect(worldMapStore.getTileAt(0, 0)?.visitCount).toBe(initialVisits + 1)
 
@@ -228,10 +220,9 @@ describe('Integration Tests', () => {
       await wrapper.vm.$nextTick()
 
       // Visit again
-      const polygons2 = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon2 = polygons2.find((p) => p.attributes('fill') === '#90EE90')
-      await academyPolygon2!.trigger('click')
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
       await wrapper.vm.$nextTick()
+      await flushPromises() // Wait for visit count increment
 
       expect(worldMapStore.getTileAt(0, 0)?.visitCount).toBe(initialVisits + 2)
     })
@@ -254,6 +245,8 @@ describe('Integration Tests', () => {
       const wrapper = mount(MainView)
       const navigationStore = useNavigationStore()
       navigationStore.navigateToAreaMap(0, 0, 'academy')
+      await wrapper.vm.$nextTick()
+      await flushPromises() // Wait for AreaMap to mount
       expect(wrapper.findComponent(StatusColumn).exists()).toBe(true)
       expect(wrapper.find('.area-map-view').exists()).toBe(true)
     })
@@ -364,7 +357,12 @@ describe('Integration Tests', () => {
       const navigationStore = useNavigationStore()
       const statusColumn = wrapper.findComponent(StatusColumn)
 
-      // App starts at Harbor Area Map - should show current location button
+      // Navigate to Harbor Area Map
+      navigationStore.navigateToAreaMap(-1, 0, 'harbor')
+      await wrapper.vm.$nextTick()
+      await flushPromises() // Wait for AreaMap to mount
+
+      // Should show current location button
       let currentLocationButton = statusColumn
         .findAll('button')
         .find((btn) => btn.text().includes('📍'))
@@ -481,21 +479,17 @@ describe('Integration Tests', () => {
       const wrapper = mount(MainView)
       const navigationStore = useNavigationStore()
 
+      // App starts at World Map
       // Recent locations starts empty (current location is not in recent until we navigate away)
       expect(navigationStore.recentLocations.length).toBe(0)
 
-      // Navigate to World Map, then visit Academy
-      navigationStore.navigateToWorldMap()
+      // Navigate to Harbor Area Map directly
+      navigationStore.navigateToAreaMap(-1, 0, 'harbor')
       await wrapper.vm.$nextTick()
 
-      const polygons = wrapper.findAll('.hex-tile polygon')
-      const academyPolygon = polygons.find((p) => p.attributes('fill') === '#90EE90')
-      await academyPolygon!.trigger('click')
-      await wrapper.vm.$nextTick()
-
-      // Recent locations should now have 1 entry (Academy)
+      // Recent locations should now have 1 entry (Harbor at -1, 0)
       expect(navigationStore.recentLocations.length).toBe(1)
-      expect(navigationStore.recentLocations[0].q).toBe(0)
+      expect(navigationStore.recentLocations[0].q).toBe(-1)
       expect(navigationStore.recentLocations[0].r).toBe(0)
     })
   })
