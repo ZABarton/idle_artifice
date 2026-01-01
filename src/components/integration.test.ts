@@ -252,8 +252,8 @@ describe('Integration Tests', () => {
 
     it('renders Status Column on Area Map view', async () => {
       const wrapper = mount(MainView)
-
-      // App starts at Area Map
+      const navigationStore = useNavigationStore()
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
       expect(wrapper.findComponent(StatusColumn).exists()).toBe(true)
       expect(wrapper.find('.area-map-view').exists()).toBe(true)
     })
@@ -450,7 +450,10 @@ describe('Integration Tests', () => {
       const navigationStore = useNavigationStore()
       const statusColumn = wrapper.findComponent(StatusColumn)
 
-      // App starts at Harbor Area Map - should show current location
+      // Navigate to Harbor Area Map first
+      navigationStore.navigateToAreaMap(-1, 0, 'harbor')
+      await wrapper.vm.$nextTick()
+      
       let initialButtons = statusColumn.findAll('button')
       let hasCurrentLocation = initialButtons.some((btn) => btn.text().includes('📍'))
       expect(hasCurrentLocation).toBe(true)
