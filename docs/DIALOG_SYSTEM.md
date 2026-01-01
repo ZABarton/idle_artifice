@@ -245,7 +245,6 @@ All conditions in the `triggerConditions` array must be met for the tutorial to 
 ### Complete Tutorial Examples
 
 See `src/content/tutorials/` for working examples:
-- `welcome.json` - Immediate trigger on game load
 - `foundry-intro.json` - Feature trigger when opening Foundry
 - `first-wood-collected.json` - Resource threshold trigger
 - `forest-discovered.json` - Location exploration trigger

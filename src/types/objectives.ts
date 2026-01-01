@@ -81,6 +81,13 @@ export interface Objective {
    */
   discoveryConditions?: UnlockCondition[]
 
+  /**
+   * Hex coordinates where this objective can be completed
+   * Format: "q,r" (e.g., "0,0" for academy, "-1,0" for harbor)
+   * Used to display quest markers on the World Map
+   */
+  targetLocation?: string
+
   /** Display order within category (lower numbers first) */
   order: number
   /** Timestamp when objective was completed */

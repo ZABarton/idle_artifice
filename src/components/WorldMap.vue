@@ -3,12 +3,14 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useWorldMapStore } from '@/stores/worldMap'
 import { useNavigationStore } from '@/stores/navigation'
 import { useDialogsStore } from '@/stores/dialogs'
+import { useObjectivesStore } from '@/stores/objectives'
 import { useHexGrid } from '@/composables/useHexGrid'
 import type { HexTile } from '@/types/hex'
 
 const worldMapStore = useWorldMapStore()
 const navigationStore = useNavigationStore()
 const dialogsStore = useDialogsStore()
+const objectivesStore = useObjectivesStore()
 const { hexToPixel } = useHexGrid()
 
 const emit = defineEmits<{
@@ -120,6 +122,25 @@ const isPannable = computed(() => {
   const contentHeight = bounds.maxY - bounds.minY
 
   return contentWidth > viewBoxWidth || contentHeight > viewBoxHeight
+})
+
+/**
+ * Get set of hex coordinates that have quest markers
+ * Shows marker on the hex where the tracked objective can be completed
+ * Returns Set of "q,r" coordinate strings
+ */
+const hexesWithActiveObjectives = computed(() => {
+  const hexCoords = new Set<string>()
+
+  // Get the currently tracked objective
+  const trackedObjective = objectivesStore.getTrackedObjective
+
+  // If there's a tracked objective with a target location, show marker there
+  if (trackedObjective && trackedObjective.targetLocation) {
+    hexCoords.add(trackedObjective.targetLocation)
+  }
+
+  return hexCoords
 })
 
 /**
@@ -252,6 +273,36 @@ onUnmounted(() => {
       @mouseup="handleMouseUp"
       @mouseleave="handleMouseLeave"
     >
+      <!-- Symbol definitions for hex type icons -->
+      <defs>
+        <!-- Academy icon: Building with triangular roof -->
+        <symbol id="academy-icon" viewBox="0 0 24 24">
+          <!-- Building base (rectangle) -->
+          <rect x="6" y="10" width="12" height="10" fill="#8B4513" stroke="#5D2E0F" stroke-width="0.5" />
+          <!-- Roof (triangle) -->
+          <path d="M 4 10 L 12 4 L 20 10 Z" fill="#A0522D" stroke="#5D2E0F" stroke-width="0.5" />
+          <!-- Door -->
+          <rect x="10" y="14" width="4" height="6" fill="#5D2E0F" />
+          <!-- Windows -->
+          <rect x="8" y="12" width="2" height="2" fill="#FFE4B5" />
+          <rect x="14" y="12" width="2" height="2" fill="#FFE4B5" />
+        </symbol>
+
+        <!-- Harbor icon: Anchor -->
+        <symbol id="harbor-icon" viewBox="0 0 24 24">
+          <!-- Anchor ring (top) -->
+          <circle cx="12" cy="6" r="2" fill="none" stroke="#4A4A4A" stroke-width="1.5" />
+          <!-- Anchor shaft (vertical line) -->
+          <line x1="12" y1="8" x2="12" y2="18" stroke="#4A4A4A" stroke-width="1.5" />
+          <!-- Cross bar (horizontal) -->
+          <line x1="8" y1="12" x2="16" y2="12" stroke="#4A4A4A" stroke-width="1.5" />
+          <!-- Left fluke -->
+          <path d="M 8 18 Q 8 16 12 18" fill="none" stroke="#4A4A4A" stroke-width="1.5" />
+          <!-- Right fluke -->
+          <path d="M 16 18 Q 16 16 12 18" fill="none" stroke="#4A4A4A" stroke-width="1.5" />
+        </symbol>
+      </defs>
+
       <!-- Main hexagons layer -->
       <g v-for="hex in hexagons" :key="`${hex.tile.q},${hex.tile.r}`" class="hex-tile">
         <polygon
@@ -275,6 +326,50 @@ onUnmounted(() => {
         >
           ({{ hex.tile.q }}, {{ hex.tile.r }})
         </text>
+      </g>
+      <!-- Hex type icons layer -->
+      <g v-for="hex in hexagons" :key="`icon-${hex.tile.q},${hex.tile.r}`" class="hex-icon-layer">
+        <!-- Academy icon -->
+        <use
+          v-if="hex.tile.type === 'academy'"
+          :href="'#academy-icon'"
+          :x="hex.center.x - 10"
+          :y="hex.center.y - 10"
+          width="20"
+          height="20"
+          class="hex-type-icon"
+        />
+        <!-- Harbor icon -->
+        <use
+          v-if="hex.tile.type === 'harbor'"
+          :href="'#harbor-icon'"
+          :x="hex.center.x - 10"
+          :y="hex.center.y - 10"
+          width="20"
+          height="20"
+          class="hex-type-icon"
+        />
+      </g>
+      <!-- Quest markers layer -->
+      <g
+        v-for="hex in hexagons"
+        :key="`quest-${hex.tile.q},${hex.tile.r}`"
+        class="quest-marker-layer"
+      >
+        <g v-if="hexesWithActiveObjectives.has(`${hex.tile.q},${hex.tile.r}`)">
+          <!-- Yellow circle background -->
+          <circle :cx="hex.center.x" :cy="hex.center.y - 15" r="8" fill="#FFD700" stroke="#DAA520" stroke-width="1" />
+          <!-- Exclamation mark -->
+          <text
+            :x="hex.center.x"
+            :y="hex.center.y - 15"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            class="quest-marker-text"
+          >
+            !
+          </text>
+        </g>
       </g>
       <!-- Borders layer - drawn on top -->
       <g
@@ -340,6 +435,24 @@ onUnmounted(() => {
 
 .hex-coordinates {
   font-size: 8px;
+  fill: #333;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hex-type-icon {
+  pointer-events: none;
+  user-select: none;
+}
+
+.quest-marker-layer {
+  pointer-events: none;
+  user-select: none;
+}
+
+.quest-marker-text {
+  font-size: 12px;
+  font-weight: bold;
   fill: #333;
   pointer-events: none;
   user-select: none;
