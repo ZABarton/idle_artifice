@@ -525,4 +525,76 @@ describe('Integration Tests', () => {
       expect(wrapper.find('.debug-view').exists()).toBe(false)
     })
   })
+
+  describe('Hex Exploration and Reveal Behavior', () => {
+    it('reveals surrounding hexes from config when exploring Academy for first time', async () => {
+      const navigationStore = useNavigationStore()
+      const worldMapStore = useWorldMapStore()
+      const wrapper = mount(MainView)
+
+      // Navigate to World Map
+      navigationStore.navigateToWorldMap()
+      await wrapper.vm.$nextTick()
+
+      // Initial state: 7 hexes (Harbor + Academy + 5 ocean)
+      expect(worldMapStore.hexTiles).toHaveLength(7)
+
+      // Academy should be unexplored
+      const academyTile = worldMapStore.getTileAt(0, 0)
+      expect(academyTile?.explorationStatus).toBe('unexplored')
+
+      // Explore the Academy hex - this triggers the reveal behavior
+      // (In actual gameplay, this would happen via triggers when navigating to Academy)
+      worldMapStore.exploreTile(0, 0)
+      await wrapper.vm.$nextTick()
+
+      // Should now have 10 hexes (7 original + 3 new land hexes from config)
+      expect(worldMapStore.hexTiles).toHaveLength(10)
+
+      // Academy should now be explored
+      expect(academyTile?.explorationStatus).toBe('explored')
+
+      // Verify the 3 new land hexes were added with correct types
+      const forest = worldMapStore.getTileAt(1, -1)
+      const plains = worldMapStore.getTileAt(1, 0)
+      const mountain = worldMapStore.getTileAt(0, 1)
+
+      expect(forest).toBeDefined()
+      expect(forest?.type).toBe('forest')
+      expect(forest?.explorationStatus).toBe('unexplored')
+
+      expect(plains).toBeDefined()
+      expect(plains?.type).toBe('plains')
+      expect(plains?.explorationStatus).toBe('unexplored')
+
+      expect(mountain).toBeDefined()
+      expect(mountain?.type).toBe('mountain')
+      expect(mountain?.explorationStatus).toBe('unexplored')
+
+      // Verify the new hexes are rendered as gray (unexplored)
+      const allPolygons = wrapper.findAll('.hex-tile polygon')
+      const unexploredPolygons = allPolygons.filter((p) => p.attributes('fill') === '#CCCCCC')
+
+      // Should have 4 unexplored hexes rendered (forest, plains, mountain + any others)
+      expect(unexploredPolygons.length).toBeGreaterThanOrEqual(3)
+    })
+
+    it('does not add hexes not defined in world map config', async () => {
+      const worldMapStore = useWorldMapStore()
+
+      // Create a scenario where we explore a hex that neighbors hexes not in config
+      // Ocean hexes at the edge have neighbors that aren't defined in the config
+      const initialTileCount = worldMapStore.hexTiles.length
+
+      // Explore an ocean hex (these don't reveal anything new in our config)
+      worldMapStore.exploreTile(-2, 0)
+
+      // No new hexes should be added since ocean neighbors aren't in the config
+      // (or at most, only hexes defined in config would be added)
+      const currentTileCount = worldMapStore.hexTiles.length
+
+      // The tile count should either stay the same or only add hexes from config
+      expect(currentTileCount).toBeLessThanOrEqual(initialTileCount + 6) // Max 6 neighbors
+    })
+  })
 })

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { HexTile } from '@/types/hex'
 import { useHexGrid } from '@/composables/useHexGrid'
+import { getHexConfig } from '@/config/WorldMapConfig'
 
 // LocalStorage key
 const STORAGE_KEY_HEX_TILES = 'idle-artifice-hex-tiles'
@@ -96,6 +97,7 @@ export const useWorldMapStore = defineStore('worldMap', () => {
   /**
    * Reveal all 6 surrounding hexes for a newly explored tile
    * Adds unexplored hexes for neighbors that don't already exist
+   * Only adds hexes that are defined in the world map configuration
    * Following rule: "An explored hex should always show the six surrounding hexes"
    */
   function revealSurroundingHexes(q: number, r: number) {
@@ -106,16 +108,20 @@ export const useWorldMapStore = defineStore('worldMap', () => {
       // Check if this neighbor already exists in the map
       const existingTile = hexTiles.value.find((t) => t.q === neighbor.q && t.r === neighbor.r)
 
-      // If it doesn't exist, add it as an unexplored hex
+      // If it doesn't exist, check if it's defined in the world map config
       if (!existingTile) {
-        // TODO: In the future, read from predefined map configuration to determine hex type
-        // For now, we add generic unexplored hexes
-        hexTiles.value.push({
-          q: neighbor.q,
-          r: neighbor.r,
-          explorationStatus: 'unexplored',
-          clickable: false,
-        })
+        const hexConfig = getHexConfig(neighbor.q, neighbor.r)
+
+        // Only add hex if it exists in the predefined world map
+        if (hexConfig) {
+          hexTiles.value.push({
+            q: neighbor.q,
+            r: neighbor.r,
+            explorationStatus: 'unexplored',
+            clickable: false,
+            ...hexConfig, // Apply config (type, etc.)
+          })
+        }
       }
     })
   }
