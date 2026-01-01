@@ -342,15 +342,15 @@ describe('useObjectivesStore', () => {
 
       const condition = {
         type: 'location' as const,
-        id: '1,0',
-        description: 'Visit hex 1,0',
+        id: '0,0',
+        description: 'Visit hex 0,0',
       }
 
-      // Initially unexplored
+      // Academy at (0,0) exists but is initially unexplored in the new initial map state
       expect(store.checkDiscoveryCondition(condition)).toBe(false)
 
-      // Explore the tile
-      worldMapStore.exploreTile(1, 0)
+      // Explore the Academy tile
+      worldMapStore.exploreTile(0, 0)
 
       expect(store.checkDiscoveryCondition(condition)).toBe(true)
     })

@@ -14,7 +14,6 @@ onMounted(async () => {
   dialogsStore.showTutorial('opening-story-1')
   dialogsStore.showTutorial('opening-story-2')
   dialogsStore.showTutorial('opening-story-3')
-  dialogsStore.showTutorial('welcome')
 })
 </script>
 

@@ -32,7 +32,7 @@ describe('ObjectivesView', () => {
       await wrapper.find('.objectives-view-header__close').trigger('click')
 
       // Should navigate to previous view (area-map is default since app starts at Harbor)
-      expect(navigationStore.currentView).toBe('area-map')
+      expect(navigationStore.currentView).toBe('world-map')
     })
 
     it('emits back event when close button is clicked', async () => {

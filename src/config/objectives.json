@@ -6,7 +6,8 @@
       "description": "Speak with the Harbormaster to learn about Camp Sagora.",
       "status": "active",
       "category": "main",
-      "order": 1
+      "order": 1,
+      "targetLocation": "-1,0"
     },
     {
       "id": "visit-academy",
@@ -15,6 +16,7 @@
       "status": "hidden",
       "category": "main",
       "order": 2,
+      "targetLocation": "0,0",
       "discoveryConditions": [
         {
           "type": "objective",
@@ -30,6 +32,7 @@
       "status": "hidden",
       "category": "main",
       "order": 3,
+      "targetLocation": "0,0",
       "discoveryConditions": [
         {
           "type": "objective",
@@ -45,6 +48,7 @@
       "status": "hidden",
       "category": "main",
       "order": 4,
+      "targetLocation": "0,0",
       "discoveryConditions": [
         {
           "type": "objective",
@@ -77,6 +81,7 @@
       "status": "hidden",
       "category": "main",
       "order": 5,
+      "targetLocation": "0,0",
       "discoveryConditions": [
         {
           "type": "objective",
