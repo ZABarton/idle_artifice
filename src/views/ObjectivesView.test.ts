@@ -7,6 +7,8 @@ import { useNavigationStore } from '@/stores/navigation'
 
 describe('ObjectivesView', () => {
   beforeEach(() => {
+    // Clear localStorage before each test to ensure clean state
+    localStorage.clear()
     setActivePinia(createPinia())
   })
 

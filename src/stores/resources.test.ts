@@ -4,6 +4,8 @@ import { useResourcesStore } from './resources'
 
 describe('useResourcesStore', () => {
   beforeEach(() => {
+    // Clear localStorage before each test to ensure clean state
+    localStorage.clear()
     // Create a fresh pinia instance for each test
     setActivePinia(createPinia())
   })

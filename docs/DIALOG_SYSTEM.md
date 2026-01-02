@@ -1117,6 +1117,124 @@ const worldMapStore = useWorldMapStore()
 worldMapStore.resetMap() // Resets all visit counts and exploration state
 ```
 
+### Feature Interaction → Dialog → Objective Flow
+
+**Architecture Pattern: Dialog Completion Drives Objective Progression**
+
+This is a critical architectural decision: when a player clicks a Feature on the Area Map, the interaction triggers a dialog, and **the completion of that dialog** drives objective progression—not the feature click itself.
+
+#### Why This Pattern?
+
+This separation of concerns provides several benefits:
+- **Clean Separation**: Feature interaction logic is separate from objective tracking
+- **Narrative-Driven**: Players must engage with NPCs/dialogs before objectives progress
+- **Flexible**: Allows for complex dialog trees where different conversation paths could complete different objectives
+- **Consistent**: All feature-based objectives follow the same pattern
+
+#### Implementation Flow
+
+```
+1. Player clicks Feature Card
+   └→ FeatureCard.vue emits 'click' event
+      └→ AreaMap.vue handleFeatureClick()
+         └→ executeTriggers() with event='onFeatureInteract'
+            └→ Area config trigger callback executes
+               └→ dialogsStore.showDialogTree() displays NPC conversation
+                  └→ Player completes dialog tree
+                     └→ dialogsStore.completeConversation()
+                        └→ objectivesStore.updateSubtask() marks objective step complete
+```
+
+#### Example: Academy Features
+
+**Objective Definition** (`src/config/objectives.json`):
+```json
+{
+  "id": "explore-features",
+  "title": "Inspect Academy Features",
+  "subtasks": [
+    { "id": "visit-foundry", "description": "Visit the Foundry", "completed": false },
+    { "id": "visit-quartermaster", "description": "Visit the Quartermaster", "completed": false },
+    { "id": "visit-tavern", "description": "Visit the Tavern", "completed": false }
+  ]
+}
+```
+
+**Feature Configuration** (`src/config/area-maps/academy.ts`):
+```typescript
+{
+  event: 'onFeatureInteract',
+  featureId: 'academy-foundry',
+  description: 'Show foundry master introduction on first foundry interaction',
+  callback: async (context) => {
+    const { dialogs } = context.stores
+
+    // Only show dialog if haven't completed the dialog tree yet
+    if (!dialogs.hasCompletedDialogTree('foundry-master-intro')) {
+      await dialogs.showDialogTree('foundry-master-intro')
+    }
+  },
+}
+```
+
+**Dialog Completion Handler** (`src/stores/dialogs.ts:533-539`):
+```typescript
+function completeConversation(): void {
+  // ... finalize conversation ...
+
+  const conversationId = activeConversation.value.conversationId
+
+  // Update objectives based on completed dialog tree
+  if (conversationId === 'foundry-master-intro') {
+    objectivesStore.updateSubtask('explore-features', 'visit-foundry', true)
+  } else if (conversationId === 'quartermaster-intro') {
+    objectivesStore.updateSubtask('explore-features', 'visit-quartermaster', true)
+  } else if (conversationId === 'tavern-keeper-intro') {
+    objectivesStore.updateSubtask('explore-features', 'visit-tavern', true)
+  }
+}
+```
+
+#### Key Points
+
+1. **Feature click triggers dialog**: The `onFeatureInteract` trigger shows the NPC dialog tree
+2. **Dialog completion updates objective**: The `completeConversation()` function updates the objective subtask
+3. **One-time check**: `hasCompletedDialogTree()` ensures the dialog only shows once per feature
+4. **Automatic progression**: When all subtasks complete, the objective auto-completes
+
+#### Creating New Feature-Based Objectives
+
+When adding new features with associated objectives, follow this pattern:
+
+1. **Add objective** to `src/config/objectives.json` with appropriate subtasks
+2. **Create dialog tree** in `src/content/dialog-trees/{feature-name}-intro.json`
+3. **Add onFeatureInteract trigger** to area config that shows the dialog tree
+4. **Add completion handler** in `dialogs.ts` `completeConversation()` that updates the objective
+
+#### Common Pitfall to Avoid
+
+❌ **Don't do this** - Updating objectives directly in the feature click handler:
+```typescript
+// WRONG - bypasses dialog system
+const handleFeatureClick = async (feature: Feature) => {
+  objectivesStore.updateSubtask('explore-features', 'visit-foundry', true) // ❌
+  await dialogsStore.showDialogTree('foundry-master-intro')
+}
+```
+
+✅ **Do this** - Let dialog completion handle objective progression:
+```typescript
+// CORRECT - dialog completion drives objective updates
+const handleFeatureClick = async (feature: Feature) => {
+  // Only trigger dialog, let completeConversation() update objective
+  if (!dialogsStore.hasCompletedDialogTree('foundry-master-intro')) {
+    await dialogsStore.showDialogTree('foundry-master-intro')
+  }
+}
+```
+
+This ensures the narrative experience is complete before objectives progress.
+
 ### Visual Editor
 
 A visual dialog tree editor is available for creating and editing dialog trees:

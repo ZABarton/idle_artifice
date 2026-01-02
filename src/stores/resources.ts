@@ -1,14 +1,18 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Resource } from '@/types/resources'
 
+// LocalStorage key
+const STORAGE_KEY_RESOURCES = 'idle-artifice-resources'
+
+// Track if we've shown storage warning to avoid spam
+let hasShownStorageWarning = false
+
 /**
- * Resources Store
- * Manages the global resource pool accessible across all game areas
+ * Get default initial resources (for new game)
  */
-export const useResourcesStore = defineStore('resources', () => {
-  // State
-  const resources = ref<Resource[]>([
+function getDefaultResources(): Resource[] {
+  return [
     {
       id: 'wood',
       name: 'Wood',
@@ -44,7 +48,34 @@ export const useResourcesStore = defineStore('resources', () => {
       icon: '✨',
       category: 'magical',
     },
-  ])
+  ]
+}
+
+/**
+ * Load resources from localStorage
+ * Returns saved resources if available, otherwise returns default initial resources
+ */
+function loadResources(): Resource[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_RESOURCES)
+    if (stored) {
+      return JSON.parse(stored) as Resource[]
+    }
+  } catch (error) {
+    console.error('Failed to load resources from localStorage:', error)
+  }
+
+  // Return default resources for new game
+  return getDefaultResources()
+}
+
+/**
+ * Resources Store
+ * Manages the global resource pool accessible across all game areas
+ */
+export const useResourcesStore = defineStore('resources', () => {
+  // State - load from localStorage or use defaults
+  const resources = ref<Resource[]>(loadResources())
 
   // Getters
   const getResourceById = computed(() => (id: string) => {
@@ -160,6 +191,47 @@ export const useResourcesStore = defineStore('resources', () => {
     return true
   }
 
+  /**
+   * Get the current resource amount for a specific resource
+   * @param id - Resource identifier
+   * @returns the current amount, or 0 if resource not found
+   */
+  function getResourceAmount(id: string): number {
+    const resource = resources.value.find((r) => r.id === id)
+    return resource?.amount ?? 0
+  }
+
+  /**
+   * Reset resources to default initial values (for debug/testing)
+   */
+  function resetResources(): void {
+    resources.value = getDefaultResources()
+    try {
+      localStorage.removeItem(STORAGE_KEY_RESOURCES)
+    } catch (error) {
+      console.error('Failed to remove resources from localStorage:', error)
+    }
+  }
+
+  // Watch for changes and auto-save to localStorage
+  watch(
+    resources,
+    () => {
+      try {
+        localStorage.setItem(STORAGE_KEY_RESOURCES, JSON.stringify(resources.value))
+      } catch (error) {
+        console.error('Failed to save resources to localStorage:', error)
+
+        // Show warning once per session
+        if (!hasShownStorageWarning) {
+          console.warn('Unable to save resource progress. Check browser storage settings.')
+          hasShownStorageWarning = true
+        }
+      }
+    },
+    { deep: true }
+  )
+
   return {
     // State
     resources,
@@ -173,6 +245,8 @@ export const useResourcesStore = defineStore('resources', () => {
     removeResource,
     setResource,
     hasResource,
+    getResourceAmount,
     initializeResource,
+    resetResources,
   }
 })
