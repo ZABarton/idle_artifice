@@ -4,6 +4,24 @@ import { useHexGrid } from '@/composables/useHexGrid'
 
 const worldMapStore = useWorldMapStore()
 const hexGrid = useHexGrid()
+
+/**
+ * Reset entire game by clearing all localStorage and reloading
+ * Equivalent to clearing localStorage in DevTools
+ */
+function resetGame() {
+  const confirmed = window.confirm(
+    'This will clear ALL game progress and restart from scratch. Are you sure?'
+  )
+
+  if (confirmed) {
+    // Clear all localStorage (not just game keys, to be thorough)
+    localStorage.clear()
+
+    // Reload page to reinitialize all stores
+    window.location.reload()
+  }
+}
 </script>
 
 <template>
@@ -59,6 +77,9 @@ const hexGrid = useHexGrid()
         Explore First Tile
       </button>
       <button @click="worldMapStore.resetMap()">Reset Map</button>
+      <button class="reset-game-button" @click="resetGame()">
+        🗑️ Reset Entire Game (Clear localStorage)
+      </button>
     </div>
 
     <div class="verification-section">
@@ -106,5 +127,21 @@ button {
   margin: 0.5rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
+}
+
+.reset-game-button {
+  background-color: #dc3545;
+  color: white;
+  border: 2px solid #c82333;
+  font-weight: bold;
+}
+
+.reset-game-button:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.reset-game-button:active {
+  background-color: #bd2130;
 }
 </style>
