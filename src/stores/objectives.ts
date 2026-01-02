@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type {
   Objective,
   ObjectiveStatus,
@@ -11,6 +11,88 @@ import { useResourcesStore } from './resources'
 import { useWorldMapStore } from './worldMap'
 import { useNotificationsStore } from './notifications'
 import { useTutorials } from '@/composables/useTutorials'
+
+// LocalStorage key
+const STORAGE_KEY_OBJECTIVES = 'idle-artifice-objectives'
+
+// Track if we've shown storage warning to avoid spam
+let hasShownStorageWarning = false
+
+/**
+ * Saved objectives progress (what gets persisted to localStorage)
+ */
+interface SavedObjectiveProgress {
+  id: string
+  status: ObjectiveStatus
+  currentProgress?: number
+  completedAt?: string // ISO date string
+  subtasks?: Array<{
+    id: string
+    completed: boolean
+  }>
+}
+
+interface SavedObjectivesState {
+  objectives: SavedObjectiveProgress[]
+  trackedObjectiveId: string | null
+}
+
+/**
+ * Load saved objectives progress from localStorage
+ */
+function loadSavedProgress(): SavedObjectivesState | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_OBJECTIVES)
+    if (stored) {
+      return JSON.parse(stored) as SavedObjectivesState
+    }
+  } catch (error) {
+    console.error('Failed to load objectives from localStorage:', error)
+  }
+  return null
+}
+
+/**
+ * Merge saved progress with config objectives
+ * Config is the source of truth for objective definitions,
+ * but saved progress overlays completion status, subtask progress, etc.
+ */
+function mergeObjectivesWithProgress(
+  configObjectives: Objective[],
+  savedProgress: SavedObjectivesState | null
+): Objective[] {
+  if (!savedProgress) {
+    return configObjectives
+  }
+
+  const progressMap = new Map(savedProgress.objectives.map((p) => [p.id, p]))
+
+  return configObjectives.map((configObj) => {
+    const saved = progressMap.get(configObj.id)
+    if (!saved) {
+      return configObj
+    }
+
+    // Merge saved progress with config definition
+    const merged: Objective = {
+      ...configObj,
+      status: saved.status,
+      currentProgress: saved.currentProgress ?? configObj.currentProgress,
+      completedAt: saved.completedAt ? new Date(saved.completedAt) : undefined,
+    }
+
+    // Merge subtask completion states
+    if (merged.subtasks && saved.subtasks) {
+      const subtaskMap = new Map(saved.subtasks.map((st) => [st.id, st.completed]))
+      merged.subtasks = merged.subtasks.map((st) => ({
+        ...st,
+        completed: subtaskMap.get(st.id) ?? st.completed,
+      }))
+    }
+
+    return merged
+  })
+}
 
 /**
  * Objectives Store
@@ -82,6 +164,7 @@ export const useObjectivesStore = defineStore('objectives', () => {
 
   /**
    * Load objectives from config file and initialize store
+   * Merges config definitions with saved progress from localStorage
    */
   function loadObjectivesFromConfig() {
     // Parse objectives from config
@@ -91,14 +174,29 @@ export const useObjectivesStore = defineStore('objectives', () => {
       completedAt: obj.completedAt ? new Date(obj.completedAt) : undefined,
     }))
 
-    objectives.value = parsedObjectives
+    // Load saved progress and merge with config
+    const savedProgress = loadSavedProgress()
+    objectives.value = mergeObjectivesWithProgress(parsedObjectives, savedProgress)
 
-    // Auto-select first unfinished main objective as tracked
-    const firstUnfinishedMain = objectives.value.find(
-      (obj) => obj.category === 'main' && obj.status !== 'completed'
-    )
-    if (firstUnfinishedMain) {
-      trackedObjectiveId.value = firstUnfinishedMain.id
+    // Restore tracked objective ID if available, otherwise auto-select first unfinished main objective
+    if (savedProgress?.trackedObjectiveId) {
+      const trackedObj = objectives.value.find((obj) => obj.id === savedProgress.trackedObjectiveId)
+      // Only restore if the objective still exists and is not completed
+      if (trackedObj && trackedObj.status !== 'completed') {
+        trackedObjectiveId.value = savedProgress.trackedObjectiveId
+      } else {
+        // Fall back to auto-select
+        const firstUnfinishedMain = objectives.value.find(
+          (obj) => obj.category === 'main' && obj.status !== 'completed'
+        )
+        trackedObjectiveId.value = firstUnfinishedMain?.id ?? null
+      }
+    } else {
+      // Auto-select first unfinished main objective as tracked
+      const firstUnfinishedMain = objectives.value.find(
+        (obj) => obj.category === 'main' && obj.status !== 'completed'
+      )
+      trackedObjectiveId.value = firstUnfinishedMain?.id ?? null
     }
   }
 
@@ -261,6 +359,73 @@ export const useObjectivesStore = defineStore('objectives', () => {
     }
   }
 
+  /**
+   * Unlock an objective (make it visible/active)
+   * Used when discovery conditions are met
+   */
+  function unlockObjective(id: string): boolean {
+    const objective = objectives.value.find((obj) => obj.id === id)
+    if (!objective || objective.status !== 'hidden') {
+      return false
+    }
+
+    objective.status = 'active'
+    return true
+  }
+
+  /**
+   * Save objectives progress to localStorage
+   */
+  function saveObjectives(): void {
+    try {
+      const progress: SavedObjectivesState = {
+        objectives: objectives.value.map((obj) => ({
+          id: obj.id,
+          status: obj.status,
+          currentProgress: obj.currentProgress,
+          completedAt: obj.completedAt?.toISOString(),
+          subtasks: obj.subtasks?.map((st) => ({
+            id: st.id,
+            completed: st.completed,
+          })),
+        })),
+        trackedObjectiveId: trackedObjectiveId.value,
+      }
+
+      localStorage.setItem(STORAGE_KEY_OBJECTIVES, JSON.stringify(progress))
+    } catch (error) {
+      console.error('Failed to save objectives to localStorage:', error)
+
+      // Show warning once per session
+      if (!hasShownStorageWarning) {
+        console.warn('Unable to save objective progress. Check browser storage settings.')
+        hasShownStorageWarning = true
+      }
+    }
+  }
+
+  /**
+   * Reset objectives to default state from config (for debug/testing)
+   */
+  function resetObjectives(): void {
+    try {
+      localStorage.removeItem(STORAGE_KEY_OBJECTIVES)
+    } catch (error) {
+      console.error('Failed to remove objectives from localStorage:', error)
+    }
+    // Reload from config
+    loadObjectivesFromConfig()
+  }
+
+  // Watch for changes and auto-save to localStorage
+  watch(
+    [objectives, trackedObjectiveId],
+    () => {
+      saveObjectives()
+    },
+    { deep: true }
+  )
+
   // Initialize on store creation
   loadObjectivesFromConfig()
 
@@ -281,7 +446,9 @@ export const useObjectivesStore = defineStore('objectives', () => {
     updateProgress,
     updateSubtask,
     completeObjective,
+    unlockObjective,
     evaluateDiscoveryConditions,
     checkDiscoveryCondition,
+    resetObjectives,
   }
 })

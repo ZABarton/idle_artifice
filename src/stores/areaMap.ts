@@ -1,8 +1,46 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { AreaMap } from '@/types/areaMap'
 import type { Feature } from '@/types/feature'
 import type { AreaMapConfig } from '@/types/areaMapConfig'
+
+// LocalStorage key
+const STORAGE_KEY_AREA_MAPS = 'idle-artifice-area-maps'
+
+// Track if we've shown storage warning to avoid spam
+let hasShownStorageWarning = false
+
+/**
+ * Saved feature state (what gets persisted to localStorage)
+ */
+interface SavedFeatureState {
+  id: string
+  state: Feature['state']
+}
+
+interface SavedAreaState {
+  coordinates: string // "q,r"
+  features: SavedFeatureState[]
+}
+
+interface SavedAreaMapsState {
+  areas: SavedAreaState[]
+}
+
+/**
+ * Load saved area maps state from localStorage
+ */
+function loadSavedAreaMaps(): SavedAreaMapsState | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_AREA_MAPS)
+    if (stored) {
+      return JSON.parse(stored) as SavedAreaMapsState
+    }
+  } catch (error) {
+    console.error('Failed to load area maps from localStorage:', error)
+  }
+  return null
+}
 
 /**
  * Area Map Store
@@ -18,8 +56,24 @@ export const useAreaMapStore = defineStore('areaMap', () => {
 
   /**
    * Currently active feature ID (for highlighting/interaction)
+   * This is UI state and NOT persisted to localStorage
    */
   const activeFeatureId = ref<string | null>(null)
+
+  /**
+   * Saved feature states loaded from localStorage
+   * Used to restore feature states when areas are initialized
+   */
+  const savedFeatureStates = ref<Map<string, Map<string, Feature['state']>>>(new Map())
+
+  // Load saved feature states on store creation
+  const savedData = loadSavedAreaMaps()
+  if (savedData) {
+    savedData.areas.forEach((area) => {
+      const featureStatesMap = new Map(area.features.map((f) => [f.id, f.state]))
+      savedFeatureStates.value.set(area.coordinates, featureStatesMap)
+    })
+  }
 
   // Getters
   /**
@@ -141,13 +195,20 @@ export const useAreaMapStore = defineStore('areaMap', () => {
   /**
    * Initialize area from configuration
    * Converts FeatureConfig to Feature and creates AreaMap
+   * Restores saved feature states from localStorage if available
    */
   function initializeAreaFromConfig(config: AreaMapConfig, q: number, r: number) {
+    const key = `${q},${r}`
+    const savedStates = savedFeatureStates.value.get(key)
+
     // Convert FeatureConfig to Feature by removing config-specific fields
     const features: Feature[] = config.features.map((featureConfig) => {
       // Use the first available position as the default position
       // (actual position will be determined dynamically based on layout)
       const defaultPosition = Object.values(featureConfig.positions)[0] || { x: 0, y: 0 }
+
+      // Restore saved state if available, otherwise use config default
+      const savedState = savedStates?.get(featureConfig.id)
 
       return {
         id: featureConfig.id,
@@ -156,7 +217,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
         description: featureConfig.description,
         icon: featureConfig.icon,
         position: defaultPosition,
-        state: featureConfig.state,
+        state: savedState ?? featureConfig.state,
         isActive: featureConfig.isActive,
         prerequisites: featureConfig.prerequisites,
         interactionType: featureConfig.interactionType,
@@ -174,6 +235,63 @@ export const useAreaMapStore = defineStore('areaMap', () => {
     initializeArea(areaMap)
   }
 
+  /**
+   * Save area maps state to localStorage
+   * Only persists feature states, not full area data
+   */
+  function saveAreaMaps(): void {
+    try {
+      const state: SavedAreaMapsState = {
+        areas: Array.from(areas.value.entries()).map(([key, area]) => ({
+          coordinates: key,
+          features: area.features.map((f) => ({
+            id: f.id,
+            state: f.state,
+          })),
+        })),
+      }
+
+      localStorage.setItem(STORAGE_KEY_AREA_MAPS, JSON.stringify(state))
+
+      // Also update savedFeatureStates for future area initializations
+      savedFeatureStates.value.clear()
+      state.areas.forEach((area) => {
+        const featureStatesMap = new Map(area.features.map((f) => [f.id, f.state]))
+        savedFeatureStates.value.set(area.coordinates, featureStatesMap)
+      })
+    } catch (error) {
+      console.error('Failed to save area maps to localStorage:', error)
+
+      // Show warning once per session
+      if (!hasShownStorageWarning) {
+        console.warn('Unable to save area map progress. Check browser storage settings.')
+        hasShownStorageWarning = true
+      }
+    }
+  }
+
+  /**
+   * Reset area maps to default state (for debug/testing)
+   */
+  function resetAreaMaps(): void {
+    try {
+      localStorage.removeItem(STORAGE_KEY_AREA_MAPS)
+    } catch (error) {
+      console.error('Failed to remove area maps from localStorage:', error)
+    }
+    savedFeatureStates.value.clear()
+    reset()
+  }
+
+  // Watch for changes and auto-save to localStorage
+  watch(
+    areas,
+    () => {
+      saveAreaMaps()
+    },
+    { deep: true }
+  )
+
   return {
     // State
     areas,
@@ -190,5 +308,6 @@ export const useAreaMapStore = defineStore('areaMap', () => {
     checkPrerequisites,
     tryUnlockFeature,
     reset,
+    resetAreaMaps,
   }
 })
