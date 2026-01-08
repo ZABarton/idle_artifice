@@ -18,19 +18,13 @@ export const harborConfig: AreaMapConfig = {
     // Desktop layout: single centered feature
     desktop: {
       mode: '1x2',
-      viewBoxWidth: 300,
-      viewBoxHeight: 300,
-      canvasWidth: 1600,
-      canvasHeight: 1200,
+      maxFeatureWidth: 1200,
       minWidth: 1400,
     },
     // Mobile layout: same as desktop (single feature)
     mobile: {
       mode: '1x2',
-      viewBoxWidth: 300,
-      viewBoxHeight: 300,
-      canvasWidth: 1000,
-      canvasHeight: 1200,
+      maxFeatureWidth: 800,
       maxWidth: 1399,
     },
   },
@@ -43,10 +37,6 @@ export const harborConfig: AreaMapConfig = {
       component: markRaw(WharfFeature),
       name: 'The Wharf',
       icon: '⚓',
-      positions: {
-        desktop: { x: 0, y: 0 }, // Centered
-        mobile: { x: 0, y: 0 }, // Centered
-      },
       state: 'locked',
       isActive: false,
       interactionType: 'navigation',
