@@ -107,8 +107,8 @@ const expandIcon = computed(() => {
       </button>
     </div>
 
-    <!-- Card Body Content (conditionally rendered based on isExpanded) -->
-    <div v-if="feature.isExpanded" class="feature-card__body">
+    <!-- Card Body Content -->
+    <div class="feature-card__body">
       <!-- Locked state: show lock icon and requirements -->
       <div v-if="feature.state === 'locked'" class="feature-card__locked">
         <div class="lock-icon">🔒</div>
@@ -122,10 +122,28 @@ const expandIcon = computed(() => {
         </div>
       </div>
 
-      <!-- Unlocked state: slot for feature-specific content -->
-      <div v-else class="feature-card__content">
-        <slot></slot>
-      </div>
+      <!-- Unlocked state: show minimized or expanded view -->
+      <template v-else>
+        <!-- Minimized view: shown when collapsed -->
+        <Transition name="fade">
+          <div v-if="!feature.isExpanded" class="feature-card__minimized">
+            <slot name="minimized">
+              <!-- Default minimized content if no slot provided -->
+              <div class="default-minimized">
+                <span class="minimized-icon">{{ feature.icon }}</span>
+                <span class="minimized-text">{{ feature.description || 'Click to expand' }}</span>
+              </div>
+            </slot>
+          </div>
+        </Transition>
+
+        <!-- Expanded view: shown when expanded -->
+        <Transition name="fade">
+          <div v-if="feature.isExpanded" class="feature-card__expanded">
+            <slot></slot>
+          </div>
+        </Transition>
+      </template>
     </div>
   </div>
 </template>
@@ -205,10 +223,42 @@ const expandIcon = computed(() => {
 /* Card Body */
 .feature-card__body {
   padding: 1rem;
-  min-height: 100px;
+  min-height: 60px;
+  position: relative;
 }
 
-.feature-card__content {
+/* Minimized view */
+.feature-card__minimized {
+  width: 100%;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 0.875rem;
+  color: #666666;
+}
+
+.default-minimized {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.minimized-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.minimized-text {
+  font-size: 0.875rem;
+  color: #666666;
+  font-style: italic;
+}
+
+/* Expanded view */
+.feature-card__expanded {
   width: 100%;
   font-family:
     system-ui,
@@ -216,6 +266,22 @@ const expandIcon = computed(() => {
     sans-serif;
   font-size: 0.875rem;
   color: #333333;
+}
+
+/* Transition animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
 }
 
 /* Locked state styles */
@@ -285,6 +351,15 @@ const expandIcon = computed(() => {
 
   .feature-card__body {
     padding: 0.75rem;
+    min-height: 50px;
+  }
+
+  .minimized-icon {
+    font-size: 1.25rem;
+  }
+
+  .minimized-text {
+    font-size: 0.8rem;
   }
 }
 </style>

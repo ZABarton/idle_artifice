@@ -543,10 +543,11 @@ describe('Integration Tests', () => {
         expect(feature.isExpanded).toBe(false)
       })
 
-      // Feature bodies should not be visible
+      // Feature cards should show minimized view, not expanded view
       const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
       featureCards.forEach((card) => {
-        expect(card.find('.feature-card__body').exists()).toBe(false)
+        expect(card.find('.feature-card__minimized').exists()).toBe(true)
+        expect(card.find('.feature-card__expanded').exists()).toBe(false)
       })
     })
 
@@ -568,18 +569,20 @@ describe('Integration Tests', () => {
 
       expect(quartermasterCard).toBeDefined()
 
-      // Initially collapsed
-      expect(quartermasterCard!.find('.feature-card__body').exists()).toBe(false)
+      // Initially collapsed - showing minimized view
+      expect(quartermasterCard!.find('.feature-card__minimized').exists()).toBe(true)
+      expect(quartermasterCard!.find('.feature-card__expanded').exists()).toBe(false)
 
       // Click expand button
       const expandButton = quartermasterCard!.find('.feature-card__expand-button')
       await expandButton.trigger('click')
       await wrapper.vm.$nextTick()
 
-      // Should now be expanded
+      // Should now be expanded - showing expanded view
       const quartermasterFeature = areaMapStore.getFeatureById('academy-quartermaster')
       expect(quartermasterFeature?.isExpanded).toBe(true)
-      expect(quartermasterCard!.find('.feature-card__body').exists()).toBe(true)
+      expect(quartermasterCard!.find('.feature-card__minimized').exists()).toBe(false)
+      expect(quartermasterCard!.find('.feature-card__expanded').exists()).toBe(true)
     })
 
     it('collapses feature when collapse button is clicked on expanded feature', async () => {
@@ -602,16 +605,18 @@ describe('Integration Tests', () => {
       await expandButton.trigger('click')
       await wrapper.vm.$nextTick()
 
-      // Verify expanded
+      // Verify expanded - showing expanded view
       expect(areaMapStore.getFeatureById('academy-quartermaster')?.isExpanded).toBe(true)
+      expect(quartermasterCard!.find('.feature-card__expanded').exists()).toBe(true)
 
       // Click collapse button
       await expandButton.trigger('click')
       await wrapper.vm.$nextTick()
 
-      // Should now be collapsed
+      // Should now be collapsed - showing minimized view
       expect(areaMapStore.getFeatureById('academy-quartermaster')?.isExpanded).toBe(false)
-      expect(quartermasterCard!.find('.feature-card__body').exists()).toBe(false)
+      expect(quartermasterCard!.find('.feature-card__minimized').exists()).toBe(true)
+      expect(quartermasterCard!.find('.feature-card__expanded').exists()).toBe(false)
     })
 
     it('allows multiple features to be expanded simultaneously', async () => {
@@ -642,8 +647,8 @@ describe('Integration Tests', () => {
       // Both should be expanded
       expect(areaMapStore.getFeatureById('academy-quartermaster')?.isExpanded).toBe(true)
       expect(areaMapStore.getFeatureById('academy-foundry')?.isExpanded).toBe(true)
-      expect(quartermasterCard!.find('.feature-card__body').exists()).toBe(true)
-      expect(foundryCard!.find('.feature-card__body').exists()).toBe(true)
+      expect(quartermasterCard!.find('.feature-card__expanded').exists()).toBe(true)
+      expect(foundryCard!.find('.feature-card__expanded').exists()).toBe(true)
     })
 
     it('expanded state is independent of active state', async () => {
