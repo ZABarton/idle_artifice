@@ -16,6 +16,8 @@ interface Props {
 interface Emits {
   /** Emitted when the card is clicked */
   (e: 'click', feature: Feature): void
+  /** Emitted when the expand/collapse button is clicked */
+  (e: 'toggleExpand', feature: Feature): void
 }
 
 const props = defineProps<Props>()
@@ -61,6 +63,17 @@ const cursorStyle = computed(() => {
 function handleClick() {
   emit('click', props.feature)
 }
+
+// Handle expand/collapse button click
+function handleExpandToggle(event: MouseEvent) {
+  event.stopPropagation() // Prevent triggering the card click
+  emit('toggleExpand', props.feature)
+}
+
+// Computed property for expand/collapse button icon
+const expandIcon = computed(() => {
+  return props.feature.isExpanded ? '▼' : '▶'
+})
 </script>
 
 <template>
@@ -85,10 +98,17 @@ function handleClick() {
     <div class="feature-card__title-bar" :style="{ backgroundColor: titleBarColor }">
       <span class="feature-card__icon">{{ feature.icon }}</span>
       <span class="feature-card__title">{{ feature.name }}</span>
+      <button
+        class="feature-card__expand-button"
+        :aria-label="feature.isExpanded ? 'Collapse' : 'Expand'"
+        @click="handleExpandToggle"
+      >
+        {{ expandIcon }}
+      </button>
     </div>
 
-    <!-- Card Body Content -->
-    <div class="feature-card__body">
+    <!-- Card Body Content (conditionally rendered based on isExpanded) -->
+    <div v-if="feature.isExpanded" class="feature-card__body">
       <!-- Locked state: show lock icon and requirements -->
       <div v-if="feature.state === 'locked'" class="feature-card__locked">
         <div class="lock-icon">🔒</div>
@@ -155,6 +175,31 @@ function handleClick() {
 .feature-card__title {
   font-size: 1rem;
   line-height: 1;
+  flex: 1;
+}
+
+.feature-card__expand-button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.feature-card__expand-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.feature-card__expand-button:active {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Card Body */
@@ -230,6 +275,12 @@ function handleClick() {
 
   .feature-card__icon {
     font-size: 1rem;
+  }
+
+  .feature-card__expand-button {
+    min-width: 20px;
+    min-height: 20px;
+    font-size: 0.875rem;
   }
 
   .feature-card__body {

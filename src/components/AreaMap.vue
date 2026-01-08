@@ -217,6 +217,11 @@ const handleFeatureNavigate = (featureType: string) => {
   // TODO: Navigate to feature screen - will be implemented in a future milestone
   void featureType // Suppress unused variable warning
 }
+
+// Handle expand/collapse toggle from feature cards
+const handleFeatureExpandToggle = (feature: Feature) => {
+  areaMapStore.toggleFeatureExpanded(feature.id)
+}
 </script>
 
 <template>
@@ -241,6 +246,7 @@ const handleFeatureNavigate = (featureType: string) => {
           :key="feature.id"
           :feature="feature"
           @click="handleFeatureClick"
+          @toggle-expand="handleFeatureExpandToggle"
         >
           <!-- Dynamic feature component from config -->
           <component

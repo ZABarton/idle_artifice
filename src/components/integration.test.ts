@@ -526,6 +526,190 @@ describe('Integration Tests', () => {
     })
   })
 
+  describe('Feature Accordion Expansion/Collapse', () => {
+    it('features start collapsed by default', async () => {
+      const navigationStore = useNavigationStore()
+      const areaMapStore = useAreaMapStore()
+      const wrapper = mount(MainView)
+
+      // Navigate to Academy
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
+      await wrapper.vm.$nextTick()
+      await flushPromises()
+
+      // All features should start collapsed (isExpanded = false)
+      const features = areaMapStore.getFeatures(0, 0)
+      features.forEach((feature) => {
+        expect(feature.isExpanded).toBe(false)
+      })
+
+      // Feature bodies should not be visible
+      const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
+      featureCards.forEach((card) => {
+        expect(card.find('.feature-card__body').exists()).toBe(false)
+      })
+    })
+
+    it('expands feature when expand button is clicked', async () => {
+      const navigationStore = useNavigationStore()
+      const areaMapStore = useAreaMapStore()
+      const wrapper = mount(MainView)
+
+      // Navigate to Academy
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
+      await wrapper.vm.$nextTick()
+      await flushPromises()
+
+      // Find Quartermaster feature card
+      const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
+      const quartermasterCard = featureCards.find(
+        (card) => card.props('feature')?.id === 'academy-quartermaster'
+      )
+
+      expect(quartermasterCard).toBeDefined()
+
+      // Initially collapsed
+      expect(quartermasterCard!.find('.feature-card__body').exists()).toBe(false)
+
+      // Click expand button
+      const expandButton = quartermasterCard!.find('.feature-card__expand-button')
+      await expandButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Should now be expanded
+      const quartermasterFeature = areaMapStore.getFeatureById('academy-quartermaster')
+      expect(quartermasterFeature?.isExpanded).toBe(true)
+      expect(quartermasterCard!.find('.feature-card__body').exists()).toBe(true)
+    })
+
+    it('collapses feature when collapse button is clicked on expanded feature', async () => {
+      const navigationStore = useNavigationStore()
+      const areaMapStore = useAreaMapStore()
+      const wrapper = mount(MainView)
+
+      // Navigate to Academy
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
+      await wrapper.vm.$nextTick()
+      await flushPromises()
+
+      // Find and expand Quartermaster
+      const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
+      const quartermasterCard = featureCards.find(
+        (card) => card.props('feature')?.id === 'academy-quartermaster'
+      )
+
+      const expandButton = quartermasterCard!.find('.feature-card__expand-button')
+      await expandButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Verify expanded
+      expect(areaMapStore.getFeatureById('academy-quartermaster')?.isExpanded).toBe(true)
+
+      // Click collapse button
+      await expandButton.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Should now be collapsed
+      expect(areaMapStore.getFeatureById('academy-quartermaster')?.isExpanded).toBe(false)
+      expect(quartermasterCard!.find('.feature-card__body').exists()).toBe(false)
+    })
+
+    it('allows multiple features to be expanded simultaneously', async () => {
+      const navigationStore = useNavigationStore()
+      const areaMapStore = useAreaMapStore()
+      const wrapper = mount(MainView)
+
+      // Navigate to Academy
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
+      await wrapper.vm.$nextTick()
+      await flushPromises()
+
+      // Find two features
+      const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
+      const quartermasterCard = featureCards.find(
+        (card) => card.props('feature')?.id === 'academy-quartermaster'
+      )
+      const foundryCard = featureCards.find(
+        (card) => card.props('feature')?.id === 'academy-foundry'
+      )
+
+      // Expand both features
+      await quartermasterCard!.find('.feature-card__expand-button').trigger('click')
+      await wrapper.vm.$nextTick()
+      await foundryCard!.find('.feature-card__expand-button').trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Both should be expanded
+      expect(areaMapStore.getFeatureById('academy-quartermaster')?.isExpanded).toBe(true)
+      expect(areaMapStore.getFeatureById('academy-foundry')?.isExpanded).toBe(true)
+      expect(quartermasterCard!.find('.feature-card__body').exists()).toBe(true)
+      expect(foundryCard!.find('.feature-card__body').exists()).toBe(true)
+    })
+
+    it('expanded state is independent of active state', async () => {
+      const navigationStore = useNavigationStore()
+      const areaMapStore = useAreaMapStore()
+      const wrapper = mount(MainView)
+
+      // Navigate to Academy
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
+      await wrapper.vm.$nextTick()
+      await flushPromises()
+
+      const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
+      const quartermasterCard = featureCards.find(
+        (card) => card.props('feature')?.id === 'academy-quartermaster'
+      )
+
+      // Expand the feature
+      await quartermasterCard!.find('.feature-card__expand-button').trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Click the card to activate it (not the expand button)
+      await quartermasterCard!.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      const feature = areaMapStore.getFeatureById('academy-quartermaster')
+      expect(feature?.isExpanded).toBe(true)
+      expect(feature?.isActive).toBe(true)
+
+      // Deactivate by clicking again
+      await quartermasterCard!.trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Should still be expanded but not active
+      expect(feature?.isExpanded).toBe(true)
+      expect(feature?.isActive).toBe(false)
+    })
+
+    it('expand button click does not trigger card click', async () => {
+      const navigationStore = useNavigationStore()
+      const areaMapStore = useAreaMapStore()
+      const wrapper = mount(MainView)
+
+      // Navigate to Academy
+      navigationStore.navigateToAreaMap(0, 0, 'academy')
+      await wrapper.vm.$nextTick()
+      await flushPromises()
+
+      const featureCards = wrapper.findAllComponents({ name: 'FeatureCard' })
+      const quartermasterCard = featureCards.find(
+        (card) => card.props('feature')?.id === 'academy-quartermaster'
+      )
+
+      const feature = areaMapStore.getFeatureById('academy-quartermaster')
+      expect(feature?.isActive).toBe(false)
+
+      // Click expand button
+      await quartermasterCard!.find('.feature-card__expand-button').trigger('click')
+      await wrapper.vm.$nextTick()
+
+      // Should be expanded but NOT active (card click not triggered)
+      expect(feature?.isExpanded).toBe(true)
+      expect(feature?.isActive).toBe(false)
+    })
+  })
+
   describe('Hex Exploration and Reveal Behavior', () => {
     it('reveals surrounding hexes from config when exploring Academy for first time', async () => {
       const navigationStore = useNavigationStore()
