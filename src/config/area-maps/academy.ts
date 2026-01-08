@@ -17,22 +17,16 @@ export const academyConfig: AreaMapConfig = {
 
   // Layout configurations for different screen sizes
   layouts: {
-    // Desktop layout: 2x2 grid arrangement
+    // Desktop layout: wider max width
     desktop: {
       mode: '2x2',
-      viewBoxWidth: 300,
-      viewBoxHeight: 300,
-      canvasWidth: 1600,
-      canvasHeight: 1200,
+      maxFeatureWidth: 1200,
       minWidth: 1400, // Breakpoint: use this layout at 1400px and above
     },
-    // Mobile layout: 1x4 vertical stack
+    // Mobile layout: narrower max width
     mobile: {
       mode: '1x4',
-      viewBoxWidth: 300,
-      viewBoxHeight: 500,
-      canvasWidth: 1000,
-      canvasHeight: 2000,
+      maxFeatureWidth: 800,
       maxWidth: 1399, // Breakpoint: use this layout below 1400px
     },
   },
@@ -46,10 +40,6 @@ export const academyConfig: AreaMapConfig = {
       name: 'Foundry',
       description: 'Craft equipment for your explorers.',
       icon: '🔨',
-      positions: {
-        desktop: { x: -130, y: -110 }, // Top-left in 2x2 grid
-        mobile: { x: -60, y: -230 }, // First in vertical stack
-      },
       state: 'unlocked',
       isActive: false,
       interactionType: 'navigation',
@@ -61,10 +51,6 @@ export const academyConfig: AreaMapConfig = {
       name: 'Quartermaster',
       description: "Manage your camp's supplies.",
       icon: '📦',
-      positions: {
-        desktop: { x: 10, y: -110 }, // Top-right in 2x2 grid
-        mobile: { x: -60, y: -110 }, // Second in vertical stack
-      },
       state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
@@ -76,10 +62,6 @@ export const academyConfig: AreaMapConfig = {
       name: 'Tavern',
       description: "Manage your camp's explorers.",
       icon: '🍺',
-      positions: {
-        desktop: { x: -130, y: 10 }, // Bottom-left in 2x2 grid
-        mobile: { x: -60, y: 10 }, // Third in vertical stack
-      },
       state: 'unlocked',
       isActive: false,
       interactionType: 'navigation',

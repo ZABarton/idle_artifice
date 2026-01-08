@@ -41,11 +41,11 @@ const borderColor = computed(() => {
 })
 
 const borderWidth = computed(() => {
-  return props.feature.isActive ? 2 : 1
+  return props.feature.isActive ? '2px' : '1px'
 })
 
 const borderStyle = computed(() => {
-  return props.feature.state === 'locked' ? '4,2' : '0' // Dashed for locked, solid otherwise
+  return props.feature.state === 'locked' ? 'dashed' : 'solid'
 })
 
 const cardOpacity = computed(() => {
@@ -57,12 +57,6 @@ const cursorStyle = computed(() => {
   return 'pointer'
 })
 
-// Card dimensions (from design specs)
-const CARD_WIDTH = 120
-const CARD_HEIGHT = 100 // Variable based on content, using 100 as base
-const TITLE_BAR_HEIGHT = 16
-const CARD_PADDING = 4
-
 // Handle click event
 function handleClick() {
   emit('click', props.feature)
@@ -70,134 +64,113 @@ function handleClick() {
 </script>
 
 <template>
-  <g
+  <div
     class="feature-card"
     :class="{
       'feature-card--active': feature.isActive,
       'feature-card--locked': feature.state === 'locked',
     }"
     :data-feature-id="feature.id"
-    :transform="`translate(${feature.position.x}, ${feature.position.y})`"
-    :style="{ cursor: cursorStyle, opacity: cardOpacity }"
+    :style="{
+      cursor: cursorStyle,
+      opacity: cardOpacity,
+      backgroundColor: bodyBackground,
+      borderColor: borderColor,
+      borderWidth: borderWidth,
+      borderStyle: borderStyle,
+    }"
     @click="handleClick"
   >
-    <!-- Card Background -->
-    <rect
-      x="0"
-      y="0"
-      :width="CARD_WIDTH"
-      :height="CARD_HEIGHT"
-      :fill="bodyBackground"
-      :stroke="borderColor"
-      :stroke-width="borderWidth"
-      :stroke-dasharray="borderStyle"
-      rx="2"
-      ry="2"
-      class="feature-card__background"
-    />
-
     <!-- Title Bar -->
-    <rect
-      x="0"
-      y="0"
-      :width="CARD_WIDTH"
-      :height="TITLE_BAR_HEIGHT"
-      :fill="titleBarColor"
-      rx="2"
-      ry="2"
-      class="feature-card__title-bar"
-    />
-
-    <!-- Icon (using text element for emoji placeholder) -->
-    <text
-      :x="CARD_PADDING + 6"
-      :y="TITLE_BAR_HEIGHT / 2 + 1"
-      font-size="10"
-      text-anchor="middle"
-      dominant-baseline="middle"
-      class="feature-card__icon"
-    >
-      {{ feature.icon }}
-    </text>
-
-    <!-- Title Text -->
-    <text
-      :x="CARD_PADDING + 14"
-      :y="TITLE_BAR_HEIGHT / 2"
-      font-size="5"
-      fill="#ffffff"
-      font-weight="600"
-      dominant-baseline="middle"
-      class="feature-card__title"
-    >
-      {{ feature.name }}
-    </text>
+    <div class="feature-card__title-bar" :style="{ backgroundColor: titleBarColor }">
+      <span class="feature-card__icon">{{ feature.icon }}</span>
+      <span class="feature-card__title">{{ feature.name }}</span>
+    </div>
 
     <!-- Card Body Content -->
-    <foreignObject
-      :x="CARD_PADDING"
-      :y="TITLE_BAR_HEIGHT + CARD_PADDING"
-      :width="CARD_WIDTH - CARD_PADDING * 2"
-      :height="CARD_HEIGHT - TITLE_BAR_HEIGHT - CARD_PADDING * 2"
-      class="feature-card__body"
-    >
-      <div xmlns="http://www.w3.org/1999/xhtml" class="feature-card__content">
-        <!-- Locked state: show lock icon and requirements -->
-        <div v-if="feature.state === 'locked'" class="feature-card__locked">
-          <div class="lock-icon">🔒</div>
-          <div class="requirements">
-            <div class="requirements__title">Requires:</div>
-            <ul class="requirements__list">
-              <li v-for="prereq in feature.prerequisites" :key="prereq.id">
-                {{ prereq.description }}
-              </li>
-            </ul>
-          </div>
+    <div class="feature-card__body">
+      <!-- Locked state: show lock icon and requirements -->
+      <div v-if="feature.state === 'locked'" class="feature-card__locked">
+        <div class="lock-icon">🔒</div>
+        <div class="requirements">
+          <div class="requirements__title">Requires:</div>
+          <ul class="requirements__list">
+            <li v-for="prereq in feature.prerequisites" :key="prereq.id">
+              {{ prereq.description }}
+            </li>
+          </ul>
         </div>
-
-        <!-- Unlocked state: slot for feature-specific content -->
-        <slot v-else></slot>
       </div>
-    </foreignObject>
-  </g>
+
+      <!-- Unlocked state: slot for feature-specific content -->
+      <div v-else class="feature-card__content">
+        <slot></slot>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
 .feature-card {
+  width: 100%;
+  border: 1px solid #333333;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #ffffff;
   transition:
     opacity 0.2s ease,
-    filter 0.2s ease;
+    box-shadow 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .feature-card:hover:not(.feature-card--locked) {
-  opacity: 0.85;
-  filter: drop-shadow(0 2px 6px rgba(74, 144, 226, 0.3));
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
 }
 
 .feature-card--active {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  box-shadow: 0 6px 16px rgba(53, 122, 189, 0.4);
 }
 
-.feature-card__background {
-  transition: all 0.2s ease;
+.feature-card--locked {
+  cursor: help;
 }
 
+/* Title Bar */
 .feature-card__title-bar {
-  transition: fill 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #4a90e2;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
-/* Styles for the foreignObject content */
+.feature-card__icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.feature-card__title {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Card Body */
+.feature-card__body {
+  padding: 1rem;
+  min-height: 100px;
+}
+
 .feature-card__content {
   width: 100%;
-  height: 100%;
   font-family:
     system-ui,
     -apple-system,
     sans-serif;
-  font-size: 7px;
+  font-size: 0.875rem;
   color: #333333;
-  overflow: hidden;
-  box-sizing: border-box;
 }
 
 /* Locked state styles */
@@ -206,24 +179,24 @@ function handleClick() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  min-height: 100px;
   text-align: center;
-  padding: 2px;
+  padding: 0.5rem;
 }
 
 .lock-icon {
-  font-size: 14px;
-  margin-bottom: 2px;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .requirements {
-  font-size: 1em;
+  font-size: 0.875rem;
   color: #666666;
 }
 
 .requirements__title {
   font-weight: 600;
-  margin-bottom: 1px;
+  margin-bottom: 0.5rem;
 }
 
 .requirements__list {
@@ -231,12 +204,12 @@ function handleClick() {
   padding: 0;
   margin: 0;
   text-align: left;
-  font-size: 0.9em;
+  font-size: 0.875rem;
 }
 
 .requirements__list li {
-  margin-bottom: 0.5px;
-  padding-left: 3px;
+  margin-bottom: 0.25rem;
+  padding-left: 1rem;
   position: relative;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -246,5 +219,21 @@ function handleClick() {
   content: '•';
   position: absolute;
   left: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .feature-card__title-bar {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .feature-card__icon {
+    font-size: 1rem;
+  }
+
+  .feature-card__body {
+    padding: 0.75rem;
+  }
 }
 </style>

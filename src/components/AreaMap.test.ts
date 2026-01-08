@@ -35,12 +35,12 @@ describe('AreaMap', () => {
       expect(wrapper.find('.area-map-header__close').exists()).toBe(true)
     })
 
-    it('renders SVG canvas', () => {
+    it('renders feature stack container', () => {
       const wrapper = mount(AreaMap, {
         props: { q: 0, r: 0 },
       })
 
-      expect(wrapper.find('.area-map-canvas').exists()).toBe(true)
+      expect(wrapper.find('.feature-stack').exists()).toBe(true)
     })
 
     it('renders visible features', () => {
@@ -99,8 +99,8 @@ describe('AreaMap', () => {
       })
       await flushPromises() // Wait for async config loading in onMounted
 
-      const backgroundRect = wrapper.find('.area-map-canvas rect')
-      expect(backgroundRect.attributes('fill')).toBe('#e8dcc4')
+      const container = wrapper.find('.area-map-container')
+      expect(container.attributes('style')).toContain('background-color: #e8dcc4')
     })
   })
 
@@ -217,11 +217,10 @@ describe('AreaMap', () => {
         props: { q: 0, r: 0 },
       })
 
-      // Check canvas dimensions (should be wider for 2x2)
-      const svg = wrapper.find('.area-map-canvas')
-      const style = svg.attributes('style')
-      expect(style).toContain('width: 1600px')
-      expect(style).toContain('height: 1200px')
+      // Check feature stack max width (should be wider for desktop)
+      const featureStack = wrapper.find('.feature-stack')
+      const style = featureStack.attributes('style')
+      expect(style).toContain('max-width: 1200px')
     })
 
     it('uses 1x4 layout mode for narrow windows', async () => {
@@ -237,11 +236,10 @@ describe('AreaMap', () => {
       })
       await flushPromises() // Wait for async config loading in onMounted
 
-      // Check canvas dimensions (should be narrower and taller for 1x4)
-      const svg = wrapper.find('.area-map-canvas')
-      const style = svg.attributes('style')
-      expect(style).toContain('width: 1000px')
-      expect(style).toContain('height: 2000px')
+      // Check feature stack max width (should be narrower for mobile)
+      const featureStack = wrapper.find('.feature-stack')
+      const style = featureStack.attributes('style')
+      expect(style).toContain('max-width: 800px')
     })
   })
 

@@ -203,10 +203,6 @@ export const useAreaMapStore = defineStore('areaMap', () => {
 
     // Convert FeatureConfig to Feature by removing config-specific fields
     const features: Feature[] = config.features.map((featureConfig) => {
-      // Use the first available position as the default position
-      // (actual position will be determined dynamically based on layout)
-      const defaultPosition = Object.values(featureConfig.positions)[0] || { x: 0, y: 0 }
-
       // Restore saved state if available, otherwise use config default
       const savedState = savedStates?.get(featureConfig.id)
 
@@ -216,7 +212,6 @@ export const useAreaMapStore = defineStore('areaMap', () => {
         name: featureConfig.name,
         description: featureConfig.description,
         icon: featureConfig.icon,
-        position: defaultPosition,
         state: savedState ?? featureConfig.state,
         isActive: featureConfig.isActive,
         prerequisites: featureConfig.prerequisites,

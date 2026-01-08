@@ -84,10 +84,10 @@ describe('FeatureCard', () => {
         props: { feature: mockUnlockedFeature },
       })
 
-      const background = wrapper.find('.feature-card__background')
-      expect(background.attributes('fill')).toBe('#ffffff')
-      expect(background.attributes('stroke')).toBe('#333333')
-      expect(background.attributes('stroke-width')).toBe('1')
+      const card = wrapper.find('.feature-card')
+      expect(card.attributes('style')).toContain('background-color: #ffffff')
+      expect(card.attributes('style')).toContain('border-color: #333333')
+      expect(card.attributes('style')).toContain('border-width: 1px')
     })
 
     it('applies correct styles for active state', () => {
@@ -96,10 +96,10 @@ describe('FeatureCard', () => {
         props: { feature: activeFeature },
       })
 
-      const background = wrapper.find('.feature-card__background')
-      expect(background.attributes('fill')).toBe('#f8fcff')
-      expect(background.attributes('stroke')).toBe('#357abd')
-      expect(background.attributes('stroke-width')).toBe('2')
+      const card = wrapper.find('.feature-card')
+      expect(card.attributes('style')).toContain('background-color: #f8fcff')
+      expect(card.attributes('style')).toContain('border-color: #357abd')
+      expect(card.attributes('style')).toContain('border-width: 2px')
     })
 
     it('applies correct styles for locked state', () => {
@@ -107,10 +107,10 @@ describe('FeatureCard', () => {
         props: { feature: mockLockedFeature },
       })
 
-      const background = wrapper.find('.feature-card__background')
-      expect(background.attributes('fill')).toBe('#e0e0e0')
-      expect(background.attributes('stroke')).toBe('#999999')
-      expect(background.attributes('stroke-dasharray')).toBe('4,2')
+      const card = wrapper.find('.feature-card')
+      expect(card.attributes('style')).toContain('background-color: #e0e0e0')
+      expect(card.attributes('style')).toContain('border-color: #999999')
+      expect(card.attributes('style')).toContain('border-style: dashed')
     })
 
     it('has correct cursor style for unlocked feature', () => {
@@ -153,30 +153,6 @@ describe('FeatureCard', () => {
 
       expect(wrapper.emitted('click')).toBeTruthy()
       expect(wrapper.emitted('click')?.[0]).toEqual([mockLockedFeature])
-    })
-  })
-
-  describe('Positioning', () => {
-    it('applies correct transform based on position', () => {
-      const wrapper = mount(FeatureCard, {
-        props: {
-          feature: { ...mockUnlockedFeature, position: { x: 100, y: 50 } },
-        },
-      })
-
-      const card = wrapper.find('.feature-card')
-      expect(card.attributes('transform')).toBe('translate(100, 50)')
-    })
-
-    it('handles negative positions', () => {
-      const wrapper = mount(FeatureCard, {
-        props: {
-          feature: { ...mockUnlockedFeature, position: { x: -100, y: -50 } },
-        },
-      })
-
-      const card = wrapper.find('.feature-card')
-      expect(card.attributes('transform')).toBe('translate(-100, -50)')
     })
   })
 

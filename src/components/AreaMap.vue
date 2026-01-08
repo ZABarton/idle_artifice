@@ -14,9 +14,9 @@ import { executeTriggers, createTriggerContext } from '@/services/areaTriggers'
 
 /**
  * AreaMap Component
- * Displays a spatial canvas with interactive Features for a specific hex area
- * Architecture: Header bar + SVG canvas with positioned Features
- * Responsive: 2x2 grid at ≥1400px, 1x4 vertical stack below
+ * Displays interactive Features for a specific hex area in a vertical stack
+ * Architecture: Header bar + vertically stacked feature cards
+ * Responsive: Different max widths for desktop vs mobile
  */
 
 interface Props {
@@ -71,40 +71,15 @@ const activeLayout = computed(() => {
       name: 'default',
       config: {
         mode: '2x2' as const,
-        viewBoxWidth: 300,
-        viewBoxHeight: 300,
-        canvasWidth: 1600,
-        canvasHeight: 1200,
+        maxFeatureWidth: 1200,
       },
     }
   }
   return getActiveLayout(areaConfig.value, windowWidth.value)
 })
 
-// Layout dimensions from active layout config
-const viewBoxWidth = computed(() => activeLayout.value.config.viewBoxWidth)
-const viewBoxHeight = computed(() => activeLayout.value.config.viewBoxHeight)
-const canvasWidth = computed(() => activeLayout.value.config.canvasWidth)
-const canvasHeight = computed(() => activeLayout.value.config.canvasHeight)
-
-// Get dynamic position based on layout mode and config
-const getFeaturePosition = (feature: Feature) => {
-  if (!areaConfig.value) {
-    return feature.position // Fallback to feature's default position
-  }
-
-  // Find the feature config that matches this feature
-  const featureConfig = areaConfig.value.features.find((f) => f.id === feature.id)
-  if (!featureConfig) {
-    return feature.position // Fallback
-  }
-
-  // Get position for current layout
-  const layoutName = activeLayout.value.name
-  const position = featureConfig.positions[layoutName]
-
-  return position ?? feature.position // Fallback if position not defined for this layout
-}
+// Maximum feature width from active layout config
+const maxFeatureWidth = computed(() => activeLayout.value.config.maxFeatureWidth ?? 1200)
 
 // Window resize handler
 const handleResize = () => {
@@ -245,7 +220,7 @@ const handleFeatureNavigate = (featureType: string) => {
 </script>
 
 <template>
-  <div class="area-map-container">
+  <div class="area-map-container" :style="{ backgroundColor }">
     <!-- Header Bar -->
     <header class="area-map-header">
       <h1 class="area-map-header__title">{{ areaTitle }}</h1>
@@ -258,33 +233,13 @@ const handleFeatureNavigate = (featureType: string) => {
       </button>
     </header>
 
-    <!-- SVG Canvas -->
-    <div class="area-map-canvas-wrapper">
-      <svg
-        class="area-map-canvas"
-        :style="{
-          width: `${canvasWidth}px`,
-          height: `${canvasHeight}px`,
-          minWidth: `${canvasWidth}px`,
-          minHeight: `${canvasHeight}px`,
-        }"
-        :viewBox="`${-viewBoxWidth / 2} ${-viewBoxHeight / 2} ${viewBoxWidth} ${viewBoxHeight}`"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <!-- Background -->
-        <rect
-          :x="-viewBoxWidth / 2"
-          :y="-viewBoxHeight / 2"
-          :width="viewBoxWidth"
-          :height="viewBoxHeight"
-          :fill="backgroundColor"
-        />
-
-        <!-- Features with dynamic positions -->
+    <!-- Feature Stack -->
+    <div class="area-map-content">
+      <div class="feature-stack" :style="{ maxWidth: `${maxFeatureWidth}px` }">
         <FeatureCard
           v-for="feature in features"
           :key="feature.id"
-          :feature="{ ...feature, position: getFeaturePosition(feature) }"
+          :feature="feature"
           @click="handleFeatureClick"
         >
           <!-- Dynamic feature component from config -->
@@ -293,7 +248,7 @@ const handleFeatureNavigate = (featureType: string) => {
             @navigate="handleFeatureNavigate(feature.type)"
           />
         </FeatureCard>
-      </svg>
+      </div>
     </div>
   </div>
 </template>
@@ -365,21 +320,24 @@ const handleFeatureNavigate = (featureType: string) => {
   transform: scale(0.95);
 }
 
-/* Canvas Wrapper - Scrollable Container */
-.area-map-canvas-wrapper {
+/* Content Area - Scrollable Container */
+.area-map-content {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
-  background-color: #f5f5f5;
   display: flex;
   justify-content: center;
+  padding: 1.5rem;
 }
 
-/* SVG Canvas */
-.area-map-canvas {
-  display: block;
-  align-self: flex-start;
-  /* Width and height are set dynamically via inline styles based on layout mode */
+/* Feature Stack */
+.feature-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0 auto;
 }
 
 /* Responsive */
@@ -388,9 +346,12 @@ const handleFeatureNavigate = (featureType: string) => {
     padding: 0 1rem;
   }
 
-  .floating-close-button {
-    bottom: 1rem;
-    right: 1rem;
+  .area-map-content {
+    padding: 1rem;
+  }
+
+  .feature-stack {
+    gap: 0.75rem;
   }
 }
 </style>

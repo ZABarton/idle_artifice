@@ -7,7 +7,7 @@
  */
 
 import type { Component } from 'vue'
-import type { Feature, FeaturePosition } from './feature'
+import type { Feature } from './feature'
 import type { AreaType } from './areaMap'
 
 /**
@@ -18,19 +18,13 @@ export type LayoutMode = '2x2' | '1x4' | '3x3' | '1x2' | 'custom'
 
 /**
  * Configuration for a specific layout mode
- * Defines viewport dimensions and breakpoints
+ * Defines breakpoints and layout-specific styling
  */
 export interface LayoutConfig {
   /** Layout mode identifier */
   mode: LayoutMode
-  /** ViewBox width in SVG units */
-  viewBoxWidth: number
-  /** ViewBox height in SVG units */
-  viewBoxHeight: number
-  /** Canvas width in pixels */
-  canvasWidth: number
-  /** Canvas height in pixels */
-  canvasHeight: number
+  /** Maximum feature width in pixels (features will be full width up to this limit) */
+  maxFeatureWidth?: number
   /** Minimum window width for this layout (optional, for breakpoints) */
   minWidth?: number
   /** Maximum window width for this layout (optional, for breakpoints) */
@@ -156,13 +150,11 @@ export interface AreaTrigger {
 
 /**
  * Feature configuration
- * Extends base Feature type with component reference and layout-specific positions
+ * Extends base Feature type with component reference
  */
 export interface FeatureConfig extends Omit<Feature, 'position'> {
   /** Vue component to render for this feature */
   component: Component
-  /** Positions for each layout mode (keyed by layout name: 'desktop', 'mobile', etc.) */
-  positions: Record<string, FeaturePosition>
   /** Props to pass to the feature component (optional) */
   props?: Record<string, any>
 }

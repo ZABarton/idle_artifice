@@ -28,7 +28,7 @@ export type FeatureType =
 
 /**
  * Position within the Area Map SVG canvas
- * Coordinates are in viewBox units (300×300 canvas, -150 to +150 range)
+ * @deprecated No longer used - features now use vertical stacking layout
  */
 export interface FeaturePosition {
   /** X coordinate in viewBox units */
@@ -63,8 +63,6 @@ export interface Feature {
   description?: string
   /** Icon identifier (SVG path or emoji placeholder) */
   icon: string
-  /** Position on the Area Map canvas */
-  position: FeaturePosition
   /** Current state of the feature (hidden/locked/unlocked) */
   state: FeatureState
   /** Whether this feature is currently active/selected */
