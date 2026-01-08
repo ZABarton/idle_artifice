@@ -119,14 +119,12 @@ function handleClick() {
   background-color: #ffffff;
   transition:
     opacity 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+    box-shadow 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .feature-card:hover:not(.feature-card--locked) {
   box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
-  transform: translateY(-2px);
 }
 
 .feature-card--active {
