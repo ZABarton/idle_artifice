@@ -8,6 +8,7 @@
 import { markRaw } from 'vue'
 import type { AreaMapConfig } from '@/types/areaMapConfig'
 import WharfFeature from '@/components/features/WharfFeature.vue'
+import StatusText from '@/components/displays/StatusText.vue'
 
 export const harborConfig: AreaMapConfig = {
   areaType: 'harbor',
@@ -40,6 +41,16 @@ export const harborConfig: AreaMapConfig = {
       state: 'locked',
       isActive: false,
       interactionType: 'navigation',
+      minimizedDisplays: [
+        {
+          component: markRaw(StatusText),
+          props: {
+            text: 'Locked - Complete prerequisites to access',
+            variant: 'warning',
+            icon: '🔒',
+          },
+        },
+      ],
     },
   ],
 

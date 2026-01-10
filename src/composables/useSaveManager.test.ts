@@ -9,7 +9,6 @@ import { useObjectivesStore } from '@/stores/objectives'
 import { useDialogsStore } from '@/stores/dialogs'
 import { useResourcesStore } from '@/stores/resources'
 import { useWorldMapStore } from '@/stores/worldMap'
-import type { SaveFile } from '@/types/saveFile'
 
 describe('useSaveManager', () => {
   beforeEach(() => {

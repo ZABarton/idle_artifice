@@ -149,6 +149,17 @@ export interface AreaTrigger {
 }
 
 /**
+ * Display component configuration for minimized views
+ * Defines a component and its props for rendering in the minimized slot
+ */
+export interface DisplayConfig {
+  /** Vue component to render (should be markRaw for performance) */
+  component: Component
+  /** Props to pass to the display component */
+  props?: Record<string, any>
+}
+
+/**
  * Feature configuration
  * Extends base Feature type with component reference
  * Note: 'position' field is deprecated as features now use vertical stacking
@@ -158,6 +169,8 @@ export interface FeatureConfig extends Omit<Feature, 'position'> {
   component: Component
   /** Props to pass to the feature component (optional) */
   props?: Record<string, any>
+  /** Display components to show in minimized view (optional) */
+  minimizedDisplays?: DisplayConfig[]
 }
 
 /**

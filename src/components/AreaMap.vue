@@ -173,6 +173,14 @@ const getFeatureComponent = (feature: Feature) => {
   return featureConfig?.component ?? null
 }
 
+// Get minimized displays from config
+const getMinimizedDisplays = (feature: Feature) => {
+  if (!areaConfig.value) return []
+
+  const featureConfig = areaConfig.value.features.find((f) => f.id === feature.id)
+  return featureConfig?.minimizedDisplays ?? []
+}
+
 // Handle feature card click
 const handleFeatureClick = async (feature: Feature) => {
   if (feature.state === 'locked') {
@@ -248,7 +256,22 @@ const handleFeatureExpandToggle = (feature: Feature) => {
           @click="handleFeatureClick"
           @toggle-expand="handleFeatureExpandToggle"
         >
-          <!-- Dynamic feature component from config -->
+          <!-- Minimized view: display components from config -->
+          <template #minimized>
+            <div
+              v-if="getMinimizedDisplays(feature).length > 0"
+              class="minimized-displays-container"
+            >
+              <component
+                :is="display.component"
+                v-for="(display, index) in getMinimizedDisplays(feature)"
+                :key="index"
+                v-bind="display.props"
+              />
+            </div>
+          </template>
+
+          <!-- Expanded view: dynamic feature component from config -->
           <component
             :is="getFeatureComponent(feature)"
             @navigate="handleFeatureNavigate(feature.type)"
@@ -365,6 +388,14 @@ const handleFeatureExpandToggle = (feature: Feature) => {
   flex-direction: column;
   gap: 1rem;
   margin: 0 auto;
+}
+
+/* Minimized Displays Container */
+.minimized-displays-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 /* Responsive */
