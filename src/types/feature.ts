@@ -67,6 +67,8 @@ export interface Feature {
   state: FeatureState
   /** Whether this feature is currently active/selected */
   isActive: boolean
+  /** Whether this feature's content is expanded (accordion behavior) */
+  isExpanded?: boolean
   /** Prerequisites required to unlock this feature */
   prerequisites?: FeaturePrerequisite[]
   /** How users interact with this feature */

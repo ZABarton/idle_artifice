@@ -217,6 +217,11 @@ const handleFeatureNavigate = (featureType: string) => {
   // TODO: Navigate to feature screen - will be implemented in a future milestone
   void featureType // Suppress unused variable warning
 }
+
+// Handle expand/collapse toggle from feature cards
+const handleFeatureExpandToggle = (feature: Feature) => {
+  areaMapStore.toggleFeatureExpanded(feature.id)
+}
 </script>
 
 <template>
@@ -241,6 +246,7 @@ const handleFeatureNavigate = (featureType: string) => {
           :key="feature.id"
           :feature="feature"
           @click="handleFeatureClick"
+          @toggle-expand="handleFeatureExpandToggle"
         >
           <!-- Dynamic feature component from config -->
           <component
@@ -326,9 +332,30 @@ const handleFeatureNavigate = (featureType: string) => {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  display: flex;
-  justify-content: center;
   padding: 1.5rem;
+  min-height: 0;
+}
+
+/* Custom scrollbar styling for area map content */
+.area-map-content::-webkit-scrollbar {
+  width: 12px;
+}
+
+.area-map-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.area-map-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.area-map-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 /* Feature Stack */

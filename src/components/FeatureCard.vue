@@ -16,6 +16,8 @@ interface Props {
 interface Emits {
   /** Emitted when the card is clicked */
   (e: 'click', feature: Feature): void
+  /** Emitted when the expand/collapse button is clicked */
+  (e: 'toggleExpand', feature: Feature): void
 }
 
 const props = defineProps<Props>()
@@ -61,6 +63,17 @@ const cursorStyle = computed(() => {
 function handleClick() {
   emit('click', props.feature)
 }
+
+// Handle expand/collapse button click
+function handleExpandToggle(event: MouseEvent) {
+  event.stopPropagation() // Prevent triggering the card click
+  emit('toggleExpand', props.feature)
+}
+
+// Computed property for expand/collapse button icon
+const expandIcon = computed(() => {
+  return props.feature.isExpanded ? '▼' : '▶'
+})
 </script>
 
 <template>
@@ -85,6 +98,13 @@ function handleClick() {
     <div class="feature-card__title-bar" :style="{ backgroundColor: titleBarColor }">
       <span class="feature-card__icon">{{ feature.icon }}</span>
       <span class="feature-card__title">{{ feature.name }}</span>
+      <button
+        class="feature-card__expand-button"
+        :aria-label="feature.isExpanded ? 'Collapse' : 'Expand'"
+        @click="handleExpandToggle"
+      >
+        {{ expandIcon }}
+      </button>
     </div>
 
     <!-- Card Body Content -->
@@ -102,10 +122,28 @@ function handleClick() {
         </div>
       </div>
 
-      <!-- Unlocked state: slot for feature-specific content -->
-      <div v-else class="feature-card__content">
-        <slot></slot>
-      </div>
+      <!-- Unlocked state: show minimized or expanded view -->
+      <template v-else>
+        <!-- Minimized view: shown when collapsed -->
+        <Transition name="fade">
+          <div v-if="!feature.isExpanded" class="feature-card__minimized">
+            <slot name="minimized">
+              <!-- Default minimized content if no slot provided -->
+              <div class="default-minimized">
+                <span class="minimized-icon">{{ feature.icon }}</span>
+                <span class="minimized-text">{{ feature.description || 'Click to expand' }}</span>
+              </div>
+            </slot>
+          </div>
+        </Transition>
+
+        <!-- Expanded view: shown when expanded -->
+        <Transition name="fade">
+          <div v-if="feature.isExpanded" class="feature-card__expanded">
+            <slot></slot>
+          </div>
+        </Transition>
+      </template>
     </div>
   </div>
 </template>
@@ -155,15 +193,72 @@ function handleClick() {
 .feature-card__title {
   font-size: 1rem;
   line-height: 1;
+  flex: 1;
+}
+
+.feature-card__expand-button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.feature-card__expand-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.feature-card__expand-button:active {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Card Body */
 .feature-card__body {
   padding: 1rem;
-  min-height: 100px;
+  min-height: 60px;
+  position: relative;
 }
 
-.feature-card__content {
+/* Minimized view */
+.feature-card__minimized {
+  width: 100%;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 0.875rem;
+  color: #666666;
+}
+
+.default-minimized {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.minimized-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.minimized-text {
+  font-size: 0.875rem;
+  color: #666666;
+  font-style: italic;
+}
+
+/* Expanded view */
+.feature-card__expanded {
   width: 100%;
   font-family:
     system-ui,
@@ -171,6 +266,22 @@ function handleClick() {
     sans-serif;
   font-size: 0.875rem;
   color: #333333;
+}
+
+/* Transition animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
 }
 
 /* Locked state styles */
@@ -232,8 +343,23 @@ function handleClick() {
     font-size: 1rem;
   }
 
+  .feature-card__expand-button {
+    min-width: 20px;
+    min-height: 20px;
+    font-size: 0.875rem;
+  }
+
   .feature-card__body {
     padding: 0.75rem;
+    min-height: 50px;
+  }
+
+  .minimized-icon {
+    font-size: 1.25rem;
+  }
+
+  .minimized-text {
+    font-size: 0.8rem;
   }
 }
 </style>

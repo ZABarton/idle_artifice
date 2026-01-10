@@ -151,6 +151,7 @@ export interface AreaTrigger {
 /**
  * Feature configuration
  * Extends base Feature type with component reference
+ * Note: 'position' field is deprecated as features now use vertical stacking
  */
 export interface FeatureConfig extends Omit<Feature, 'position'> {
   /** Vue component to render for this feature */

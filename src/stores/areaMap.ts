@@ -16,6 +16,7 @@ let hasShownStorageWarning = false
 interface SavedFeatureState {
   id: string
   state: Feature['state']
+  isExpanded?: boolean
 }
 
 interface SavedAreaState {
@@ -64,13 +65,17 @@ export const useAreaMapStore = defineStore('areaMap', () => {
    * Saved feature states loaded from localStorage
    * Used to restore feature states when areas are initialized
    */
-  const savedFeatureStates = ref<Map<string, Map<string, Feature['state']>>>(new Map())
+  const savedFeatureStates = ref<
+    Map<string, Map<string, { state: Feature['state']; isExpanded?: boolean }>>
+  >(new Map())
 
   // Load saved feature states on store creation
   const savedData = loadSavedAreaMaps()
   if (savedData) {
     savedData.areas.forEach((area) => {
-      const featureStatesMap = new Map(area.features.map((f) => [f.id, f.state]))
+      const featureStatesMap = new Map(
+        area.features.map((f) => [f.id, { state: f.state, isExpanded: f.isExpanded }])
+      )
       savedFeatureStates.value.set(area.coordinates, featureStatesMap)
     })
   }
@@ -147,6 +152,17 @@ export const useAreaMapStore = defineStore('areaMap', () => {
   }
 
   /**
+   * Toggle a feature's expanded state (accordion behavior)
+   * Multiple features can be expanded simultaneously
+   */
+  function toggleFeatureExpanded(featureId: string) {
+    const feature = getFeatureById.value(featureId)
+    if (feature) {
+      feature.isExpanded = !feature.isExpanded
+    }
+  }
+
+  /**
    * Check if a feature's prerequisites are met
    */
   function checkPrerequisites(featureId: string): boolean {
@@ -204,7 +220,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
     // Convert FeatureConfig to Feature by removing config-specific fields
     const features: Feature[] = config.features.map((featureConfig) => {
       // Restore saved state if available, otherwise use config default
-      const savedState = savedStates?.get(featureConfig.id)
+      const savedData = savedStates?.get(featureConfig.id)
 
       return {
         id: featureConfig.id,
@@ -212,8 +228,9 @@ export const useAreaMapStore = defineStore('areaMap', () => {
         name: featureConfig.name,
         description: featureConfig.description,
         icon: featureConfig.icon,
-        state: savedState ?? featureConfig.state,
+        state: savedData?.state ?? featureConfig.state,
         isActive: featureConfig.isActive,
+        isExpanded: savedData?.isExpanded ?? featureConfig.isExpanded ?? false,
         prerequisites: featureConfig.prerequisites,
         interactionType: featureConfig.interactionType,
       }
@@ -242,6 +259,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
           features: area.features.map((f) => ({
             id: f.id,
             state: f.state,
+            isExpanded: f.isExpanded,
           })),
         })),
       }
@@ -251,7 +269,9 @@ export const useAreaMapStore = defineStore('areaMap', () => {
       // Also update savedFeatureStates for future area initializations
       savedFeatureStates.value.clear()
       state.areas.forEach((area) => {
-        const featureStatesMap = new Map(area.features.map((f) => [f.id, f.state]))
+        const featureStatesMap = new Map(
+          area.features.map((f) => [f.id, { state: f.state, isExpanded: f.isExpanded }])
+        )
         savedFeatureStates.value.set(area.coordinates, featureStatesMap)
       })
     } catch (error) {
@@ -300,6 +320,7 @@ export const useAreaMapStore = defineStore('areaMap', () => {
     initializeAreaFromConfig,
     updateFeatureState,
     setActiveFeature,
+    toggleFeatureExpanded,
     checkPrerequisites,
     tryUnlockFeature,
     reset,
