@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useNavigationStore } from '@/stores/navigation'
 import { useWorldMapStore } from '@/stores/worldMap'
 import { useAreaMapStore } from '@/stores/areaMap'
 import { useDialogsStore } from '@/stores/dialogs'
@@ -30,6 +31,7 @@ const emit = defineEmits<{
   back: []
 }>()
 
+const navigationStore = useNavigationStore()
 const worldMapStore = useWorldMapStore()
 const areaMapStore = useAreaMapStore()
 const dialogsStore = useDialogsStore()
@@ -213,17 +215,15 @@ const handleFeatureClick = async (feature: Feature) => {
     await executeTriggers(areaConfig.value.triggers, 'onFeatureInteract', triggerContext)
   }
 
-  // For navigation-type features, this is where we would navigate to feature screen
-  // This will be implemented in a future milestone
+  // For navigation-type features, navigate to feature screen
   if (feature.interactionType === 'navigation') {
-    // TODO: Navigate to feature screen
+    navigationStore.navigateToFeatureScreen(feature.id)
   }
 }
 
 // Handle navigate event from feature components
-const handleFeatureNavigate = (featureType: string) => {
-  // TODO: Navigate to feature screen - will be implemented in a future milestone
-  void featureType // Suppress unused variable warning
+const handleFeatureNavigate = (featureId: string) => {
+  navigationStore.navigateToFeatureScreen(featureId)
 }
 
 // Handle expand/collapse toggle from feature cards
@@ -274,7 +274,7 @@ const handleFeatureExpandToggle = (feature: Feature) => {
           <!-- Expanded view: dynamic feature component from config -->
           <component
             :is="getFeatureComponent(feature)"
-            @navigate="handleFeatureNavigate(feature.type)"
+            @navigate="handleFeatureNavigate(feature.id)"
           />
         </FeatureCard>
       </div>

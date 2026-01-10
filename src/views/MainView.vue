@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import WorldMap from '@/components/WorldMap.vue'
 import AreaMap from '@/components/AreaMap.vue'
+import FeatureScreen from '@/components/FeatureScreen.vue'
 import ObjectivesView from '@/views/ObjectivesView.vue'
 import HelpView from '@/views/HelpView.vue'
 import PiniaDebugTable from '@/components/PiniaDebugTable.vue'
@@ -90,6 +91,11 @@ const handleToggleHelpView = () => {
         <AreaMap :q="selectedHex.q" :r="selectedHex.r" @back="handleBackToWorldMap" />
       </div>
 
+      <!-- Feature Screen View -->
+      <div v-else-if="currentView === 'feature-screen'" class="feature-screen-view">
+        <FeatureScreen />
+      </div>
+
       <!-- Objectives View -->
       <div v-else-if="currentView === 'objectives-view'" class="objectives-view">
         <ObjectivesView @back="handleBackFromObjectivesView" />
@@ -122,6 +128,7 @@ const handleToggleHelpView = () => {
 .debug-view,
 .world-map-view,
 .area-map-view,
+.feature-screen-view,
 .objectives-view {
   height: 100%;
   overflow: hidden;
