@@ -9,7 +9,6 @@ describe('FeatureCard', () => {
     type: 'foundry',
     name: 'Test Feature',
     icon: '🔨',
-    position: { x: 0, y: 0 },
     state: 'unlocked',
     isActive: false,
     interactionType: 'navigation',
@@ -20,7 +19,6 @@ describe('FeatureCard', () => {
     type: 'workshop',
     name: 'Locked Feature',
     icon: '🔧',
-    position: { x: 0, y: 0 },
     state: 'locked',
     isActive: false,
     prerequisites: [

@@ -10,6 +10,8 @@ import type { AreaMapConfig } from '@/types/areaMapConfig'
 import FoundryFeature from '@/components/features/FoundryFeature.vue'
 import QuartermasterFeature from '@/components/features/QuartermasterFeature.vue'
 import TavernFeature from '@/components/features/TavernFeature.vue'
+import NPCIndicator from '@/components/displays/NPCIndicator.vue'
+import StatusText from '@/components/displays/StatusText.vue'
 
 export const academyConfig: AreaMapConfig = {
   areaType: 'academy',
@@ -54,6 +56,25 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
+      minimizedDisplays: [
+        {
+          component: markRaw(NPCIndicator),
+          props: {
+            npcName: 'Quartermaster Jones',
+            icon: '📦',
+            hasAvailableConversation: false,
+            showBadge: false,
+          },
+        },
+        {
+          component: markRaw(StatusText),
+          props: {
+            text: 'Supplies ready',
+            variant: 'success',
+            icon: '✓',
+          },
+        },
+      ],
     },
     {
       id: 'academy-tavern',
@@ -65,6 +86,26 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'navigation',
+      minimizedDisplays: [
+        {
+          component: markRaw(NPCIndicator),
+          props: {
+            npcName: 'Tavern Keeper',
+            icon: '🍺',
+            hasAvailableConversation: true,
+            showBadge: true,
+            badgeText: '!',
+          },
+        },
+        {
+          component: markRaw(StatusText),
+          props: {
+            text: 'New explorers available',
+            variant: 'info',
+            icon: 'ℹ️',
+          },
+        },
+      ],
     },
   ],
 
