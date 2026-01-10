@@ -236,14 +236,14 @@ const handleFeatureExpandToggle = (feature: Feature) => {
   <div class="area-map-container" :style="{ backgroundColor }">
     <!-- Header Bar -->
     <header class="area-map-header">
-      <h1 class="area-map-header__title">{{ areaTitle }}</h1>
       <button
         class="area-map-header__close"
-        aria-label="Close and return to World Map"
+        aria-label="Back to Area Map"
         @click="handleBackClick"
       >
-        ✕
+        ← Back
       </button>
+      <h1 class="area-map-header__title">{{ areaTitle }}</h1>
     </header>
 
     <!-- Feature Stack -->
@@ -299,54 +299,37 @@ const handleFeatureExpandToggle = (feature: Feature) => {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 60px;
+  justify-content: center;
+  padding: 1rem 2rem;
   background-color: #2c3e50;
-  padding: 0 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-  flex-shrink: 0;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
 }
 
 .area-map-header__title {
   margin: 0;
-  color: white;
   font-size: 1.5rem;
   font-weight: 600;
+  text-align: center;
 }
 
 .area-map-header__close {
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
-  min-height: 40px !important;
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  color: white !important;
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  position: absolute;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 4px;
-  font-size: 1.75rem;
-  font-weight: 300;
-  line-height: 1;
+  font-size: 0.95rem;
   cursor: pointer;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0 !important;
-  position: relative;
-  opacity: 1 !important;
-  visibility: visible !important;
+  transition: all 0.2s ease;
 }
 
 .area-map-header__close:hover {
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.5);
-  transform: scale(1.05);
-}
-
-.area-map-header__close:active {
-  background-color: rgba(255, 255, 255, 0.3);
-  transform: scale(0.95);
 }
 
 /* Content Area - Scrollable Container */
@@ -396,6 +379,19 @@ const handleFeatureExpandToggle = (feature: Feature) => {
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
+}
+
+.area-map-header__close {
+  position: absolute;
+  left: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 /* Responsive */

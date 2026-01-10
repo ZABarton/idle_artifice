@@ -129,7 +129,7 @@ const handleBackClick = () => {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0;
+  padding: 2rem;
   background-color: #f5f5f5;
 }
 
