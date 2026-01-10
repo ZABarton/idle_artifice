@@ -45,6 +45,25 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'navigation',
+      minimizedDisplays: [
+        {
+          component: markRaw(NPCIndicator),
+          props: {
+            npcName: 'Foundry Master',
+            icon: '🔨',
+            hasAvailableConversation: false,
+            showBadge: false,
+          },
+        },
+        {
+          component: markRaw(StatusText),
+          props: {
+            text: 'Crafting available',
+            variant: 'success',
+            icon: '✓',
+          },
+        },
+      ],
     },
     {
       id: 'academy-quartermaster',
