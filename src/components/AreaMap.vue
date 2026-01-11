@@ -238,7 +238,7 @@ const handleFeatureExpandToggle = (feature: Feature) => {
     <header class="area-map-header">
       <button
         class="area-map-header__close"
-        aria-label="Back to Area Map"
+        aria-label="Back"
         @click="handleBackClick"
       >
         ← Back

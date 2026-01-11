@@ -251,7 +251,7 @@ describe('AreaMap', () => {
 
       const headerClose = wrapper.find('.area-map-header__close')
 
-      expect(headerClose.attributes('aria-label')).toBe('Close and return to World Map')
+      expect(headerClose.attributes('aria-label')).toBe('Back')
     })
   })
 })
