@@ -9,6 +9,7 @@
 import type { Component } from 'vue'
 import type { Feature } from './feature'
 import type { AreaType } from './areaMap'
+import type { CharacterPortrait } from './dialogs'
 
 /**
  * Layout mode identifier
@@ -149,6 +150,23 @@ export interface AreaTrigger {
 }
 
 /**
+ * NPC configuration for features
+ * Defines NPC information and associated dialog trees
+ */
+export interface NPCConfig {
+  /** Unique identifier for this NPC */
+  id: string
+  /** Name of the NPC */
+  name: string
+  /** Character portrait information */
+  portrait: CharacterPortrait
+  /** Dialog tree ID to show when NPC is clicked */
+  dialogTreeId: string
+  /** Icon/emoji to display for this NPC (defaults to '💬') */
+  icon?: string
+}
+
+/**
  * Display component configuration for minimized views
  * Defines a component and its props for rendering in the minimized slot
  */
@@ -173,6 +191,8 @@ export interface FeatureConfig extends Omit<Feature, 'position'> {
   props?: Record<string, any>
   /** Display components to show in minimized view (optional) */
   minimizedDisplays?: DisplayConfig[]
+  /** NPCs associated with this feature (optional) */
+  npcs?: NPCConfig[]
 }
 
 /**

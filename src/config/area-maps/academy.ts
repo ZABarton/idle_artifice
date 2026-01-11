@@ -11,7 +11,6 @@ import FoundryFeature from '@/components/features/FoundryFeature.vue'
 import FoundryScreen from '@/components/screens/FoundryScreen.vue'
 import QuartermasterFeature from '@/components/features/QuartermasterFeature.vue'
 import TavernFeature from '@/components/features/TavernFeature.vue'
-import NPCIndicator from '@/components/displays/NPCIndicator.vue'
 import StatusText from '@/components/displays/StatusText.vue'
 import NavigationButton from '@/components/displays/NavigationButton.vue'
 
@@ -48,16 +47,19 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
-      minimizedDisplays: [
+      npcs: [
         {
-          component: markRaw(NPCIndicator),
-          props: {
-            npcName: 'Foundry Master',
-            icon: '🔨',
-            hasAvailableConversation: false,
-            showBadge: false,
+          id: 'foundry-master',
+          name: 'Anton DeCassieur',
+          portrait: {
+            path: 'images/portraits/smith.png',
+            alt: 'Anton DeCassieur, the Foundry Master',
           },
+          dialogTreeId: 'foundry-master-intro',
+          icon: '🔨',
         },
+      ],
+      minimizedDisplays: [
         {
           component: markRaw(StatusText),
           props: {
@@ -87,16 +89,19 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
-      minimizedDisplays: [
+      npcs: [
         {
-          component: markRaw(NPCIndicator),
-          props: {
-            npcName: 'Quartermaster Jones',
-            icon: '📦',
-            hasAvailableConversation: false,
-            showBadge: false,
+          id: 'quartermaster',
+          name: 'Quartermaster Jones',
+          portrait: {
+            path: 'images/portraits/quartermaster.png',
+            alt: 'Quartermaster Jones',
           },
+          dialogTreeId: 'quartermaster-intro',
+          icon: '📦',
         },
+      ],
+      minimizedDisplays: [
         {
           component: markRaw(StatusText),
           props: {
@@ -117,17 +122,19 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'navigation',
-      minimizedDisplays: [
+      npcs: [
         {
-          component: markRaw(NPCIndicator),
-          props: {
-            npcName: 'Tavern Keeper',
-            icon: '🍺',
-            hasAvailableConversation: true,
-            showBadge: true,
-            badgeText: '!',
+          id: 'tavern-keeper',
+          name: 'Camille Adai',
+          portrait: {
+            path: 'images/portraits/tavern-keeper.png',
+            alt: 'Camille Adai, the Tavern Keeper',
           },
+          dialogTreeId: 'tavern-keeper-intro',
+          icon: '🍺',
         },
+      ],
+      minimizedDisplays: [
         {
           component: markRaw(StatusText),
           props: {

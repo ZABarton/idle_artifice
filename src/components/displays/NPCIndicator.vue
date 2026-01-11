@@ -3,7 +3,7 @@
  * NPCIndicator Component
  * Shows NPC conversation availability for feature minimized views.
  * Displays an icon with a badge indicator when conversation is available.
- * Purely presentational - parent components handle click events.
+ * Clickable to initiate NPC conversations.
  */
 
 interface Props {
@@ -17,18 +17,38 @@ interface Props {
   showBadge?: boolean
   /** Optional badge text (e.g., "New" or "!") */
   badgeText?: string
+  /** NPC ID for identifying which NPC was clicked */
+  npcId?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   icon: '💬',
   hasAvailableConversation: false,
   showBadge: false,
   badgeText: '!',
+  npcId: '',
 })
+
+const emit = defineEmits<{
+  'npc-click': [npcId: string]
+}>()
+
+const handleClick = () => {
+  if (props.hasAvailableConversation && props.npcId) {
+    emit('npc-click', props.npcId)
+  }
+}
 </script>
 
 <template>
-  <div class="npc-indicator" :class="{ available: hasAvailableConversation }">
+  <div
+    class="npc-indicator"
+    :class="{
+      available: hasAvailableConversation,
+      clickable: hasAvailableConversation && npcId
+    }"
+    @click="handleClick"
+  >
     <div class="npc-icon-container">
       <span class="npc-icon">{{ icon }}</span>
       <span v-if="showBadge" class="badge">{{ badgeText }}</span>
@@ -96,6 +116,20 @@ withDefaults(defineProps<Props>(), {
 .npc-indicator.available .npc-name {
   color: #357abd;
   font-weight: 600;
+}
+
+.npc-indicator.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.npc-indicator.clickable:hover {
+  background-color: #d4e9f2;
+  transform: translateY(-1px);
+}
+
+.npc-indicator.clickable:active {
+  transform: translateY(0);
 }
 
 /* Responsive sizing */

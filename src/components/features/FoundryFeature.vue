@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTutorials } from '@/composables/useTutorials'
 import { useNavigationStore } from '@/stores/navigation'
+import { useDialogsStore } from '@/stores/dialogs'
+import NPCPortrait from '@/components/displays/NPCPortrait.vue'
+import type { Feature } from '@/types/feature'
+import type { FeatureConfig } from '@/types/areaMapConfig'
 
 /**
  * FoundryFeature Component
@@ -10,7 +14,34 @@ import { useNavigationStore } from '@/stores/navigation'
  * Includes navigation button to open full Foundry Screen
  */
 
+interface Props {
+  feature?: Feature
+  featureConfig?: FeatureConfig | null
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  'npc-click': [npcId: string]
+}>()
+
 const navigationStore = useNavigationStore()
+const dialogsStore = useDialogsStore()
+
+// Get NPCs from feature config
+const npcs = computed(() => props.featureConfig?.npcs ?? [])
+
+// Check if NPC conversation is available
+const isNPCConversationAvailable = (npcId: string): boolean => {
+  const npc = npcs.value.find((n) => n.id === npcId)
+  if (!npc) return false
+  return !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
+}
+
+// Handle NPC click
+const handleNPCClick = (npcId: string) => {
+  emit('npc-click', npcId)
+}
 
 // Mock resource data - will come from resource store in future
 const mockResources = ref([
@@ -47,6 +78,17 @@ onMounted(() => {
 
 <template>
   <div class="foundry-feature">
+    <!-- NPC Portraits -->
+    <div v-if="npcs.length > 0" class="npcs-section">
+      <NPCPortrait
+        v-for="npc in npcs"
+        :key="npc.id"
+        :npc="npc"
+        :has-available-conversation="isNPCConversationAvailable(npc.id)"
+        @npc-click="handleNPCClick"
+      />
+    </div>
+
     <!-- Feature Description -->
     <div class="feature-header">
       <p class="description">Craft magical items by solving grid-based puzzles.</p>
@@ -114,6 +156,15 @@ onMounted(() => {
     sans-serif;
   box-sizing: border-box;
   width: 100%;
+}
+
+/* NPCs Section */
+.npcs-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 /* Header */
