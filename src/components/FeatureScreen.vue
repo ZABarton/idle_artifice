@@ -34,10 +34,11 @@ const feature = computed<Feature | null>(() => {
 })
 
 // Get feature component from config
+// Use screenComponent if available, otherwise fall back to component
 const featureComponent = computed(() => {
   if (!areaConfig.value || !feature.value) return null
   const featureConfig = areaConfig.value.features.find((f) => f.id === feature.value!.id)
-  return featureConfig?.component ?? null
+  return featureConfig?.screenComponent ?? featureConfig?.component ?? null
 })
 
 // Feature title for header
@@ -55,7 +56,7 @@ const handleBackClick = () => {
     <header class="feature-screen-header">
       <button
         class="feature-screen-header__back"
-        aria-label="Back to Area Map"
+        aria-label="Back"
         @click="handleBackClick"
       >
         ← Back

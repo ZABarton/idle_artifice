@@ -1,20 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useTutorials } from '@/composables/useTutorials'
-import { useNavigationStore } from '@/stores/navigation';
+import { useNavigationStore } from '@/stores/navigation'
 
 /**
  * FoundryFeature Component
- * Complex feature with navigation to dedicated Foundry screen
+ * Displays foundry information in the Area Map
  * Expanded view shows crafting preview, available materials, and recent activity
+ * Includes navigation button to open full Foundry Screen
  */
 
-interface Emits {
-  /** Emitted when user wants to open the Foundry screen */
-  (e: 'navigate'): void
-}
-
-const emit = defineEmits<Emits>()
+const navigationStore = useNavigationStore()
 
 // Mock resource data - will come from resource store in future
 const mockResources = ref([
@@ -37,10 +33,9 @@ const mockRecentCrafts = ref([
   { item: 'Wooden Shield', time: '5 hours ago' },
 ])
 
+// Navigate to full Foundry screen
 const handleOpenFoundry = () => {
-  // Intro dialog is handled by area map trigger system (see academy.ts)
-  // Just emit navigation event
-  useNavigationStore().navigateToFeatureScreen('academy-foundry')
+  navigationStore.navigateToFeatureScreen('academy-foundry')
 }
 
 // Trigger tutorials on first interaction with this feature
@@ -100,8 +95,11 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Action Button -->
-    <button class="open-button" @click="handleOpenFoundry">Enter Foundry</button>
+    <!-- Navigation Button -->
+    <button class="open-button" @click="handleOpenFoundry">
+      <span class="button-icon">🔨</span>
+      <span>Enter Foundry</span>
+    </button>
   </div>
 </template>
 
@@ -277,8 +275,13 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* Action Button */
+/* Navigation Button */
 .open-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
   margin-top: 0.5rem;
   padding: 0.75rem 1rem;
   background-color: #4a90e2;
@@ -301,6 +304,11 @@ onMounted(() => {
   background-color: #2b5a8a;
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
+}
+
+.button-icon {
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 /* Responsive */
@@ -328,6 +336,7 @@ onMounted(() => {
 
   .open-button {
     padding: 0.625rem 0.875rem;
+    font-size: 0.8rem;
   }
 }
 </style>

@@ -8,10 +8,12 @@
 import { markRaw } from 'vue'
 import type { AreaMapConfig } from '@/types/areaMapConfig'
 import FoundryFeature from '@/components/features/FoundryFeature.vue'
+import FoundryScreen from '@/components/screens/FoundryScreen.vue'
 import QuartermasterFeature from '@/components/features/QuartermasterFeature.vue'
 import TavernFeature from '@/components/features/TavernFeature.vue'
 import NPCIndicator from '@/components/displays/NPCIndicator.vue'
 import StatusText from '@/components/displays/StatusText.vue'
+import NavigationButton from '@/components/displays/NavigationButton.vue'
 
 export const academyConfig: AreaMapConfig = {
   areaType: 'academy',
@@ -39,6 +41,7 @@ export const academyConfig: AreaMapConfig = {
       id: 'academy-foundry',
       type: 'foundry',
       component: markRaw(FoundryFeature),
+      screenComponent: markRaw(FoundryScreen),
       name: 'Foundry',
       description: 'Craft equipment for your explorers.',
       icon: '🔨',
@@ -61,6 +64,15 @@ export const academyConfig: AreaMapConfig = {
             text: 'Crafting available',
             variant: 'success',
             icon: '✓',
+          },
+        },
+        {
+          component: markRaw(NavigationButton),
+          props: {
+            label: 'Enter Foundry',
+            featureId: 'academy-foundry',
+            icon: '🔨',
+            variant: 'primary',
           },
         },
       ],
