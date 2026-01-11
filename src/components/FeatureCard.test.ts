@@ -52,9 +52,10 @@ describe('FeatureCard', () => {
       expect(wrapper.text()).toContain('Complete test feature')
     })
 
-    it('renders slot content for unlocked features', () => {
+    it('renders slot content for unlocked features when expanded', () => {
+      const expandedFeature: Feature = { ...mockUnlockedFeature, isExpanded: true }
       const wrapper = mount(FeatureCard, {
-        props: { feature: mockUnlockedFeature },
+        props: { feature: expandedFeature },
         slots: {
           default: '<div class="test-slot">Slot content</div>',
         },

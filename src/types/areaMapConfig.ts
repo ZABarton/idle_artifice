@@ -167,6 +167,8 @@ export interface DisplayConfig {
 export interface FeatureConfig extends Omit<Feature, 'position'> {
   /** Vue component to render for this feature */
   component: Component
+  /** Optional separate component to render in feature screen (overrides component if provided) */
+  screenComponent?: Component
   /** Props to pass to the feature component (optional) */
   props?: Record<string, any>
   /** Display components to show in minimized view (optional) */

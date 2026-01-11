@@ -70,6 +70,12 @@ function handleExpandToggle(event: MouseEvent) {
   emit('toggleExpand', props.feature)
 }
 
+// Handle title bar click - triggers expand/collapse
+function handleTitleBarClick(event: MouseEvent) {
+  event.stopPropagation() // Prevent triggering the card click
+  emit('toggleExpand', props.feature)
+}
+
 // Computed property for expand/collapse button icon
 const expandIcon = computed(() => {
   return props.feature.isExpanded ? '▼' : '▶'
@@ -95,7 +101,11 @@ const expandIcon = computed(() => {
     @click="handleClick"
   >
     <!-- Title Bar -->
-    <div class="feature-card__title-bar" :style="{ backgroundColor: titleBarColor }">
+    <div
+      class="feature-card__title-bar"
+      :style="{ backgroundColor: titleBarColor }"
+      @click="handleTitleBarClick"
+    >
       <span class="feature-card__icon">{{ feature.icon }}</span>
       <span class="feature-card__title">{{ feature.name }}</span>
       <button
@@ -124,9 +134,10 @@ const expandIcon = computed(() => {
 
       <!-- Unlocked state: show minimized or expanded view -->
       <template v-else>
-        <!-- Minimized view: shown when collapsed -->
-        <Transition name="fade">
-          <div v-if="!feature.isExpanded" class="feature-card__minimized">
+        <!-- Single transition wrapper with mode to prevent overlap -->
+        <Transition name="fade" mode="out-in">
+          <!-- Minimized view: shown when collapsed -->
+          <div v-if="!feature.isExpanded" key="minimized" class="feature-card__minimized">
             <slot name="minimized">
               <!-- Default minimized content if no slot provided -->
               <div class="default-minimized">
@@ -135,11 +146,9 @@ const expandIcon = computed(() => {
               </div>
             </slot>
           </div>
-        </Transition>
 
-        <!-- Expanded view: shown when expanded -->
-        <Transition name="fade">
-          <div v-if="feature.isExpanded" class="feature-card__expanded">
+          <!-- Expanded view: shown when expanded -->
+          <div v-else key="expanded" class="feature-card__expanded">
             <slot></slot>
           </div>
         </Transition>
@@ -183,6 +192,12 @@ const expandIcon = computed(() => {
   color: white;
   font-weight: 600;
   font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.feature-card__title-bar:hover {
+  filter: brightness(1.1);
 }
 
 .feature-card__icon {
@@ -225,6 +240,7 @@ const expandIcon = computed(() => {
   padding: 1rem;
   min-height: 60px;
   position: relative;
+  overflow: hidden;
 }
 
 /* Minimized view */
@@ -269,9 +285,12 @@ const expandIcon = computed(() => {
 }
 
 /* Transition animations */
-.fade-enter-active,
+.fade-enter-active {
+  transition: opacity 0.15s ease 0.05s;
+}
+
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
 }
 
 .fade-enter-from,
