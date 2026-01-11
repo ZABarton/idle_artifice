@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useTutorials } from '@/composables/useTutorials'
+import { useNavigationStore } from '@/stores/navigation';
 
 /**
  * FoundryFeature Component
@@ -39,7 +40,7 @@ const mockRecentCrafts = ref([
 const handleOpenFoundry = () => {
   // Intro dialog is handled by area map trigger system (see academy.ts)
   // Just emit navigation event
-  emit('navigate')
+  useNavigationStore().navigateToFeatureScreen('academy-foundry')
 }
 
 // Trigger tutorials on first interaction with this feature

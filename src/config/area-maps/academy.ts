@@ -44,7 +44,7 @@ export const academyConfig: AreaMapConfig = {
       icon: '🔨',
       state: 'unlocked',
       isActive: false,
-      interactionType: 'navigation',
+      interactionType: 'inline',
       minimizedDisplays: [
         {
           component: markRaw(NPCIndicator),

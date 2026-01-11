@@ -4,7 +4,7 @@ import { ref } from 'vue'
 /**
  * View types for navigation
  */
-export type ViewType = 'world-map' | 'area-map' | 'objectives-view'
+export type ViewType = 'world-map' | 'area-map' | 'feature-screen' | 'objectives-view'
 
 /**
  * Recent location entry
@@ -26,6 +26,7 @@ export const useNavigationStore = defineStore('navigation', () => {
   const currentView = ref<ViewType>('world-map')
   const previousView = ref<ViewType>('world-map')
   const selectedHex = ref<{ q: number; r: number } | null>(null)
+  const selectedFeatureId = ref<string | null>(null)
   const recentLocations = ref<RecentLocation[]>([])
   const hasViewedWorldMap = ref<boolean>(false)
 
@@ -48,7 +49,41 @@ export const useNavigationStore = defineStore('navigation', () => {
   function navigateToWorldMap() {
     previousView.value = currentView.value
     currentView.value = 'world-map'
+    selectedFeatureId.value = null
     // Keep selectedHex for potential breadcrumb or history features
+  }
+
+  /**
+   * Navigate to Feature Screen for a specific feature
+   * Can only navigate from area-map view
+   * In future: replace with router.push({ name: 'feature-screen', params: { featureId } })
+   */
+  function navigateToFeatureScreen(featureId: string) {
+    // Guard: only allow navigation from area-map view
+    if (currentView.value !== 'area-map') {
+      console.warn('Cannot navigate to feature screen from', currentView.value)
+      return
+    }
+
+    previousView.value = currentView.value
+    selectedFeatureId.value = featureId
+    currentView.value = 'feature-screen'
+  }
+
+  /**
+   * Navigate back to Area Map from Feature Screen
+   * In future: replace with router.back() or router.push({ name: 'area-map' })
+   */
+  function navigateBackToAreaMap() {
+    // Guard: should only be called from feature-screen
+    if (currentView.value !== 'feature-screen') {
+      console.warn('navigateBackToAreaMap called from non-feature-screen view:', currentView.value)
+      return
+    }
+
+    previousView.value = currentView.value
+    selectedFeatureId.value = null
+    currentView.value = 'area-map'
   }
 
   /**
@@ -109,6 +144,7 @@ export const useNavigationStore = defineStore('navigation', () => {
   function reset() {
     currentView.value = 'world-map'
     selectedHex.value = null
+    selectedFeatureId.value = null
     recentLocations.value = []
     hasViewedWorldMap.value = false
   }
@@ -118,11 +154,14 @@ export const useNavigationStore = defineStore('navigation', () => {
     currentView,
     previousView,
     selectedHex,
+    selectedFeatureId,
     recentLocations,
     hasViewedWorldMap,
     // Actions
     navigateToAreaMap,
     navigateToWorldMap,
+    navigateToFeatureScreen,
+    navigateBackToAreaMap,
     navigateToObjectivesView,
     navigateToPreviousView,
     addRecentLocation,
