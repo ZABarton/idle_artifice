@@ -11,7 +11,6 @@ import FoundryFeature from '@/components/features/FoundryFeature.vue'
 import FoundryScreen from '@/components/screens/FoundryScreen.vue'
 import QuartermasterFeature from '@/components/features/QuartermasterFeature.vue'
 import TavernFeature from '@/components/features/TavernFeature.vue'
-import NPCIndicator from '@/components/displays/NPCIndicator.vue'
 import StatusText from '@/components/displays/StatusText.vue'
 import NavigationButton from '@/components/displays/NavigationButton.vue'
 
@@ -48,16 +47,20 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
-      minimizedDisplays: [
+      npcs: [
         {
-          component: markRaw(NPCIndicator),
-          props: {
-            npcName: 'Foundry Master',
-            icon: '🔨',
-            hasAvailableConversation: false,
-            showBadge: false,
+          id: 'foundry-master',
+          name: 'Anton DeCassieur',
+          portrait: {
+            path: 'images/portraits/smith.png',
+            alt: 'Anton DeCassieur, the Foundry Master',
           },
+          dialogTreeId: 'foundry-master-intro',
+          fallbackDialogTreeId: 'foundry-master-tips',
+          icon: '🔨',
         },
+      ],
+      minimizedDisplays: [
         {
           component: markRaw(StatusText),
           props: {
@@ -87,16 +90,20 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
-      minimizedDisplays: [
+      npcs: [
         {
-          component: markRaw(NPCIndicator),
-          props: {
-            npcName: 'Quartermaster Jones',
-            icon: '📦',
-            hasAvailableConversation: false,
-            showBadge: false,
+          id: 'quartermaster',
+          name: 'Quartermaster Jones',
+          portrait: {
+            path: 'images/portraits/quartermaster.png',
+            alt: 'Quartermaster Jones',
           },
+          dialogTreeId: 'quartermaster-intro',
+          fallbackDialogTreeId: 'quartermaster-tips',
+          icon: '📦',
         },
+      ],
+      minimizedDisplays: [
         {
           component: markRaw(StatusText),
           props: {
@@ -117,17 +124,20 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'navigation',
-      minimizedDisplays: [
+      npcs: [
         {
-          component: markRaw(NPCIndicator),
-          props: {
-            npcName: 'Tavern Keeper',
-            icon: '🍺',
-            hasAvailableConversation: true,
-            showBadge: true,
-            badgeText: '!',
+          id: 'tavern-keeper',
+          name: 'Camille Adai',
+          portrait: {
+            path: 'images/portraits/ranger.png',
+            alt: 'Camille Adai, the Tavern Keeper',
           },
+          dialogTreeId: 'tavern-keeper-intro',
+          fallbackDialogTreeId: 'tavern-keeper-tips',
+          icon: '🍺',
         },
+      ],
+      minimizedDisplays: [
         {
           component: markRaw(StatusText),
           props: {
@@ -157,50 +167,7 @@ export const academyConfig: AreaMapConfig = {
         },
       ],
     },
-
-    // Foundry interaction: show foundry master dialog and update objective
-    {
-      event: 'onFeatureInteract',
-      featureId: 'academy-foundry',
-      description: 'Show foundry master introduction on first foundry interaction',
-      callback: async (context) => {
-        const { dialogs } = context.stores
-
-        // Only show dialog if haven't completed the dialog tree yet
-        if (!dialogs.hasCompletedDialogTree('foundry-master-intro')) {
-          await dialogs.showDialogTree('foundry-master-intro')
-        }
-      },
-    },
-
-    // Quartermaster interaction: show quartermaster dialog and update objective
-    {
-      event: 'onFeatureInteract',
-      featureId: 'academy-quartermaster',
-      description: 'Show quartermaster introduction on first quartermaster interaction',
-      callback: async (context) => {
-        const { dialogs } = context.stores
-
-        // Only show dialog if haven't completed the dialog tree yet
-        if (!dialogs.hasCompletedDialogTree('quartermaster-intro')) {
-          await dialogs.showDialogTree('quartermaster-intro')
-        }
-      },
-    },
-
-    // Tavern interaction: show tavern keeper dialog and update objective
-    {
-      event: 'onFeatureInteract',
-      featureId: 'academy-tavern',
-      description: 'Show tavern keeper introduction on first tavern interaction',
-      callback: async (context) => {
-        const { dialogs } = context.stores
-
-        // Only show dialog if haven't completed the dialog tree yet
-        if (!dialogs.hasCompletedDialogTree('tavern-keeper-intro')) {
-          await dialogs.showDialogTree('tavern-keeper-intro')
-        }
-      },
-    },
+    // Note: Foundry, Quartermaster, and Tavern dialogs are now triggered
+    // by clicking on NPC portraits/indicators, not by feature interaction
   ],
 }

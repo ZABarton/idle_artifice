@@ -1,0 +1,59 @@
+{
+  "id": "foundry-master-tips",
+  "characterName": "Anton DeCassieur",
+  "portrait": {
+    "path": "images/portraits/smith.png",
+    "alt": "Anton DeCassieur, the Foundry Master"
+  },
+  "startNodeId": "greeting",
+  "nodes": {
+    "greeting": {
+      "id": "greeting",
+      "message": "Ah, back again? Good, good. The forge is always ready for someone who wants to learn.",
+      "responses": [
+        {
+          "text": "Do you have any crafting tips?",
+          "nextNodeId": "tips"
+        },
+        {
+          "text": "Just checking in.",
+          "nextNodeId": "checking-in"
+        }
+      ]
+    },
+    "tips": {
+      "id": "tips",
+      "message": "The key to good crafting is understanding your materials. Each resource has unique properties - wood is flexible, stone is sturdy, crystal amplifies magic. Don't just follow recipes blindly; understand *why* they work.",
+      "responses": [
+        {
+          "text": "Thanks for the advice!",
+          "nextNodeId": null
+        },
+        {
+          "text": "Any other tips?",
+          "nextNodeId": "more-tips"
+        }
+      ]
+    },
+    "more-tips": {
+      "id": "more-tips",
+      "message": "Remember, the best way to improve is to practice. Even failures teach you something. Now, let me get back to work - this forge won't tend itself.",
+      "responses": [
+        {
+          "text": "I'll let you work.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "checking-in": {
+      "id": "checking-in",
+      "message": "Well, everything's running smoothly here. The forge is hot, the anvil is ready, and we've got materials to spare. Just let me know when you're ready to craft something.",
+      "responses": [
+        {
+          "text": "Will do!",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

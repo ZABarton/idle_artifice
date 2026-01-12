@@ -37,8 +37,14 @@ const feature = computed<Feature | null>(() => {
 // Use screenComponent if available, otherwise fall back to component
 const featureComponent = computed(() => {
   if (!areaConfig.value || !feature.value) return null
-  const featureConfig = areaConfig.value.features.find((f) => f.id === feature.value!.id)
-  return featureConfig?.screenComponent ?? featureConfig?.component ?? null
+  const featureConfigData = areaConfig.value.features.find((f) => f.id === feature.value!.id)
+  return featureConfigData?.screenComponent ?? featureConfigData?.component ?? null
+})
+
+// Get feature config
+const featureConfig = computed(() => {
+  if (!areaConfig.value || !feature.value) return null
+  return areaConfig.value.features.find((f) => f.id === feature.value!.id) ?? null
 })
 
 // Feature title for header
@@ -66,7 +72,13 @@ const handleBackClick = () => {
 
     <!-- Feature Content -->
     <div class="feature-screen-content">
-      <component :is="featureComponent" v-if="featureComponent" :full-screen="true" />
+      <component
+        :is="featureComponent"
+        v-if="featureComponent"
+        :full-screen="true"
+        :feature="feature"
+        :feature-config="featureConfig"
+      />
       <div v-else class="feature-screen-error">
         <p>Feature not found or not available.</p>
         <button @click="handleBackClick">Return to Area Map</button>

@@ -40,7 +40,7 @@ export const harborConfig: AreaMapConfig = {
       icon: '⚓',
       state: 'locked',
       isActive: false,
-      interactionType: 'navigation',
+      interactionType: 'inline',
       minimizedDisplays: [
         {
           component: markRaw(StatusText),

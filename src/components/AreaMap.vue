@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, markRaw } from 'vue'
 import { useNavigationStore } from '@/stores/navigation'
 import { useWorldMapStore } from '@/stores/worldMap'
 import { useAreaMapStore } from '@/stores/areaMap'
@@ -8,8 +8,9 @@ import { useObjectivesStore } from '@/stores/objectives'
 import { useResourcesStore } from '@/stores/resources'
 import { useNotificationsStore } from '@/stores/notifications'
 import FeatureCard from './FeatureCard.vue'
+import NPCIndicator from '@/components/displays/NPCIndicator.vue'
 import type { Feature } from '@/types/feature'
-import type { AreaMapConfig } from '@/types/areaMapConfig'
+import type { AreaMapConfig, NPCConfig } from '@/types/areaMapConfig'
 import { getAreaConfigByCoords, getActiveLayout } from '@/config/area-maps'
 import { executeTriggers, createTriggerContext } from '@/services/areaTriggers'
 
@@ -175,12 +176,76 @@ const getFeatureComponent = (feature: Feature) => {
   return featureConfig?.component ?? null
 }
 
+// Get feature config from area config
+const getFeatureConfig = (feature: Feature) => {
+  if (!areaConfig.value) return null
+
+  return areaConfig.value.features.find((f) => f.id === feature.id) ?? null
+}
+
 // Get minimized displays from config
 const getMinimizedDisplays = (feature: Feature) => {
   if (!areaConfig.value) return []
 
   const featureConfig = areaConfig.value.features.find((f) => f.id === feature.id)
   return featureConfig?.minimizedDisplays ?? []
+}
+
+// Get NPCs from feature config
+const getNPCs = (feature: Feature): NPCConfig[] => {
+  if (!areaConfig.value) return []
+
+  const featureConfig = areaConfig.value.features.find((f) => f.id === feature.id)
+  return featureConfig?.npcs ?? []
+}
+
+// Check if NPC conversation is available (not completed)
+const isNPCConversationAvailable = (npc: NPCConfig): boolean => {
+  return !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
+}
+
+// Handle NPC click - trigger dialog
+const handleNPCClick = async (npcId: string, featureId: string) => {
+  if (!areaConfig.value) return
+
+  // Find the NPC config
+  const featureConfig = areaConfig.value.features.find((f) => f.id === featureId)
+  const npc = featureConfig?.npcs?.find((n) => n.id === npcId)
+
+  if (!npc) {
+    console.error(`NPC ${npcId} not found in feature ${featureId}`)
+    return
+  }
+
+  // Determine which dialog tree to show
+  // If primary dialog is completed and fallback exists, show fallback
+  // Otherwise, show primary dialog
+  const hasPrimaryDialog = !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
+  const dialogTreeId =
+    hasPrimaryDialog || !npc.fallbackDialogTreeId ? npc.dialogTreeId : npc.fallbackDialogTreeId
+
+  // Show dialog tree
+  await dialogsStore.showDialogTree(dialogTreeId)
+}
+
+// Generate NPC indicator display configs for a feature
+const getNPCIndicatorDisplays = (feature: Feature) => {
+  const npcs = getNPCs(feature)
+  if (npcs.length === 0) return []
+
+  return npcs.map((npc) => ({
+    component: markRaw(NPCIndicator),
+    props: {
+      npcName: npc.name,
+      icon: npc.icon || '💬',
+      hasAvailableConversation: isNPCConversationAvailable(npc),
+      showBadge: isNPCConversationAvailable(npc),
+      badgeText: '!',
+      npcId: npc.id,
+    },
+    npcId: npc.id,
+    featureId: feature.id,
+  }))
 }
 
 // Handle feature card click
@@ -256,16 +321,29 @@ const handleFeatureExpandToggle = (feature: Feature) => {
           @click="handleFeatureClick"
           @toggle-expand="handleFeatureExpandToggle"
         >
-          <!-- Minimized view: display components from config -->
+          <!-- Minimized view: NPC indicators + display components from config -->
           <template #minimized>
             <div
-              v-if="getMinimizedDisplays(feature).length > 0"
+              v-if="
+                getNPCIndicatorDisplays(feature).length > 0 ||
+                getMinimizedDisplays(feature).length > 0
+              "
               class="minimized-displays-container"
             >
+              <!-- NPC Indicators (auto-generated from feature.npcs) -->
+              <component
+                :is="npcDisplay.component"
+                v-for="npcDisplay in getNPCIndicatorDisplays(feature)"
+                :key="`npc-${npcDisplay.npcId}`"
+                v-bind="npcDisplay.props"
+                @npc-click="handleNPCClick(npcDisplay.npcId, npcDisplay.featureId)"
+              />
+
+              <!-- Other display components from config -->
               <component
                 :is="display.component"
                 v-for="(display, index) in getMinimizedDisplays(feature)"
-                :key="index"
+                :key="`display-${index}`"
                 v-bind="display.props"
               />
             </div>
@@ -274,7 +352,10 @@ const handleFeatureExpandToggle = (feature: Feature) => {
           <!-- Expanded view: dynamic feature component from config -->
           <component
             :is="getFeatureComponent(feature)"
+            :feature="feature"
+            :feature-config="getFeatureConfig(feature)"
             @navigate="handleFeatureNavigate(feature.id)"
+            @npc-click="(npcId: string) => handleNPCClick(npcId, feature.id)"
           />
         </FeatureCard>
       </div>
