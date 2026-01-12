@@ -9,10 +9,12 @@ import { useResourcesStore } from '@/stores/resources'
 import { useNotificationsStore } from '@/stores/notifications'
 import FeatureCard from './FeatureCard.vue'
 import NPCIndicator from '@/components/displays/NPCIndicator.vue'
+import QuestBadge from '@/components/displays/QuestBadge.vue'
 import type { Feature } from '@/types/feature'
 import type { AreaMapConfig, NPCConfig } from '@/types/areaMapConfig'
 import { getAreaConfigByCoords, getActiveLayout } from '@/config/area-maps'
 import { executeTriggers, createTriggerContext } from '@/services/areaTriggers'
+import { useFeatureObjectives } from '@/composables/useFeatureObjectives'
 
 /**
  * AreaMap Component
@@ -39,6 +41,7 @@ const dialogsStore = useDialogsStore()
 const objectivesStore = useObjectivesStore()
 const resourcesStore = useResourcesStore()
 const notificationsStore = useNotificationsStore()
+const { isFeatureInActiveObjective, completeFeatureSubtask } = useFeatureObjectives()
 
 // Get the tile data for this area
 const tile = computed(() => worldMapStore.getTileAt(props.q, props.r))
@@ -248,12 +251,31 @@ const getNPCIndicatorDisplays = (feature: Feature) => {
   }))
 }
 
+// Generate QuestBadge display if feature is part of active objectives
+const getQuestBadgeDisplay = (feature: Feature) => {
+  if (!isFeatureInActiveObjective.value(feature.id)) {
+    return null
+  }
+
+  return {
+    component: markRaw(QuestBadge),
+    props: {
+      icon: '!',
+      variant: 'warning' as const,
+      pulse: false,
+    },
+  }
+}
+
 // Handle feature card click
 const handleFeatureClick = async (feature: Feature) => {
   if (feature.state === 'locked') {
     // For locked features, could show a tooltip or modal with requirements
     return
   }
+
+  // Auto-complete any objective subtasks associated with this feature
+  completeFeatureSubtask(feature.id)
 
   // Toggle active state
   if (feature.isActive) {
@@ -321,15 +343,23 @@ const handleFeatureExpandToggle = (feature: Feature) => {
           @click="handleFeatureClick"
           @toggle-expand="handleFeatureExpandToggle"
         >
-          <!-- Minimized view: NPC indicators + display components from config -->
+          <!-- Minimized view: Quest badge + NPC indicators + display components from config -->
           <template #minimized>
             <div
               v-if="
+                getQuestBadgeDisplay(feature) ||
                 getNPCIndicatorDisplays(feature).length > 0 ||
                 getMinimizedDisplays(feature).length > 0
               "
               class="minimized-displays-container"
             >
+              <!-- Quest Badge (shown when feature is part of active objective) -->
+              <component
+                :is="getQuestBadgeDisplay(feature)!.component"
+                v-if="getQuestBadgeDisplay(feature)"
+                v-bind="getQuestBadgeDisplay(feature)!.props"
+              />
+
               <!-- NPC Indicators (auto-generated from feature.npcs) -->
               <component
                 :is="npcDisplay.component"

@@ -60,17 +60,20 @@
         {
           "id": "visit-foundry",
           "description": "Visit the Foundry",
-          "completed": false
+          "completed": false,
+          "featureId": "academy-foundry"
         },
         {
           "id": "visit-quartermaster",
           "description": "Visit the Quartermaster",
-          "completed": false
+          "completed": false,
+          "featureId": "academy-quartermaster"
         },
         {
           "id": "visit-tavern",
           "description": "Visit the Tavern",
-          "completed": false
+          "completed": false,
+          "featureId": "academy-tavern"
         }
       ]
     },
