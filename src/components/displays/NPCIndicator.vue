@@ -33,8 +33,11 @@ const emit = defineEmits<{
   'npc-click': [npcId: string]
 }>()
 
-const handleClick = () => {
-  if (props.hasAvailableConversation && props.npcId) {
+const handleClick = (event: MouseEvent) => {
+  // Stop event propagation to prevent triggering feature card click
+  event.stopPropagation()
+
+  if (props.npcId) {
     emit('npc-click', props.npcId)
   }
 }
@@ -45,7 +48,7 @@ const handleClick = () => {
     class="npc-indicator"
     :class="{
       available: hasAvailableConversation,
-      clickable: hasAvailableConversation && npcId
+      clickable: !!npcId
     }"
     @click="handleClick"
   >

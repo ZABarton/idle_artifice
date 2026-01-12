@@ -1,0 +1,87 @@
+{
+  "id": "tavern-keeper-tips",
+  "characterName": "Camille Adai",
+  "portrait": {
+    "path": "images/portraits/ranger.png",
+    "alt": "Camille Adai portrait"
+  },
+  "startNodeId": "greeting",
+  "nodes": {
+    "greeting": {
+      "id": "greeting",
+      "message": "Back already? What do you need?",
+      "responses": [
+        {
+          "text": "How are the scouts doing?",
+          "nextNodeId": "scouts-status"
+        },
+        {
+          "text": "Any advice for exploring?",
+          "nextNodeId": "exploration-advice"
+        },
+        {
+          "text": "Just wanted to check in.",
+          "nextNodeId": "check-in"
+        }
+      ]
+    },
+    "scouts-status": {
+      "id": "scouts-status",
+      "message": "They're still here, still waiting for better equipment. But morale is holding. My people are tough - they just need the right tools to do their jobs.",
+      "responses": [
+        {
+          "text": "We'll get them equipped soon.",
+          "nextNodeId": null
+        },
+        {
+          "text": "What kind of equipment do they need?",
+          "nextNodeId": "equipment"
+        }
+      ]
+    },
+    "equipment": {
+      "id": "equipment",
+      "message": "Protection, mostly. Good armor, sturdy weapons, maybe some magical items if the foundry can spare them. The wilderness isn't kind to the unprepared.",
+      "responses": [
+        {
+          "text": "I'll see what I can do.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "exploration-advice": {
+      "id": "exploration-advice",
+      "message": "The first rule of exploration: always have an escape plan. The second rule: never go alone. The third rule: bring more supplies than you think you need. Follow those, and you'll have a better chance of coming back.",
+      "responses": [
+        {
+          "text": "Sound advice.",
+          "nextNodeId": null
+        },
+        {
+          "text": "You speak from experience?",
+          "nextNodeId": "experience"
+        }
+      ]
+    },
+    "experience": {
+      "id": "experience",
+      "message": "I've lost good people out there. People who didn't follow those rules - or couldn't. That's why we're staying put until we're properly equipped. I won't lose anyone else to carelessness.",
+      "responses": [
+        {
+          "text": "We'll make sure they're ready.",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "check-in": {
+      "id": "check-in",
+      "message": "Well, we're still here. Still waiting. But I appreciate you checking on us. Means you actually care about keeping my scouts alive.",
+      "responses": [
+        {
+          "text": "Of course I do.",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

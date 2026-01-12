@@ -1,0 +1,73 @@
+{
+  "id": "quartermaster-tips",
+  "characterName": "Quartermaster Jones",
+  "portrait": {
+    "path": "images/portraits/quartermaster.png",
+    "alt": "Quartermaster Jones"
+  },
+  "startNodeId": "greeting",
+  "nodes": {
+    "greeting": {
+      "id": "greeting",
+      "message": "Hallo again! Need something from the quartermaster?",
+      "responses": [
+        {
+          "text": "How are the supplies?",
+          "nextNodeId": "supplies-status"
+        },
+        {
+          "text": "Any advice for managing resources?",
+          "nextNodeId": "resource-advice"
+        },
+        {
+          "text": "Just saying hello.",
+          "nextNodeId": "friendly"
+        }
+      ]
+    },
+    "supplies-status": {
+      "id": "supplies-status",
+      "message": "Everything's well-stocked and properly organized! A good quartermaster always knows exactly what they have and where to find it. That's the secret - organization!",
+      "responses": [
+        {
+          "text": "Good to hear!",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "resource-advice": {
+      "id": "resource-advice",
+      "message": "The most important thing is to never let your essential supplies run too low. Keep a buffer - you never know when you'll need extra rations or materials. And always, always keep inventory organized!",
+      "responses": [
+        {
+          "text": "Thanks for the tip!",
+          "nextNodeId": null
+        },
+        {
+          "text": "You really like organization, don't you?",
+          "nextNodeId": "organization"
+        }
+      ]
+    },
+    "organization": {
+      "id": "organization",
+      "message": "Like it? I *love* it! There's nothing quite as satisfying as a perfectly organized supply depot. Everything in its place, every item counted and accounted for. Beautiful!",
+      "responses": [
+        {
+          "text": "Your enthusiasm is contagious!",
+          "nextNodeId": null
+        }
+      ]
+    },
+    "friendly": {
+      "id": "friendly",
+      "message": "Well, hallo to you too! Always happy to chat. Good morale is important for keeping the camp running smoothly, you know!",
+      "responses": [
+        {
+          "text": "Take care!",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

@@ -22,15 +22,17 @@ const emit = defineEmits<{
   'npc-click': [npcId: string]
 }>()
 
-const handleClick = () => {
+const handleClick = (event: MouseEvent) => {
+  // Stop event propagation to prevent triggering parent clicks
+  event.stopPropagation()
+
   emit('npc-click', props.npc.id)
 }
 </script>
 
 <template>
   <div
-    class="npc-portrait"
-    :class="{ clickable: hasAvailableConversation }"
+    class="npc-portrait clickable"
     @click="handleClick"
   >
     <div class="portrait-frame">

@@ -217,8 +217,15 @@ const handleNPCClick = async (npcId: string, featureId: string) => {
     return
   }
 
+  // Determine which dialog tree to show
+  // If primary dialog is completed and fallback exists, show fallback
+  // Otherwise, show primary dialog
+  const hasPrimaryDialog = !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
+  const dialogTreeId =
+    hasPrimaryDialog || !npc.fallbackDialogTreeId ? npc.dialogTreeId : npc.fallbackDialogTreeId
+
   // Show dialog tree
-  await dialogsStore.showDialogTree(npc.dialogTreeId)
+  await dialogsStore.showDialogTree(dialogTreeId)
 }
 
 // Generate NPC indicator display configs for a feature

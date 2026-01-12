@@ -160,8 +160,10 @@ export interface NPCConfig {
   name: string
   /** Character portrait information */
   portrait: CharacterPortrait
-  /** Dialog tree ID to show when NPC is clicked */
+  /** Primary dialog tree ID to show when NPC is clicked (shows indicator if not completed) */
   dialogTreeId: string
+  /** Fallback dialog tree ID to show after primary dialog is completed (no indicator) */
+  fallbackDialogTreeId?: string
   /** Icon/emoji to display for this NPC (defaults to '💬') */
   icon?: string
 }

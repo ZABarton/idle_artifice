@@ -56,6 +56,7 @@ export const academyConfig: AreaMapConfig = {
             alt: 'Anton DeCassieur, the Foundry Master',
           },
           dialogTreeId: 'foundry-master-intro',
+          fallbackDialogTreeId: 'foundry-master-tips',
           icon: '🔨',
         },
       ],
@@ -98,6 +99,7 @@ export const academyConfig: AreaMapConfig = {
             alt: 'Quartermaster Jones',
           },
           dialogTreeId: 'quartermaster-intro',
+          fallbackDialogTreeId: 'quartermaster-tips',
           icon: '📦',
         },
       ],
@@ -127,10 +129,11 @@ export const academyConfig: AreaMapConfig = {
           id: 'tavern-keeper',
           name: 'Camille Adai',
           portrait: {
-            path: 'images/portraits/tavern-keeper.png',
+            path: 'images/portraits/ranger.png',
             alt: 'Camille Adai, the Tavern Keeper',
           },
           dialogTreeId: 'tavern-keeper-intro',
+          fallbackDialogTreeId: 'tavern-keeper-tips',
           icon: '🍺',
         },
       ],
@@ -164,50 +167,7 @@ export const academyConfig: AreaMapConfig = {
         },
       ],
     },
-
-    // Foundry interaction: show foundry master dialog and update objective
-    {
-      event: 'onFeatureInteract',
-      featureId: 'academy-foundry',
-      description: 'Show foundry master introduction on first foundry interaction',
-      callback: async (context) => {
-        const { dialogs } = context.stores
-
-        // Only show dialog if haven't completed the dialog tree yet
-        if (!dialogs.hasCompletedDialogTree('foundry-master-intro')) {
-          await dialogs.showDialogTree('foundry-master-intro')
-        }
-      },
-    },
-
-    // Quartermaster interaction: show quartermaster dialog and update objective
-    {
-      event: 'onFeatureInteract',
-      featureId: 'academy-quartermaster',
-      description: 'Show quartermaster introduction on first quartermaster interaction',
-      callback: async (context) => {
-        const { dialogs } = context.stores
-
-        // Only show dialog if haven't completed the dialog tree yet
-        if (!dialogs.hasCompletedDialogTree('quartermaster-intro')) {
-          await dialogs.showDialogTree('quartermaster-intro')
-        }
-      },
-    },
-
-    // Tavern interaction: show tavern keeper dialog and update objective
-    {
-      event: 'onFeatureInteract',
-      featureId: 'academy-tavern',
-      description: 'Show tavern keeper introduction on first tavern interaction',
-      callback: async (context) => {
-        const { dialogs } = context.stores
-
-        // Only show dialog if haven't completed the dialog tree yet
-        if (!dialogs.hasCompletedDialogTree('tavern-keeper-intro')) {
-          await dialogs.showDialogTree('tavern-keeper-intro')
-        }
-      },
-    },
+    // Note: Foundry, Quartermaster, and Tavern dialogs are now triggered
+    // by clicking on NPC portraits/indicators, not by feature interaction
   ],
 }
