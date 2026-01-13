@@ -260,12 +260,215 @@ describe('useFoundryStore', () => {
     })
   })
 
+  describe('queue management', () => {
+    it('should add item to queue', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+
+      expect(store.craftingQueue).toHaveLength(1)
+      expect(store.craftingQueue[0].recipeId).toBe('survival-kit')
+      expect(store.craftingQueue[0].status).toBe('pending')
+      expect(store.craftingQueue[0].id).toBeDefined()
+    })
+
+    it('should add multiple items to queue with quantity', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit', 3)
+
+      expect(store.craftingQueue).toHaveLength(3)
+      expect(store.craftingQueue[0].recipeId).toBe('survival-kit')
+      expect(store.craftingQueue[1].recipeId).toBe('survival-kit')
+      expect(store.craftingQueue[2].recipeId).toBe('survival-kit')
+
+      // Each should have unique ID
+      expect(store.craftingQueue[0].id).not.toBe(store.craftingQueue[1].id)
+      expect(store.craftingQueue[1].id).not.toBe(store.craftingQueue[2].id)
+    })
+
+    it('should remove item from queue by index', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+      store.addToQueue('hammer')
+      store.addToQueue('rope')
+
+      expect(store.craftingQueue).toHaveLength(3)
+
+      const result = store.removeFromQueue(1)
+      expect(result).toBe(true)
+      expect(store.craftingQueue).toHaveLength(2)
+      expect(store.craftingQueue[0].recipeId).toBe('survival-kit')
+      expect(store.craftingQueue[1].recipeId).toBe('rope')
+    })
+
+    it('should fail to remove item with invalid index', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+
+      expect(store.removeFromQueue(-1)).toBe(false)
+      expect(store.removeFromQueue(10)).toBe(false)
+      expect(store.craftingQueue).toHaveLength(1)
+    })
+
+    it('should adjust currentQueueIndex when removing item before it', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+      store.addToQueue('hammer')
+      store.addToQueue('rope')
+      store.setCurrentQueueIndex(2)
+
+      expect(store.currentQueueIndex).toBe(2)
+
+      store.removeFromQueue(1)
+      expect(store.currentQueueIndex).toBe(1)
+    })
+
+    it('should clear entire queue', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit', 3)
+      store.setCurrentQueueIndex(1)
+
+      expect(store.craftingQueue).toHaveLength(3)
+      expect(store.currentQueueIndex).toBe(1)
+
+      store.clearQueue()
+
+      expect(store.craftingQueue).toHaveLength(0)
+      expect(store.currentQueueIndex).toBe(0)
+    })
+
+    it('should update queue item status', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+
+      const result = store.updateQueueItemStatus(0, 'in-progress')
+      expect(result).toBe(true)
+      expect(store.craftingQueue[0].status).toBe('in-progress')
+    })
+
+    it('should update queue item status with skip reason', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+
+      const result = store.updateQueueItemStatus(0, 'skipped', 'Insufficient wood')
+      expect(result).toBe(true)
+      expect(store.craftingQueue[0].status).toBe('skipped')
+      expect(store.craftingQueue[0].skipReason).toBe('Insufficient wood')
+    })
+
+    it('should clear skip reason when updating status without reason', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+      store.updateQueueItemStatus(0, 'skipped', 'Insufficient wood')
+
+      expect(store.craftingQueue[0].skipReason).toBe('Insufficient wood')
+
+      store.updateQueueItemStatus(0, 'pending')
+      expect(store.craftingQueue[0].skipReason).toBeUndefined()
+    })
+
+    it('should fail to update status with invalid index', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+
+      expect(store.updateQueueItemStatus(-1, 'in-progress')).toBe(false)
+      expect(store.updateQueueItemStatus(10, 'in-progress')).toBe(false)
+    })
+
+    it('should move to next queue item', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+      store.addToQueue('hammer')
+      store.addToQueue('rope')
+
+      expect(store.currentQueueIndex).toBe(0)
+
+      const result1 = store.moveToNextQueueItem()
+      expect(result1).toBe(true)
+      expect(store.currentQueueIndex).toBe(1)
+
+      const result2 = store.moveToNextQueueItem()
+      expect(result2).toBe(true)
+      expect(store.currentQueueIndex).toBe(2)
+    })
+
+    it('should fail to move beyond end of queue', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+
+      expect(store.currentQueueIndex).toBe(0)
+
+      const result = store.moveToNextQueueItem()
+      expect(result).toBe(false)
+      expect(store.currentQueueIndex).toBe(0)
+    })
+
+    it('should set current queue index', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit', 3)
+
+      store.setCurrentQueueIndex(2)
+      expect(store.currentQueueIndex).toBe(2)
+
+      store.setCurrentQueueIndex(0)
+      expect(store.currentQueueIndex).toBe(0)
+    })
+
+    it('should clamp queue index to valid range', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit', 3)
+
+      store.setCurrentQueueIndex(10)
+      expect(store.currentQueueIndex).toBe(2) // max index is 2
+
+      store.setCurrentQueueIndex(-5)
+      expect(store.currentQueueIndex).toBe(0) // min index is 0
+    })
+
+    it('should get current queue item', () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+      store.addToQueue('hammer')
+
+      expect(store.currentQueueItem?.recipeId).toBe('survival-kit')
+
+      store.moveToNextQueueItem()
+      expect(store.currentQueueItem?.recipeId).toBe('hammer')
+    })
+
+    it('should return null for current queue item when queue is empty', () => {
+      const store = useFoundryStore()
+      expect(store.currentQueueItem).toBeNull()
+    })
+  })
+
+  describe('queue persistence', () => {
+    it('should persist queue to localStorage', async () => {
+      const store = useFoundryStore()
+      store.addToQueue('survival-kit')
+      store.addToQueue('hammer')
+      store.setCurrentQueueIndex(1)
+
+      // Wait for watch to trigger
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      // Create new store instance
+      setActivePinia(createPinia())
+      const newStore = useFoundryStore()
+
+      expect(newStore.craftingQueue).toHaveLength(2)
+      expect(newStore.craftingQueue[0].recipeId).toBe('survival-kit')
+      expect(newStore.craftingQueue[1].recipeId).toBe('hammer')
+      expect(newStore.currentQueueIndex).toBe(1)
+    })
+  })
+
   describe('reset', () => {
     it('should reset foundry to default state', () => {
       const store = useFoundryStore()
       // Make some changes
       store.moveSupplyBin(2, 2)
       store.updateAntonPosition({ x: 4, y: 4 })
+      store.addToQueue('survival-kit', 3)
 
       // Reset
       store.resetFoundry()
@@ -275,6 +478,8 @@ describe('useFoundryStore', () => {
       expect(store.anvilPosition).toEqual(FOUNDRY_CONSTANTS.DEFAULT_ANVIL_POSITION)
       expect(store.anton.position).toEqual(FOUNDRY_CONSTANTS.DEFAULT_ANTON_POSITION)
       expect(store.anton.currentAction).toBe('idle')
+      expect(store.craftingQueue).toHaveLength(0)
+      expect(store.currentQueueIndex).toBe(0)
     })
   })
 })

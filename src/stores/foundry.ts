@@ -294,6 +294,106 @@ export const useFoundryStore = defineStore('foundry', () => {
     gridState.value.anton.currentRecipeId = recipeId
   }
 
+  // Actions - Queue management
+
+  /**
+   * Add recipe to crafting queue
+   * Creates a unique ID for each queue item for tracking
+   * @param recipeId - ID of recipe to craft
+   * @param quantity - Number of times to craft this recipe (defaults to 1)
+   */
+  function addToQueue(recipeId: string, quantity: number = 1): void {
+    for (let i = 0; i < quantity; i++) {
+      const queueItem: CraftingQueueItem = {
+        id: `${recipeId}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        recipeId,
+        status: 'pending',
+      }
+      gridState.value.craftingQueue.push(queueItem)
+    }
+  }
+
+  /**
+   * Remove item from queue at specific index
+   * Adjusts currentQueueIndex if needed
+   * @param index - Index of item to remove
+   * @returns true if successful, false if index invalid
+   */
+  function removeFromQueue(index: number): boolean {
+    if (index < 0 || index >= gridState.value.craftingQueue.length) {
+      return false
+    }
+
+    gridState.value.craftingQueue.splice(index, 1)
+
+    // Adjust current queue index if needed
+    if (gridState.value.currentQueueIndex >= gridState.value.craftingQueue.length) {
+      gridState.value.currentQueueIndex = Math.max(0, gridState.value.craftingQueue.length - 1)
+    }
+
+    return true
+  }
+
+  /**
+   * Clear all items from the crafting queue
+   * Resets currentQueueIndex to 0
+   */
+  function clearQueue(): void {
+    gridState.value.craftingQueue = []
+    gridState.value.currentQueueIndex = 0
+  }
+
+  /**
+   * Update the status of a queue item
+   * @param index - Index of queue item to update
+   * @param status - New status
+   * @param skipReason - Optional reason if status is 'skipped'
+   * @returns true if successful, false if index invalid
+   */
+  function updateQueueItemStatus(
+    index: number,
+    status: CraftingQueueItem['status'],
+    skipReason?: string
+  ): boolean {
+    if (index < 0 || index >= gridState.value.craftingQueue.length) {
+      return false
+    }
+
+    gridState.value.craftingQueue[index].status = status
+    if (skipReason) {
+      gridState.value.craftingQueue[index].skipReason = skipReason
+    } else {
+      delete gridState.value.craftingQueue[index].skipReason
+    }
+
+    return true
+  }
+
+  /**
+   * Move to next item in queue
+   * Increments currentQueueIndex
+   * @returns true if moved to next item, false if at end of queue
+   */
+  function moveToNextQueueItem(): boolean {
+    if (gridState.value.currentQueueIndex >= gridState.value.craftingQueue.length - 1) {
+      return false
+    }
+
+    gridState.value.currentQueueIndex++
+    return true
+  }
+
+  /**
+   * Set current queue index
+   * @param index - New queue index
+   */
+  function setCurrentQueueIndex(index: number): void {
+    gridState.value.currentQueueIndex = Math.max(
+      0,
+      Math.min(index, gridState.value.craftingQueue.length - 1)
+    )
+  }
+
   /**
    * Reset foundry to default state (for debug/testing)
    */
@@ -339,15 +439,24 @@ export const useFoundryStore = defineStore('foundry', () => {
     anvilPosition,
     currentQueueItem,
     isValidPosition,
-    // Actions
+    // Actions - Grid
     updateCellType,
     moveSupplyBin,
     moveAnvil,
+    // Actions - Anton
     updateAntonPosition,
     updateAntonAction,
     updateAntonProgress,
     setAntonPath,
     setAntonRecipe,
+    // Actions - Queue
+    addToQueue,
+    removeFromQueue,
+    clearQueue,
+    updateQueueItemStatus,
+    moveToNextQueueItem,
+    setCurrentQueueIndex,
+    // Actions - Utility
     resetFoundry,
   }
 })
