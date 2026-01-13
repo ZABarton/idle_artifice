@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useFoundryStore } from '@/stores/foundry'
 import { GridCellType } from '@/types/foundry'
 import type { GridCell } from '@/types/foundry'
@@ -21,6 +21,16 @@ const foundryStore = useFoundryStore()
 
 // Toggle for coordinate labels
 const showCoordinates = ref(true)
+
+// Edit mode state
+const isEditMode = ref(false)
+const selectedItem = ref<'supplyBin' | 'anvil' | null>(null)
+const placementFeedback = ref<{ x: number; y: number; success: boolean } | null>(null)
+
+// Check if Anton is actively crafting (disable editing during crafting)
+const isAntonCrafting = computed(() => {
+  return foundryStore.anton.currentAction !== 'idle'
+})
 
 // Mock data for placeholder display
 const mockMaterials = ref([
@@ -74,6 +84,124 @@ function getCellClass(cell: GridCell): string {
 function isAntonAt(x: number, y: number): boolean {
   return foundryStore.anton.position.x === x && foundryStore.anton.position.y === y
 }
+
+/**
+ * Toggle edit mode
+ */
+function toggleEditMode(): void {
+  isEditMode.value = !isEditMode.value
+  // Clear selection when exiting edit mode
+  if (!isEditMode.value) {
+    selectedItem.value = null
+    placementFeedback.value = null
+  }
+}
+
+/**
+ * Handle grid cell click in edit mode
+ */
+function handleCellClick(cell: GridCell): void {
+  if (!isEditMode.value) return
+
+  // If an item is selected, try to place it
+  if (selectedItem.value) {
+    placeCellItem(cell.x, cell.y)
+  } else {
+    // Otherwise, try to select an item
+    selectCellItem(cell)
+  }
+}
+
+/**
+ * Select an item (supply bin or anvil) for moving
+ */
+function selectCellItem(cell: GridCell): void {
+  if (cell.type === GridCellType.SupplyBin) {
+    // Toggle selection - deselect if already selected
+    selectedItem.value = selectedItem.value === 'supplyBin' ? null : 'supplyBin'
+  } else if (cell.type === GridCellType.Anvil) {
+    // Toggle selection - deselect if already selected
+    selectedItem.value = selectedItem.value === 'anvil' ? null : 'anvil'
+  }
+}
+
+/**
+ * Place selected item at target position
+ */
+function placeCellItem(x: number, y: number): void {
+  if (!selectedItem.value) return
+
+  // Cannot place on Anton's position
+  if (isAntonAt(x, y)) {
+    showPlacementFeedback(x, y, false)
+    return
+  }
+
+  let success = false
+  if (selectedItem.value === 'supplyBin') {
+    success = foundryStore.moveSupplyBin(x, y)
+  } else if (selectedItem.value === 'anvil') {
+    success = foundryStore.moveAnvil(x, y)
+  }
+
+  showPlacementFeedback(x, y, success)
+
+  // Clear selection on successful placement
+  if (success) {
+    selectedItem.value = null
+  }
+}
+
+/**
+ * Show visual feedback for placement attempt
+ */
+function showPlacementFeedback(x: number, y: number, success: boolean): void {
+  placementFeedback.value = { x, y, success }
+  // Clear feedback after animation
+  setTimeout(() => {
+    placementFeedback.value = null
+  }, 600)
+}
+
+/**
+ * Check if this cell is the selected item
+ */
+function isCellSelected(cell: GridCell): boolean {
+  if (!selectedItem.value) return false
+  if (selectedItem.value === 'supplyBin' && cell.type === GridCellType.SupplyBin) return true
+  if (selectedItem.value === 'anvil' && cell.type === GridCellType.Anvil) return true
+  return false
+}
+
+/**
+ * Check if this cell is a valid placement target
+ */
+function isValidPlacementTarget(cell: GridCell): boolean {
+  if (!isEditMode.value || !selectedItem.value) return false
+
+  // Cannot place on Anton
+  if (isAntonAt(cell.x, cell.y)) return false
+
+  // Cannot place on blocked cells
+  if (cell.type === GridCellType.Blocked) return false
+
+  // Cannot place supply bin on anvil or vice versa
+  if (selectedItem.value === 'supplyBin' && cell.type === GridCellType.Anvil) return false
+  if (selectedItem.value === 'anvil' && cell.type === GridCellType.SupplyBin) return false
+
+  return true
+}
+
+/**
+ * Check if this cell has placement feedback
+ */
+function getCellFeedbackClass(cell: GridCell): string | null {
+  if (!placementFeedback.value) return null
+  if (placementFeedback.value.x === cell.x && placementFeedback.value.y === cell.y) {
+    return placementFeedback.value.success ? 'placement-success' : 'placement-failure'
+  }
+  return null
+}
 </script>
 
 <template>
@@ -86,6 +214,15 @@ function isAntonAt(x: number, y: number): boolean {
           <input type="checkbox" v-model="showCoordinates" />
           <span>Show Coordinates</span>
         </label>
+        <button
+          class="edit-mode-button"
+          :class="{ active: isEditMode }"
+          :disabled="isAntonCrafting"
+          @click="toggleEditMode"
+          :title="isAntonCrafting ? 'Cannot edit while Anton is crafting' : ''"
+        >
+          {{ isEditMode ? '💾 Save Layout' : '✏️ Edit Layout' }}
+        </button>
       </div>
     </div>
 
@@ -130,13 +267,22 @@ function isAntonAt(x: number, y: number): boolean {
           <h3 class="section-title">Crafting Grid ({{ foundryStore.gridSize.width }}x{{ foundryStore.gridSize.height }})</h3>
 
           <!-- Actual Grid from Store -->
-          <div class="crafting-grid">
+          <div class="crafting-grid" :class="{ 'edit-mode': isEditMode }">
             <div v-for="(row, rowIndex) in foundryStore.grid" :key="rowIndex" class="grid-row">
               <div
                 v-for="(cell, colIndex) in row"
                 :key="`${rowIndex}-${colIndex}`"
                 class="grid-cell"
-                :class="getCellClass(cell)"
+                :class="[
+                  getCellClass(cell),
+                  {
+                    'cell-selected': isCellSelected(cell),
+                    'cell-placement-target': isValidPlacementTarget(cell),
+                    'cell-editable': isEditMode.value && (cell.type === GridCellType.SupplyBin || cell.type === GridCellType.Anvil),
+                  },
+                  getCellFeedbackClass(cell)
+                ]"
+                @click="handleCellClick(cell)"
               >
                 <!-- Cell Icon (Supply Bin, Anvil, etc.) -->
                 <span v-if="getCellIcon(cell)" class="cell-icon">{{ getCellIcon(cell) }}</span>
@@ -149,6 +295,11 @@ function isAntonAt(x: number, y: number): boolean {
 
                 <!-- Coordinate Labels -->
                 <span v-if="showCoordinates" class="cell-coordinates">({{ cell.x }},{{ cell.y }})</span>
+
+                <!-- Placement Preview -->
+                <div v-if="isValidPlacementTarget(cell) && selectedItem" class="placement-preview">
+                  <span class="preview-icon">{{ selectedItem === 'supplyBin' ? '📦' : '🔨' }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -208,6 +359,35 @@ function isAntonAt(x: number, y: number): boolean {
 
 .coordinate-toggle input[type='checkbox'] {
   cursor: pointer;
+}
+
+.edit-mode-button {
+  padding: 0.5rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.edit-mode-button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.edit-mode-button.active {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #667eea;
+  border-color: white;
+}
+
+.edit-mode-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Main Content Layout */
@@ -458,6 +638,111 @@ function isAntonAt(x: number, y: number): boolean {
   border-color: #7c3aed;
   box-shadow: 0 4px 8px rgba(124, 58, 237, 0.2);
   transform: translateY(-2px);
+}
+
+/* Edit Mode States */
+.crafting-grid.edit-mode .grid-cell {
+  cursor: default;
+}
+
+.crafting-grid.edit-mode .cell-editable {
+  cursor: pointer;
+}
+
+.crafting-grid.edit-mode .cell-editable:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Selected Cell - Pulsing Border Animation */
+.cell-selected {
+  border-width: 3px;
+  animation: pulse-border 1.5s ease-in-out infinite;
+  cursor: pointer !important;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  50% {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Placement Target - Valid cells for placement */
+.cell-placement-target {
+  cursor: pointer !important;
+  position: relative;
+}
+
+.cell-placement-target:hover {
+  border-color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* Placement Preview */
+.placement-preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(16, 185, 129, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.cell-placement-target:hover .placement-preview {
+  opacity: 1;
+}
+
+.preview-icon {
+  font-size: 2rem;
+  opacity: 0.6;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Placement Feedback Animations */
+.placement-success {
+  animation: flash-success 0.6s ease-out;
+}
+
+.placement-failure {
+  animation: flash-failure 0.6s ease-out;
+}
+
+@keyframes flash-success {
+  0% {
+    background-color: rgba(16, 185, 129, 0.8);
+    border-color: #10b981;
+    transform: scale(1.05);
+  }
+  100% {
+    background-color: inherit;
+    border-color: inherit;
+    transform: scale(1);
+  }
+}
+
+@keyframes flash-failure {
+  0%, 50%, 100% {
+    background-color: rgba(239, 68, 68, 0.3);
+    border-color: #ef4444;
+  }
+  25%, 75% {
+    background-color: rgba(239, 68, 68, 0.6);
+    border-color: #dc2626;
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
 }
 
 /* Action Buttons */
