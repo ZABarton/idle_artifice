@@ -48,6 +48,13 @@ function getDefaultResources(): Resource[] {
       icon: '✨',
       category: 'magical',
     },
+    {
+      id: 'survival-kit',
+      name: 'Survival Kit',
+      amount: 0,
+      icon: '🎒',
+      category: 'crafted_items',
+    },
   ]
 }
 

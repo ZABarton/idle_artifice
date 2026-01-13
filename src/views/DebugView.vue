@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useWorldMapStore } from '@/stores/worldMap'
+import { useFoundryStore } from '@/stores/foundry'
 import { useHexGrid } from '@/composables/useHexGrid'
 import { useSaveManager } from '@/composables/useSaveManager'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const worldMapStore = useWorldMapStore()
+const foundryStore = useFoundryStore()
 const hexGrid = useHexGrid()
 const saveManager = useSaveManager()
 const notifications = useNotificationsStore()
@@ -190,6 +192,79 @@ function cancelImport() {
       <p>
         Academy location: ({{ worldMapStore.academyTile?.q }}, {{ worldMapStore.academyTile?.r }})
       </p>
+    </div>
+
+    <div class="verification-section">
+      <h2>Foundry Status</h2>
+      <div class="foundry-info">
+        <div class="foundry-grid-info">
+          <h3>Grid Configuration</h3>
+          <p>Grid size: {{ foundryStore.gridSize.width }}x{{ foundryStore.gridSize.height }}</p>
+          <p>
+            Supply bin position: ({{ foundryStore.supplyBinPosition?.x }},
+            {{ foundryStore.supplyBinPosition?.y }})
+          </p>
+          <p>
+            Anvil position: ({{ foundryStore.anvilPosition?.x }},
+            {{ foundryStore.anvilPosition?.y }})
+          </p>
+        </div>
+
+        <div class="foundry-anton-info">
+          <h3>Anton Status</h3>
+          <p>
+            Position: ({{ foundryStore.anton.position.x }}, {{ foundryStore.anton.position.y }})
+          </p>
+          <p>Current action: {{ foundryStore.anton.currentAction }}</p>
+          <p>Action progress: {{ (foundryStore.anton.actionProgress * 100).toFixed(1) }}%</p>
+          <p>Current recipe: {{ foundryStore.anton.currentRecipeId || 'None' }}</p>
+        </div>
+
+        <div class="foundry-queue-info">
+          <h3>Crafting Queue ({{ foundryStore.craftingQueue.length }} items)</h3>
+          <p v-if="foundryStore.craftingQueue.length === 0" class="empty-message">Queue is empty</p>
+          <table v-else class="queue-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Recipe ID</th>
+                <th>Status</th>
+                <th>Skip Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in foundryStore.craftingQueue"
+                :key="item.id"
+                :class="{
+                  'queue-current': index === foundryStore.currentQueueIndex,
+                  'queue-skipped': item.status === 'skipped',
+                  'queue-in-progress': item.status === 'in-progress',
+                  'queue-completed': item.status === 'completed',
+                }"
+              >
+                <td>{{ index + 1 }}</td>
+                <td>{{ item.recipeId }}</td>
+                <td>
+                  <span class="status-badge" :class="`status-${item.status}`">
+                    {{ item.status }}
+                  </span>
+                </td>
+                <td>{{ item.skipReason || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-if="foundryStore.craftingQueue.length > 0" class="queue-index-info">
+            Current queue index: {{ foundryStore.currentQueueIndex }}
+          </p>
+        </div>
+      </div>
+
+      <div class="foundry-actions">
+        <button @click="foundryStore.addToQueue('survival-kit')">Add Test Item to Queue</button>
+        <button @click="foundryStore.clearQueue()">Clear Queue</button>
+        <button @click="foundryStore.resetFoundry()">Reset Foundry</button>
+      </div>
     </div>
 
     <div class="verification-section">
@@ -440,5 +515,143 @@ button {
 .cancel-button:hover {
   background-color: #545b62;
   border-color: #4e555b;
+}
+
+/* Foundry debug styles */
+.foundry-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.foundry-info > div {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.foundry-info h3 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  color: #333;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 0.25rem;
+}
+
+.foundry-info p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.foundry-queue-info {
+  grid-column: 1 / -1;
+}
+
+.queue-table {
+  width: 100%;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.queue-table th {
+  background-color: #007bff;
+  color: white;
+}
+
+.queue-table tbody tr {
+  transition: background-color 0.2s;
+}
+
+.queue-table tbody tr:hover {
+  background-color: #f0f0f0;
+}
+
+.queue-current {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107;
+}
+
+.queue-current:hover {
+  background-color: #ffe69c !important;
+}
+
+.queue-in-progress {
+  background-color: #cfe2ff;
+}
+
+.queue-skipped {
+  background-color: #f8d7da;
+}
+
+.queue-completed {
+  background-color: #d1e7dd;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background-color: #e7e7e7;
+  color: #666;
+}
+
+.status-in-progress {
+  background-color: #0d6efd;
+  color: white;
+}
+
+.status-skipped {
+  background-color: #dc3545;
+  color: white;
+}
+
+.status-completed {
+  background-color: #198754;
+  color: white;
+}
+
+.empty-message {
+  color: #999;
+  font-style: italic;
+}
+
+.queue-index-info {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: bold;
+}
+
+.foundry-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.foundry-actions button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.foundry-actions button:hover {
+  background-color: #0056b3;
 }
 </style>
