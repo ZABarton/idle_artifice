@@ -27,6 +27,8 @@ export interface ObjectiveSubtask {
   description: string
   /** Whether this subtask has been completed */
   completed: boolean
+  /** Optional feature ID that this subtask is associated with */
+  featureId?: string
 }
 
 /**

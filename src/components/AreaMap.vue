@@ -217,6 +217,9 @@ const handleNPCClick = async (npcId: string, featureId: string) => {
     return
   }
 
+  // Check if this is a new conversation (not completed yet)
+  const isNewConversation = !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
+
   // Determine which dialog tree to show
   // If primary dialog is completed and fallback exists, show fallback
   // Otherwise, show primary dialog
@@ -226,6 +229,21 @@ const handleNPCClick = async (npcId: string, featureId: string) => {
 
   // Show dialog tree
   await dialogsStore.showDialogTree(dialogTreeId)
+
+  // If this was a new conversation, check for and complete any related objectives
+  if (isNewConversation) {
+    // Complete any objective subtasks associated with this feature
+    const objectives = objectivesStore.objectives
+    for (const objective of objectives) {
+      if (objective.subtasks) {
+        for (const subtask of objective.subtasks) {
+          if (subtask.featureId === featureId && !subtask.completed) {
+            objectivesStore.updateSubtask(objective.id, subtask.id, true)
+          }
+        }
+      }
+    }
+  }
 }
 
 // Generate NPC indicator display configs for a feature
@@ -246,6 +264,12 @@ const getNPCIndicatorDisplays = (feature: Feature) => {
     npcId: npc.id,
     featureId: feature.id,
   }))
+}
+
+// Check if feature has any NPCs with new conversations
+const hasNewConversations = (feature: Feature): boolean => {
+  const npcs = getNPCs(feature)
+  return npcs.some((npc) => isNPCConversationAvailable(npc))
 }
 
 // Handle feature card click
@@ -321,15 +345,19 @@ const handleFeatureExpandToggle = (feature: Feature) => {
           @click="handleFeatureClick"
           @toggle-expand="handleFeatureExpandToggle"
         >
-          <!-- Minimized view: NPC indicators + display components from config -->
+          <!-- Minimized view: Speech bubble indicator + NPC indicators + display components from config -->
           <template #minimized>
             <div
               v-if="
+                hasNewConversations(feature) ||
                 getNPCIndicatorDisplays(feature).length > 0 ||
                 getMinimizedDisplays(feature).length > 0
               "
               class="minimized-displays-container"
             >
+              <!-- Speech bubble indicator (shown when there are new conversations) -->
+              <div v-if="hasNewConversations(feature)" class="conversation-indicator">💬</div>
+
               <!-- NPC Indicators (auto-generated from feature.npcs) -->
               <component
                 :is="npcDisplay.component"
@@ -460,6 +488,15 @@ const handleFeatureExpandToggle = (feature: Feature) => {
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
+}
+
+/* Conversation Indicator */
+.conversation-indicator {
+  font-size: 1.25rem;
+  text-align: center;
+  padding: 0.25rem;
+  pointer-events: none;
+  user-select: none;
 }
 
 .area-map-header__close {
