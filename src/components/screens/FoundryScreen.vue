@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useFoundryStore } from '@/stores/foundry'
+import { GridCellType } from '@/types/foundry'
+import type { GridCell } from '@/types/foundry'
 
 /**
  * FoundryScreen Component
  * Full-screen crafting interface for the Foundry feature
- * Currently displays placeholder UI for future grid-based crafting puzzle system
+ * Displays interactive 5x5 grid with Anton's position and cell types
  */
 
 interface Props {
@@ -12,6 +15,12 @@ interface Props {
 }
 
 defineProps<Props>()
+
+// Connect to foundry store
+const foundryStore = useFoundryStore()
+
+// Toggle for coordinate labels
+const showCoordinates = ref(true)
 
 // Mock data for placeholder display
 const mockMaterials = ref([
@@ -26,14 +35,58 @@ const mockRecipes = ref([
   { id: 'shield', name: 'Wooden Shield', unlocked: true, icon: '🛡️' },
   { id: 'staff', name: 'Crystal Staff', unlocked: false, icon: '🪄' },
 ])
+
+/**
+ * Get icon for cell type
+ */
+function getCellIcon(cell: GridCell): string {
+  switch (cell.type) {
+    case GridCellType.SupplyBin:
+      return '📦'
+    case GridCellType.Anvil:
+      return '🔨'
+    case GridCellType.Blocked:
+      return '🚫'
+    default:
+      return ''
+  }
+}
+
+/**
+ * Get CSS class for cell type
+ */
+function getCellClass(cell: GridCell): string {
+  switch (cell.type) {
+    case GridCellType.SupplyBin:
+      return 'cell-supply-bin'
+    case GridCellType.Anvil:
+      return 'cell-anvil'
+    case GridCellType.Blocked:
+      return 'cell-blocked'
+    default:
+      return 'cell-empty'
+  }
+}
+
+/**
+ * Check if Anton is at this position
+ */
+function isAntonAt(x: number, y: number): boolean {
+  return foundryStore.anton.position.x === x && foundryStore.anton.position.y === y
+}
 </script>
 
 <template>
   <div class="foundry-screen">
-    <!-- Placeholder Notice -->
-    <div class="placeholder-notice">
+    <!-- Header -->
+    <div class="foundry-header">
       <h2>Foundry Crafting System</h2>
-      <p>This is a placeholder for the future grid-based crafting puzzle interface.</p>
+      <div class="header-controls">
+        <label class="coordinate-toggle">
+          <input type="checkbox" v-model="showCoordinates" />
+          <span>Show Coordinates</span>
+        </label>
+      </div>
     </div>
 
     <div class="foundry-content">
@@ -74,39 +127,29 @@ const mockRecipes = ref([
       <!-- Main Panel: Crafting Grid -->
       <main class="foundry-main">
         <div class="crafting-grid-container">
-          <h3 class="section-title">Crafting Grid</h3>
-          <div class="crafting-grid-placeholder">
-            <div class="grid-placeholder-content">
-              <div class="grid-icon">🔨</div>
-              <p class="grid-message">Grid-based crafting puzzle will be implemented here</p>
-              <div class="grid-preview">
-                <!-- Placeholder grid visualization -->
-                <div class="grid-row">
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
+          <h3 class="section-title">Crafting Grid ({{ foundryStore.gridSize.width }}x{{ foundryStore.gridSize.height }})</h3>
+
+          <!-- Actual Grid from Store -->
+          <div class="crafting-grid">
+            <div v-for="(row, rowIndex) in foundryStore.grid" :key="rowIndex" class="grid-row">
+              <div
+                v-for="(cell, colIndex) in row"
+                :key="`${rowIndex}-${colIndex}`"
+                class="grid-cell"
+                :class="getCellClass(cell)"
+              >
+                <!-- Cell Icon (Supply Bin, Anvil, etc.) -->
+                <span v-if="getCellIcon(cell)" class="cell-icon">{{ getCellIcon(cell) }}</span>
+
+                <!-- Anton's Position -->
+                <div v-if="isAntonAt(cell.x, cell.y)" class="anton-marker">
+                  <span class="anton-icon">👷</span>
+                  <span class="anton-label">Anton</span>
                 </div>
-                <div class="grid-row">
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                </div>
-                <div class="grid-row">
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                </div>
-                <div class="grid-row">
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                  <div class="grid-cell"></div>
-                </div>
+
+                <!-- Coordinate Labels -->
+                <span v-if="showCoordinates" class="cell-coordinates">({{ cell.x }},{{ cell.y }})</span>
               </div>
-              <p class="grid-hint">Drag materials onto grid • Arrange to match patterns • Craft items</p>
             </div>
           </div>
 
@@ -131,25 +174,40 @@ const mockRecipes = ref([
   overflow: hidden;
 }
 
-/* Placeholder Notice */
-.placeholder-notice {
+/* Header */
+.foundry-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 2rem;
-  text-align: center;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.placeholder-notice h2 {
-  margin: 0 0 0.5rem 0;
+.foundry-header h2 {
+  margin: 0;
   font-size: 1.75rem;
   font-weight: 600;
 }
 
-.placeholder-notice p {
-  margin: 0;
-  font-size: 1rem;
-  opacity: 0.95;
+.header-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.coordinate-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.coordinate-toggle input[type='checkbox'] {
+  cursor: pointer;
 }
 
 /* Main Content Layout */
@@ -296,46 +354,16 @@ const mockRecipes = ref([
   gap: 1.5rem;
 }
 
-.crafting-grid-placeholder {
+/* Actual Grid */
+.crafting-grid {
   background-color: white;
-  border: 2px solid #e2e8f0;
+  border: 3px solid #e2e8f0;
   border-radius: 12px;
   padding: 2rem;
-  min-height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.grid-placeholder-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  text-align: center;
-  max-width: 500px;
-}
-
-.grid-icon {
-  font-size: 4rem;
-  line-height: 1;
-  opacity: 0.5;
-}
-
-.grid-message {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.grid-preview {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   gap: 8px;
-  padding: 1rem;
-  background-color: #f8fafc;
-  border-radius: 8px;
+  align-self: center;
 }
 
 .grid-row {
@@ -344,24 +372,92 @@ const mockRecipes = ref([
 }
 
 .grid-cell {
-  width: 50px;
-  height: 50px;
-  background-color: white;
-  border: 2px dashed #cbd5e1;
-  border-radius: 6px;
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.grid-cell:hover {
-  border-color: #94a3b8;
+/* Cell Type Styles */
+.cell-empty {
+  background-color: #ffffff;
+}
+
+.cell-supply-bin {
+  background-color: #dbeafe;
+  border-color: #3b82f6;
+}
+
+.cell-anvil {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.cell-blocked {
   background-color: #f1f5f9;
+  border-color: #94a3b8;
+  opacity: 0.6;
 }
 
-.grid-hint {
-  margin: 0;
-  font-size: 0.85rem;
+/* Cell Icons */
+.cell-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  position: absolute;
+  z-index: 1;
+}
+
+/* Anton Marker */
+.anton-marker {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  pointer-events: none;
+}
+
+.anton-icon {
+  font-size: 2rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.anton-label {
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Coordinate Labels */
+.cell-coordinates {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 0.65rem;
   color: #94a3b8;
-  font-style: italic;
+  font-family: monospace;
+  font-weight: 500;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Hover States */
+.grid-cell:hover {
+  border-color: #7c3aed;
+  box-shadow: 0 4px 8px rgba(124, 58, 237, 0.2);
+  transform: translateY(-2px);
 }
 
 /* Action Buttons */
@@ -436,12 +532,25 @@ const mockRecipes = ref([
     padding: 1rem;
   }
 
-  .placeholder-notice {
-    padding: 1.5rem;
+  .foundry-header {
+    padding: 1.25rem 1.5rem;
   }
 
-  .placeholder-notice h2 {
+  .foundry-header h2 {
     font-size: 1.5rem;
+  }
+
+  .grid-cell {
+    width: 70px;
+    height: 70px;
+  }
+
+  .cell-icon {
+    font-size: 2rem;
+  }
+
+  .anton-icon {
+    font-size: 1.75rem;
   }
 }
 
@@ -460,9 +569,35 @@ const mockRecipes = ref([
     order: 1;
   }
 
+  .foundry-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .crafting-grid {
+    padding: 1rem;
+  }
+
   .grid-cell {
-    width: 40px;
-    height: 40px;
+    width: 55px;
+    height: 55px;
+  }
+
+  .cell-icon {
+    font-size: 1.5rem;
+  }
+
+  .anton-icon {
+    font-size: 1.5rem;
+  }
+
+  .anton-label {
+    font-size: 0.6rem;
+  }
+
+  .cell-coordinates {
+    font-size: 0.55rem;
   }
 
   .crafting-actions {

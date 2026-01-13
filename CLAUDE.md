@@ -66,6 +66,53 @@ When starting work on a GitHub issue:
 5. **Wait for approval** before executing the implementation
 6. **Only proceed** after questions are answered and plan is confirmed
 
+### Testing Workflow
+
+After completing implementation, follow this standardized testing process:
+
+**1. TypeScript Type Check**
+```bash
+npx vue-tsc --noEmit
+```
+- Validates TypeScript types without emitting build files
+- Faster than full build
+- Should complete with no output (silence means success)
+- Note: `npm run type-check` script does not exist in this project
+
+**2. Lint Check (Optional - for your changed files only)**
+```bash
+npm run lint -- path/to/your/file.vue
+```
+- Only lint the specific files you modified
+- The full project may have existing lint warnings from other files
+- Focus on ensuring your new code has no lint errors
+- Use `npm run lint -- --fix` to auto-fix formatting issues in your files
+
+**3. Manual Dev Server Test**
+```bash
+npm run dev
+```
+- Starts Vite dev server (typically on port 5173, will auto-increment if in use)
+- Manually verify your changes work in the browser
+- Check console for runtime errors
+- Stop server with Ctrl+C when done
+- DO NOT run dev server in background unless you need to continue working while it runs
+
+**4. Unit Tests (if applicable)**
+```bash
+npm test
+# or for UI
+npm run test:ui
+```
+- Run if you've modified components with existing tests
+- Run if you've added new tests
+
+**Testing Best Practices:**
+- Always run TypeScript check first - it's the fastest way to catch errors
+- Don't rely on `npm run build` for testing - it's slower and produces build artifacts
+- When dev server fails to stop cleanly, check for background processes with `ps aux | grep vite`
+- Focus lint checks on your changed files to avoid noise from pre-existing issues
+
 ## Code Architecture
 
 This is a Vue.js project designed to run in a web browser. See Vue.js style guides
