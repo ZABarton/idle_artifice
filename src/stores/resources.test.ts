@@ -11,10 +11,10 @@ describe('useResourcesStore', () => {
   })
 
   describe('initial state', () => {
-    it('should initialize with 5 test resources', () => {
+    it('should initialize with 6 test resources', () => {
       const store = useResourcesStore()
-      expect(store.resources).toHaveLength(5)
-      expect(store.totalResources).toBe(5)
+      expect(store.resources).toHaveLength(6)
+      expect(store.totalResources).toBe(6)
     })
 
     it('should have correct initial resource data', () => {
@@ -60,7 +60,7 @@ describe('useResourcesStore', () => {
     it('should return all resources when no category specified', () => {
       const store = useResourcesStore()
       const resources = store.getResourcesByCategory()
-      expect(resources).toHaveLength(5)
+      expect(resources).toHaveLength(6)
     })
 
     it('should return resources by category', () => {
@@ -295,7 +295,7 @@ describe('useResourcesStore', () => {
   describe('allResources computed', () => {
     it('should return all resources', () => {
       const store = useResourcesStore()
-      expect(store.allResources).toHaveLength(5)
+      expect(store.allResources).toHaveLength(6)
       expect(store.allResources).toBe(store.resources)
     })
 

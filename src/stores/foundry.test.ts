@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useFoundryStore } from './foundry'
+import { useResourcesStore } from './resources'
 import { GridCellType, FOUNDRY_CONSTANTS } from '@/types/foundry'
 
 describe('useFoundryStore', () => {
@@ -459,6 +460,76 @@ describe('useFoundryStore', () => {
       expect(newStore.craftingQueue[0].recipeId).toBe('survival-kit')
       expect(newStore.craftingQueue[1].recipeId).toBe('hammer')
       expect(newStore.currentQueueIndex).toBe(1)
+    })
+  })
+
+  describe('recipes', () => {
+    it('should load recipes from config', () => {
+      const store = useFoundryStore()
+      expect(store.recipes.length).toBeGreaterThan(0)
+      expect(store.allRecipes.length).toBeGreaterThan(0)
+    })
+
+    it('should have survival kit recipe', () => {
+      const store = useFoundryStore()
+      const recipe = store.getRecipeById('survival-kit')
+
+      expect(recipe).toBeDefined()
+      expect(recipe?.name).toBe('Survival Kit')
+      expect(recipe?.craftTime).toBe(10)
+      expect(recipe?.inputs).toHaveLength(1)
+      expect(recipe?.inputs[0].resourceId).toBe('wood')
+      expect(recipe?.inputs[0].amount).toBe(10)
+      expect(recipe?.outputs).toHaveLength(1)
+      expect(recipe?.outputs[0].resourceId).toBe('survival-kit')
+      expect(recipe?.outputs[0].amount).toBe(1)
+    })
+
+    it('should return undefined for non-existent recipe', () => {
+      const store = useFoundryStore()
+      const recipe = store.getRecipeById('non-existent')
+      expect(recipe).toBeUndefined()
+    })
+
+    it('should check if player has required resources', () => {
+      const store = useFoundryStore()
+      const resourcesStore = useResourcesStore()
+
+      // Default wood amount is 50, survival kit needs 10
+      expect(store.hasRequiredResources('survival-kit')).toBe(true)
+
+      // Remove wood to below requirement
+      resourcesStore.setResource('wood', 5)
+      expect(store.hasRequiredResources('survival-kit')).toBe(false)
+    })
+
+    it('should return false for non-existent recipe when checking resources', () => {
+      const store = useFoundryStore()
+      expect(store.hasRequiredResources('non-existent')).toBe(false)
+    })
+
+    it('should get list of missing resources', () => {
+      const store = useFoundryStore()
+      const resourcesStore = useResourcesStore()
+
+      // Default wood is 50, so no missing resources
+      let missing = store.getMissingResources('survival-kit')
+      expect(missing).toHaveLength(0)
+
+      // Set wood to 5 (need 10)
+      resourcesStore.setResource('wood', 5)
+      missing = store.getMissingResources('survival-kit')
+
+      expect(missing).toHaveLength(1)
+      expect(missing[0].resourceId).toBe('wood')
+      expect(missing[0].required).toBe(10)
+      expect(missing[0].available).toBe(5)
+    })
+
+    it('should return empty array for missing resources on non-existent recipe', () => {
+      const store = useFoundryStore()
+      const missing = store.getMissingResources('non-existent')
+      expect(missing).toHaveLength(0)
     })
   })
 

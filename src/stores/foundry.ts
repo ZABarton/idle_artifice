@@ -9,6 +9,8 @@ import type {
   Recipe,
 } from '@/types/foundry'
 import { GridCellType, FOUNDRY_CONSTANTS } from '@/types/foundry'
+import { recipes as recipeDefinitions } from '@/config/recipes'
+import { useResourcesStore } from './resources'
 
 // LocalStorage key
 const STORAGE_KEY_FOUNDRY = 'idle-artifice-foundry'
@@ -100,7 +102,7 @@ export const useFoundryStore = defineStore('foundry', () => {
   const gridState = ref<Omit<FoundryState, 'recipes'>>(loadFoundryState())
 
   // Recipes are not persisted (defined in config)
-  const recipes = ref<Recipe[]>([])
+  const recipes = ref<Recipe[]>(recipeDefinitions)
 
   // Getters - Grid queries
   const grid = computed(() => gridState.value.grid)
@@ -164,6 +166,73 @@ export const useFoundryStore = defineStore('foundry', () => {
   const isValidPosition = computed(() => (x: number, y: number): boolean => {
     return x >= 0 && y >= 0 && y < gridSize.value.height && x < gridSize.value.width
   })
+
+  // Getters - Recipe queries
+
+  /**
+   * Get recipe by ID
+   */
+  const getRecipeById = computed(() => (id: string): Recipe | undefined => {
+    return recipes.value.find((recipe) => recipe.id === id)
+  })
+
+  /**
+   * Get all available recipes
+   */
+  const allRecipes = computed(() => recipes.value)
+
+  /**
+   * Check if player has required resources for a recipe
+   * @param recipeId - ID of recipe to check
+   * @returns true if player has all required resources, false otherwise
+   */
+  function hasRequiredResources(recipeId: string): boolean {
+    const recipe = getRecipeById.value(recipeId)
+    if (!recipe) {
+      return false
+    }
+
+    const resourcesStore = useResourcesStore()
+
+    // Check all inputs
+    for (const input of recipe.inputs) {
+      if (!resourcesStore.hasResource(input.resourceId, input.amount)) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  /**
+   * Get list of missing resources for a recipe
+   * @param recipeId - ID of recipe to check
+   * @returns Array of objects describing missing resources
+   */
+  function getMissingResources(
+    recipeId: string
+  ): Array<{ resourceId: string; required: number; available: number }> {
+    const recipe = getRecipeById.value(recipeId)
+    if (!recipe) {
+      return []
+    }
+
+    const resourcesStore = useResourcesStore()
+    const missing: Array<{ resourceId: string; required: number; available: number }> = []
+
+    for (const input of recipe.inputs) {
+      const available = resourcesStore.getResourceAmount(input.resourceId)
+      if (available < input.amount) {
+        missing.push({
+          resourceId: input.resourceId,
+          required: input.amount,
+          available,
+        })
+      }
+    }
+
+    return missing
+  }
 
   // Actions - Grid manipulation
 
@@ -433,12 +502,15 @@ export const useFoundryStore = defineStore('foundry', () => {
     craftingQueue,
     currentQueueIndex,
     recipes,
-    // Getters
+    // Getters - Grid
     getCellAt,
     supplyBinPosition,
     anvilPosition,
     currentQueueItem,
     isValidPosition,
+    // Getters - Recipe
+    getRecipeById,
+    allRecipes,
     // Actions - Grid
     updateCellType,
     moveSupplyBin,
@@ -456,6 +528,9 @@ export const useFoundryStore = defineStore('foundry', () => {
     updateQueueItemStatus,
     moveToNextQueueItem,
     setCurrentQueueIndex,
+    // Actions - Recipe
+    hasRequiredResources,
+    getMissingResources,
     // Actions - Utility
     resetFoundry,
   }
