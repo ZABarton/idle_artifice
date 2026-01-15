@@ -94,6 +94,118 @@ function loadFoundryState(): Omit<FoundryState, 'recipes'> {
 }
 
 /**
+ * Movement tracking state (module level)
+ * Used to cancel ongoing movements when a new movement starts
+ */
+let currentMovementController: AbortController | null = null
+
+/**
+ * Check if a cell is traversable (can be walked through)
+ */
+function isTraversable(cell: GridCell | null): boolean {
+  if (!cell) return false
+  return cell.type === GridCellType.Empty
+}
+
+/**
+ * BFS pathfinding algorithm
+ * Finds shortest path from start to target on the grid
+ * @param grid - The foundry grid
+ * @param start - Starting position
+ * @param target - Target position
+ * @returns Array of positions from start to target (excluding start), or empty array if no path exists
+ */
+function findPathBFS(
+  grid: GridCell[][],
+  start: GridPosition,
+  target: GridPosition
+): GridPosition[] {
+  // Validate start and target are within bounds
+  if (
+    start.y < 0 ||
+    start.y >= grid.length ||
+    start.x < 0 ||
+    start.x >= grid[0]?.length ||
+    target.y < 0 ||
+    target.y >= grid.length ||
+    target.x < 0 ||
+    target.x >= grid[0]?.length
+  ) {
+    return []
+  }
+
+  // Target must be traversable
+  if (!isTraversable(grid[target.y][target.x])) {
+    return []
+  }
+
+  // Early exit if start and target are the same
+  if (start.x === target.x && start.y === target.y) {
+    return []
+  }
+
+  // BFS setup
+  const queue: Array<{ pos: GridPosition; path: GridPosition[] }> = []
+  const visited = new Set<string>()
+
+  // Helper to create unique key for position
+  const posKey = (pos: GridPosition) => `${pos.x},${pos.y}`
+
+  // Start BFS
+  queue.push({ pos: start, path: [] })
+  visited.add(posKey(start))
+
+  // 4-directional movement: up, right, down, left
+  const directions = [
+    { x: 0, y: -1 }, // up
+    { x: 1, y: 0 }, // right
+    { x: 0, y: 1 }, // down
+    { x: -1, y: 0 }, // left
+  ]
+
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    const { pos, path } = current
+
+    // Try each direction
+    for (const dir of directions) {
+      const nextPos: GridPosition = {
+        x: pos.x + dir.x,
+        y: pos.y + dir.y,
+      }
+
+      // Check if we've reached the target
+      if (nextPos.x === target.x && nextPos.y === target.y) {
+        return [...path, nextPos]
+      }
+
+      // Skip if already visited
+      const key = posKey(nextPos)
+      if (visited.has(key)) {
+        continue
+      }
+
+      // Check if position is valid and traversable
+      const cell =
+        nextPos.y >= 0 && nextPos.y < grid.length && nextPos.x >= 0 && nextPos.x < grid[0]?.length
+          ? grid[nextPos.y][nextPos.x]
+          : null
+
+      if (isTraversable(cell)) {
+        visited.add(key)
+        queue.push({
+          pos: nextPos,
+          path: [...path, nextPos],
+        })
+      }
+    }
+  }
+
+  // No path found
+  return []
+}
+
+/**
  * Foundry Store
  * Manages the foundry grid, Anton's state, and crafting queue
  */
@@ -165,6 +277,13 @@ export const useFoundryStore = defineStore('foundry', () => {
    */
   const isValidPosition = computed(() => (x: number, y: number): boolean => {
     return x >= 0 && y >= 0 && y < gridSize.value.height && x < gridSize.value.width
+  })
+
+  /**
+   * Check if Anton is currently moving
+   */
+  const isMoving = computed(() => {
+    return anton.value.currentAction === 'moving' || anton.value.path.length > 0
   })
 
   // Getters - Recipe queries
@@ -363,6 +482,130 @@ export const useFoundryStore = defineStore('foundry', () => {
     gridState.value.anton.currentRecipeId = recipeId
   }
 
+  /**
+   * Find path from start to target using BFS
+   * @param start - Starting position
+   * @param target - Target position
+   * @returns Array of positions from start to target (excluding start), or empty array if no path exists
+   */
+  function findPath(start: GridPosition, target: GridPosition): GridPosition[] {
+    return findPathBFS(grid.value, start, target)
+  }
+
+  /**
+   * Move Anton to target cell
+   * Calculates path and executes movement at 1 cell per second
+   * @param targetX - Target X coordinate
+   * @param targetY - Target Y coordinate
+   * @returns Promise that resolves to true on success, false if no path exists or movement is interrupted
+   */
+  async function moveAntonToCell(targetX: number, targetY: number): Promise<boolean> {
+    // Validate target position
+    if (!isValidPosition.value(targetX, targetY)) {
+      return false
+    }
+
+    // Cancel any ongoing movement
+    if (currentMovementController) {
+      currentMovementController.abort()
+    }
+
+    // Create new abort controller for this movement
+    currentMovementController = new AbortController()
+    const signal = currentMovementController.signal
+
+    // Calculate path
+    const path = findPath(anton.value.position, { x: targetX, y: targetY })
+
+    if (path.length === 0) {
+      return false
+    }
+
+    // Set movement state
+    updateAntonAction('moving')
+    setAntonPath(path)
+    updateAntonProgress(0)
+
+    try {
+      // Move through each cell in the path
+      for (let i = 0; i < path.length; i++) {
+        const targetPos = path[i]
+
+        // Check if movement was aborted
+        if (signal.aborted) {
+          updateAntonAction('idle')
+          setAntonPath([])
+          updateAntonProgress(0)
+          return false
+        }
+
+        // Check if target cell is still traversable (edge case handling)
+        const cell = getCellAt.value(targetPos.x, targetPos.y)
+        if (!isTraversable(cell)) {
+          // Target became invalid during movement - return to idle
+          updateAntonAction('idle')
+          setAntonPath([])
+          updateAntonProgress(0)
+          return false
+        }
+
+        // Animate movement to this cell
+        const moveTimeMs = FOUNDRY_CONSTANTS.MOVE_TIME_PER_CELL * 1000
+        const tickInterval = 100 // Update progress every 100ms for smooth animation
+        const totalTicks = moveTimeMs / tickInterval
+        let currentTick = 0
+
+        await new Promise<void>((resolve) => {
+          const intervalId = setInterval(() => {
+            if (signal.aborted) {
+              clearInterval(intervalId)
+              resolve()
+              return
+            }
+
+            currentTick++
+            const progress = Math.min(currentTick / totalTicks, 1)
+            updateAntonProgress(progress)
+
+            if (progress >= 1) {
+              clearInterval(intervalId)
+              resolve()
+            }
+          }, tickInterval)
+        })
+
+        // Check again if movement was aborted during animation
+        if (signal.aborted) {
+          updateAntonAction('idle')
+          setAntonPath([])
+          updateAntonProgress(0)
+          return false
+        }
+
+        // Move Anton to the cell
+        updateAntonPosition(targetPos)
+        updateAntonProgress(0)
+
+        // Remove this step from the path
+        setAntonPath(path.slice(i + 1))
+      }
+
+      // Movement complete
+      updateAntonAction('idle')
+      setAntonPath([])
+      updateAntonProgress(0)
+      currentMovementController = null
+      return true
+    } catch (error) {
+      // Error during movement - reset to idle
+      updateAntonAction('idle')
+      setAntonPath([])
+      updateAntonProgress(0)
+      currentMovementController = null
+      return false
+    }
+  }
+
   // Actions - Queue management
 
   /**
@@ -508,6 +751,7 @@ export const useFoundryStore = defineStore('foundry', () => {
     anvilPosition,
     currentQueueItem,
     isValidPosition,
+    isMoving,
     // Getters - Recipe
     getRecipeById,
     allRecipes,
@@ -521,6 +765,8 @@ export const useFoundryStore = defineStore('foundry', () => {
     updateAntonProgress,
     setAntonPath,
     setAntonRecipe,
+    findPath,
+    moveAntonToCell,
     // Actions - Queue
     addToQueue,
     removeFromQueue,

@@ -43,6 +43,7 @@ export interface GridPosition {
  */
 export type AntonAction =
   | 'idle'
+  | 'moving'
   | 'movingToSupplyBin'
   | 'gathering'
   | 'movingToAnvil'

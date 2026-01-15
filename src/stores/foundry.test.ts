@@ -553,4 +553,222 @@ describe('useFoundryStore', () => {
       expect(store.currentQueueIndex).toBe(0)
     })
   })
+
+  describe('pathfinding', () => {
+    it('should find straight line path (horizontal)', () => {
+      const store = useFoundryStore()
+      // Anton is at (2,2) by default
+      const path = store.findPath({ x: 2, y: 2 }, { x: 4, y: 2 })
+
+      expect(path).toHaveLength(2)
+      expect(path[0]).toEqual({ x: 3, y: 2 })
+      expect(path[1]).toEqual({ x: 4, y: 2 })
+    })
+
+    it('should find straight line path (vertical)', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: 2, y: 2 }, { x: 2, y: 0 })
+
+      expect(path).toHaveLength(2)
+      expect(path[0]).toEqual({ x: 2, y: 1 })
+      expect(path[1]).toEqual({ x: 2, y: 0 })
+    })
+
+    it('should find diagonal path (L-shaped)', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: 0, y: 0 }, { x: 1, y: 1 })
+
+      // BFS will find shortest path, which is 2 steps for diagonal
+      expect(path).toHaveLength(2)
+      // Should go either right then down, or down then right
+      expect(path[1]).toEqual({ x: 1, y: 1 })
+    })
+
+    it('should find path around obstacles', () => {
+      const store = useFoundryStore()
+      // Supply bin at (0,0) and anvil at (4,4) are obstacles
+      // Path from (0,1) to (0,0) should fail because (0,0) is supply bin
+      const path = store.findPath({ x: 1, y: 0 }, { x: 0, y: 0 })
+      expect(path).toHaveLength(0) // No path - target is not traversable
+    })
+
+    it('should return empty array when no path exists', () => {
+      const store = useFoundryStore()
+      // Create a wall of blocked cells to make path impossible
+      store.updateCellType(1, 2, GridCellType.Blocked)
+      store.updateCellType(2, 1, GridCellType.Blocked)
+      store.updateCellType(3, 2, GridCellType.Blocked)
+      store.updateCellType(2, 3, GridCellType.Blocked)
+
+      // Try to path from (2,2) to (3,3) - should be blocked
+      const path = store.findPath({ x: 2, y: 2 }, { x: 3, y: 3 })
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array for invalid start position', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: -1, y: 0 }, { x: 2, y: 2 })
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array for invalid target position', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: 2, y: 2 }, { x: 10, y: 10 })
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array when start equals target', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: 2, y: 2 }, { x: 2, y: 2 })
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array when target is not traversable (supply bin)', () => {
+      const store = useFoundryStore()
+      const supplyBinPos = store.supplyBinPosition!
+      const path = store.findPath({ x: 1, y: 1 }, supplyBinPos)
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array when target is not traversable (anvil)', () => {
+      const store = useFoundryStore()
+      const anvilPos = store.anvilPosition!
+      const path = store.findPath({ x: 3, y: 3 }, anvilPos)
+      expect(path).toHaveLength(0)
+    })
+  })
+
+  describe('movement', () => {
+    it('should move Anton to target cell', async () => {
+      const store = useFoundryStore()
+      // Anton starts at (2,2)
+      expect(store.anton.position).toEqual({ x: 2, y: 2 })
+
+      const result = await store.moveAntonToCell(3, 2)
+
+      expect(result).toBe(true)
+      expect(store.anton.position).toEqual({ x: 3, y: 2 })
+      expect(store.anton.currentAction).toBe('idle')
+      expect(store.anton.path).toHaveLength(0)
+    })
+
+    it('should return false when no path exists', async () => {
+      const store = useFoundryStore()
+      // Try to move to supply bin (not traversable)
+      const supplyBinPos = store.supplyBinPosition!
+      const result = await store.moveAntonToCell(supplyBinPos.x, supplyBinPos.y)
+
+      expect(result).toBe(false)
+      // Anton should still be at starting position
+      expect(store.anton.position).toEqual(FOUNDRY_CONSTANTS.DEFAULT_ANTON_POSITION)
+    })
+
+    it('should return false for invalid target position', async () => {
+      const store = useFoundryStore()
+      const result = await store.moveAntonToCell(-1, -1)
+
+      expect(result).toBe(false)
+      expect(store.anton.position).toEqual(FOUNDRY_CONSTANTS.DEFAULT_ANTON_POSITION)
+    })
+
+    it('should set action to moving during movement', async () => {
+      const store = useFoundryStore()
+      const movementPromise = store.moveAntonToCell(3, 3)
+
+      // Check state during movement (should be quick enough to catch it)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(store.anton.currentAction).toBe('moving')
+
+      await movementPromise
+    })
+
+    it('should update path during movement', async () => {
+      const store = useFoundryStore()
+      const movementPromise = store.moveAntonToCell(4, 3)
+
+      // Check path is set during movement
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(store.anton.path.length).toBeGreaterThan(0)
+
+      await movementPromise
+      expect(store.anton.path).toHaveLength(0)
+    })
+
+    it('should update isMoving computed property', async () => {
+      const store = useFoundryStore()
+      expect(store.isMoving).toBe(false)
+
+      const movementPromise = store.moveAntonToCell(3, 3)
+
+      // Should be moving
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(store.isMoving).toBe(true)
+
+      await movementPromise
+      expect(store.isMoving).toBe(false)
+    })
+
+    it('should handle target becoming invalid during movement', async () => {
+      const store = useFoundryStore()
+
+      // Start a movement from (2,2) to (2,0)
+      const movementPromise = store.moveAntonToCell(2, 0)
+
+      // Wait a bit for movement to start
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // Block the target cell during movement
+      store.updateCellType(2, 0, GridCellType.Blocked)
+
+      const result = await movementPromise
+
+      expect(result).toBe(false)
+      expect(store.anton.currentAction).toBe('idle')
+      expect(store.anton.path).toHaveLength(0)
+    })
+
+    it('should cancel previous movement when new movement starts', async () => {
+      const store = useFoundryStore()
+
+      // Start first movement
+      const firstMovement = store.moveAntonToCell(4, 3)
+
+      // Wait a bit
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // Start second movement before first completes
+      const secondMovement = store.moveAntonToCell(0, 3)
+
+      const firstResult = await firstMovement
+      const secondResult = await secondMovement
+
+      expect(firstResult).toBe(false) // First movement should be cancelled
+      expect(secondResult).toBe(true) // Second movement should succeed
+      expect(store.anton.position).toEqual({ x: 0, y: 3 })
+    })
+
+    it('should take approximately 1 second per cell', async () => {
+      const store = useFoundryStore()
+      const startTime = Date.now()
+
+      // Move 2 cells (from 2,2 to 4,2)
+      await store.moveAntonToCell(4, 2)
+
+      const elapsed = Date.now() - startTime
+      // Should take about 2 seconds (2000ms), allow some margin for test execution
+      expect(elapsed).toBeGreaterThanOrEqual(1900)
+      expect(elapsed).toBeLessThan(2500)
+    })
+
+    it('should move Anton through multiple cells in path', async () => {
+      const store = useFoundryStore()
+      // Start at (2,2), move to (0,3) - requires multiple steps
+      const result = await store.moveAntonToCell(0, 3)
+
+      expect(result).toBe(true)
+      expect(store.anton.position).toEqual({ x: 0, y: 3 })
+      expect(store.anton.currentAction).toBe('idle')
+      expect(store.anton.path).toHaveLength(0)
+    })
+  })
 })
