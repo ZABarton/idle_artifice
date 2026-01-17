@@ -63,6 +63,8 @@ export interface AntonState {
   path: GridPosition[]
   /** ID of recipe currently being crafted (if any) */
   currentRecipeId: string | null
+  /** Timestamp when current timed action started (for offline progress) */
+  actionStartTime: number | null
 }
 
 /**
@@ -143,6 +145,8 @@ export interface FoundryState {
   currentQueueIndex: number
   /** Available recipes (registry) */
   recipes: Recipe[]
+  /** Timestamp of last state machine update (for offline progress) */
+  lastTickTime: number | null
 }
 
 /**

@@ -1,8 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import FoundryScreen from './FoundryScreen.vue'
 
 describe('FoundryScreen', () => {
+  beforeEach(() => {
+    // Clear localStorage before each test to ensure clean state
+    localStorage.clear()
+    // Create a fresh pinia instance for each test
+    setActivePinia(createPinia())
+  })
+
   describe('Rendering', () => {
     it('renders the component', () => {
       const wrapper = mount(FoundryScreen)
