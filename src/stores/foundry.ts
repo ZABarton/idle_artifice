@@ -70,9 +70,11 @@ function getDefaultFoundryState(): Omit<FoundryState, 'recipes'> {
       actionProgress: 0,
       path: [],
       currentRecipeId: null,
+      actionStartTime: null,
     },
     craftingQueue: [],
     currentQueueIndex: 0,
+    lastTickTime: null,
   }
 }
 
@@ -91,6 +93,234 @@ function loadFoundryState(): Omit<FoundryState, 'recipes'> {
   }
 
   return getDefaultFoundryState()
+}
+
+/**
+ * Movement tracking state (module level)
+ * Used to cancel ongoing movements when a new movement starts
+ */
+let currentMovementController: AbortController | null = null
+
+/**
+ * State machine interval (module level)
+ * Runs the crafting workflow tick every 100ms
+ */
+let stateMachineInterval: ReturnType<typeof setInterval> | null = null
+
+/**
+ * Flag to track if we're currently processing a movement
+ * Prevents multiple simultaneous movement calls
+ */
+let isProcessingMovement = false
+
+/**
+ * Check if a cell is traversable (can be walked through)
+ */
+function isTraversable(cell: GridCell | null): boolean {
+  if (!cell) return false
+  return cell.type === GridCellType.Empty
+}
+
+/**
+ * Check if two positions are orthogonally adjacent
+ */
+function areAdjacent(pos1: GridPosition, pos2: GridPosition): boolean {
+  const dx = Math.abs(pos1.x - pos2.x)
+  const dy = Math.abs(pos1.y - pos2.y)
+  return (dx === 1 && dy === 0) || (dx === 0 && dy === 1)
+}
+
+/**
+ * Find a walkable cell adjacent to target position
+ * Returns the first traversable cell found, or null if none exists
+ */
+function findAdjacentWalkableCell(
+  grid: GridCell[][],
+  target: GridPosition
+): GridPosition | null {
+  const directions = [
+    { x: 0, y: -1 }, // up
+    { x: 1, y: 0 }, // right
+    { x: 0, y: 1 }, // down
+    { x: -1, y: 0 }, // left
+  ]
+
+  for (const dir of directions) {
+    const adjacentPos: GridPosition = {
+      x: target.x + dir.x,
+      y: target.y + dir.y,
+    }
+
+    // Check bounds
+    if (
+      adjacentPos.y >= 0 &&
+      adjacentPos.y < grid.length &&
+      adjacentPos.x >= 0 &&
+      adjacentPos.x < grid[0]?.length
+    ) {
+      const cell = grid[adjacentPos.y][adjacentPos.x]
+      if (isTraversable(cell)) {
+        return adjacentPos
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Find the closest walkable cell adjacent to target position from a starting point
+ * Uses BFS path length to determine "closest"
+ * Returns the adjacent cell with the shortest path, or null if none reachable
+ */
+function findClosestAdjacentWalkableCell(
+  grid: GridCell[][],
+  target: GridPosition,
+  from: GridPosition
+): GridPosition | null {
+  const directions = [
+    { x: 0, y: -1 }, // up
+    { x: 1, y: 0 }, // right
+    { x: 0, y: 1 }, // down
+    { x: -1, y: 0 }, // left
+  ]
+
+  let closestCell: GridPosition | null = null
+  let shortestPathLength = Infinity
+
+  for (const dir of directions) {
+    const adjacentPos: GridPosition = {
+      x: target.x + dir.x,
+      y: target.y + dir.y,
+    }
+
+    // Check bounds
+    if (
+      adjacentPos.y < 0 ||
+      adjacentPos.y >= grid.length ||
+      adjacentPos.x < 0 ||
+      adjacentPos.x >= grid[0]?.length
+    ) {
+      continue
+    }
+
+    const cell = grid[adjacentPos.y][adjacentPos.x]
+    if (!isTraversable(cell)) {
+      continue
+    }
+
+    // If we're already at this position, it's the best choice
+    if (from.x === adjacentPos.x && from.y === adjacentPos.y) {
+      return adjacentPos
+    }
+
+    // Calculate path length to this adjacent cell
+    const path = findPathBFS(grid, from, adjacentPos)
+    if (path.length > 0 && path.length < shortestPathLength) {
+      shortestPathLength = path.length
+      closestCell = adjacentPos
+    }
+  }
+
+  return closestCell
+}
+
+/**
+ * BFS pathfinding algorithm
+ * Finds shortest path from start to target on the grid
+ * @param grid - The foundry grid
+ * @param start - Starting position
+ * @param target - Target position
+ * @returns Array of positions from start to target (excluding start), or empty array if no path exists
+ */
+function findPathBFS(
+  grid: GridCell[][],
+  start: GridPosition,
+  target: GridPosition
+): GridPosition[] {
+  // Validate start and target are within bounds
+  if (
+    start.y < 0 ||
+    start.y >= grid.length ||
+    start.x < 0 ||
+    start.x >= grid[0]?.length ||
+    target.y < 0 ||
+    target.y >= grid.length ||
+    target.x < 0 ||
+    target.x >= grid[0]?.length
+  ) {
+    return []
+  }
+
+  // Target must be traversable
+  if (!isTraversable(grid[target.y][target.x])) {
+    return []
+  }
+
+  // Early exit if start and target are the same
+  if (start.x === target.x && start.y === target.y) {
+    return []
+  }
+
+  // BFS setup
+  const queue: Array<{ pos: GridPosition; path: GridPosition[] }> = []
+  const visited = new Set<string>()
+
+  // Helper to create unique key for position
+  const posKey = (pos: GridPosition) => `${pos.x},${pos.y}`
+
+  // Start BFS
+  queue.push({ pos: start, path: [] })
+  visited.add(posKey(start))
+
+  // 4-directional movement: up, right, down, left
+  const directions = [
+    { x: 0, y: -1 }, // up
+    { x: 1, y: 0 }, // right
+    { x: 0, y: 1 }, // down
+    { x: -1, y: 0 }, // left
+  ]
+
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    const { pos, path } = current
+
+    // Try each direction
+    for (const dir of directions) {
+      const nextPos: GridPosition = {
+        x: pos.x + dir.x,
+        y: pos.y + dir.y,
+      }
+
+      // Check if we've reached the target
+      if (nextPos.x === target.x && nextPos.y === target.y) {
+        return [...path, nextPos]
+      }
+
+      // Skip if already visited
+      const key = posKey(nextPos)
+      if (visited.has(key)) {
+        continue
+      }
+
+      // Check if position is valid and traversable
+      const cell =
+        nextPos.y >= 0 && nextPos.y < grid.length && nextPos.x >= 0 && nextPos.x < grid[0]?.length
+          ? grid[nextPos.y][nextPos.x]
+          : null
+
+      if (isTraversable(cell)) {
+        visited.add(key)
+        queue.push({
+          pos: nextPos,
+          path: [...path, nextPos],
+        })
+      }
+    }
+  }
+
+  // No path found
+  return []
 }
 
 /**
@@ -165,6 +395,31 @@ export const useFoundryStore = defineStore('foundry', () => {
    */
   const isValidPosition = computed(() => (x: number, y: number): boolean => {
     return x >= 0 && y >= 0 && y < gridSize.value.height && x < gridSize.value.width
+  })
+
+  /**
+   * Check if Anton is currently moving
+   */
+  const isMoving = computed(() => {
+    return anton.value.currentAction === 'moving' || anton.value.path.length > 0
+  })
+
+  /**
+   * Check if Anton is adjacent to the supply bin
+   */
+  const isAdjacentToSupplyBin = computed((): boolean => {
+    const binPos = supplyBinPosition.value
+    if (!binPos) return false
+    return areAdjacent(anton.value.position, binPos)
+  })
+
+  /**
+   * Check if Anton is adjacent to the anvil
+   */
+  const isAdjacentToAnvil = computed((): boolean => {
+    const anvilPos = anvilPosition.value
+    if (!anvilPos) return false
+    return areAdjacent(anton.value.position, anvilPos)
   })
 
   // Getters - Recipe queries
@@ -363,11 +618,136 @@ export const useFoundryStore = defineStore('foundry', () => {
     gridState.value.anton.currentRecipeId = recipeId
   }
 
+  /**
+   * Find path from start to target using BFS
+   * @param start - Starting position
+   * @param target - Target position
+   * @returns Array of positions from start to target (excluding start), or empty array if no path exists
+   */
+  function findPath(start: GridPosition, target: GridPosition): GridPosition[] {
+    return findPathBFS(grid.value, start, target)
+  }
+
+  /**
+   * Move Anton to target cell
+   * Calculates path and executes movement at 1 cell per second
+   * @param targetX - Target X coordinate
+   * @param targetY - Target Y coordinate
+   * @returns Promise that resolves to true on success, false if no path exists or movement is interrupted
+   */
+  async function moveAntonToCell(targetX: number, targetY: number): Promise<boolean> {
+    // Validate target position
+    if (!isValidPosition.value(targetX, targetY)) {
+      return false
+    }
+
+    // Cancel any ongoing movement
+    if (currentMovementController) {
+      currentMovementController.abort()
+    }
+
+    // Create new abort controller for this movement
+    currentMovementController = new AbortController()
+    const signal = currentMovementController.signal
+
+    // Calculate path
+    const path = findPath(anton.value.position, { x: targetX, y: targetY })
+
+    if (path.length === 0) {
+      return false
+    }
+
+    // Set movement state
+    updateAntonAction('moving')
+    setAntonPath(path)
+    updateAntonProgress(0)
+
+    try {
+      // Move through each cell in the path
+      for (let i = 0; i < path.length; i++) {
+        const targetPos = path[i]
+
+        // Check if movement was aborted
+        if (signal.aborted) {
+          updateAntonAction('idle')
+          setAntonPath([])
+          updateAntonProgress(0)
+          return false
+        }
+
+        // Check if target cell is still traversable (edge case handling)
+        const cell = getCellAt.value(targetPos.x, targetPos.y)
+        if (!isTraversable(cell)) {
+          // Target became invalid during movement - return to idle
+          updateAntonAction('idle')
+          setAntonPath([])
+          updateAntonProgress(0)
+          return false
+        }
+
+        // Animate movement to this cell
+        const moveTimeMs = FOUNDRY_CONSTANTS.MOVE_TIME_PER_CELL * 1000
+        const tickInterval = 100 // Update progress every 100ms for smooth animation
+        const totalTicks = moveTimeMs / tickInterval
+        let currentTick = 0
+
+        await new Promise<void>((resolve) => {
+          const intervalId = setInterval(() => {
+            if (signal.aborted) {
+              clearInterval(intervalId)
+              resolve()
+              return
+            }
+
+            currentTick++
+            const progress = Math.min(currentTick / totalTicks, 1)
+            updateAntonProgress(progress)
+
+            if (progress >= 1) {
+              clearInterval(intervalId)
+              resolve()
+            }
+          }, tickInterval)
+        })
+
+        // Check again if movement was aborted during animation
+        if (signal.aborted) {
+          updateAntonAction('idle')
+          setAntonPath([])
+          updateAntonProgress(0)
+          return false
+        }
+
+        // Move Anton to the cell
+        updateAntonPosition(targetPos)
+        updateAntonProgress(0)
+
+        // Remove this step from the path
+        setAntonPath(path.slice(i + 1))
+      }
+
+      // Movement complete
+      updateAntonAction('idle')
+      setAntonPath([])
+      updateAntonProgress(0)
+      currentMovementController = null
+      return true
+    } catch (error) {
+      // Error during movement - reset to idle
+      updateAntonAction('idle')
+      setAntonPath([])
+      updateAntonProgress(0)
+      currentMovementController = null
+      return false
+    }
+  }
+
   // Actions - Queue management
 
   /**
    * Add recipe to crafting queue
    * Creates a unique ID for each queue item for tracking
+   * Automatically starts the state machine if not running
    * @param recipeId - ID of recipe to craft
    * @param quantity - Number of times to craft this recipe (defaults to 1)
    */
@@ -380,6 +760,9 @@ export const useFoundryStore = defineStore('foundry', () => {
       }
       gridState.value.craftingQueue.push(queueItem)
     }
+
+    // Start the state machine if not already running
+    startStateMachine()
   }
 
   /**
@@ -467,12 +850,558 @@ export const useFoundryStore = defineStore('foundry', () => {
    * Reset foundry to default state (for debug/testing)
    */
   function resetFoundry(): void {
+    stopStateMachine()
     gridState.value = getDefaultFoundryState()
     try {
       localStorage.removeItem(STORAGE_KEY_FOUNDRY)
     } catch (error) {
       console.error('Failed to remove foundry state from localStorage:', error)
     }
+  }
+
+  // State Machine - Helper functions
+
+  /**
+   * Set Anton's action start time (for timed actions)
+   */
+  function setAntonActionStartTime(time: number | null): void {
+    gridState.value.anton.actionStartTime = time
+  }
+
+  /**
+   * Update last tick time (for offline progress)
+   */
+  function updateLastTickTime(): void {
+    gridState.value.lastTickTime = Date.now()
+  }
+
+  /**
+   * Consume recipe inputs (called during gathering phase)
+   * @param recipeId - ID of recipe to consume inputs for
+   * @returns true if resources were consumed, false if not available
+   */
+  function consumeRecipeInputs(recipeId: string): boolean {
+    const recipe = getRecipeById.value(recipeId)
+    if (!recipe) return false
+
+    const resourcesStore = useResourcesStore()
+
+    // Check if all resources are available
+    for (const input of recipe.inputs) {
+      if (!resourcesStore.hasResource(input.resourceId, input.amount)) {
+        return false
+      }
+    }
+
+    // Consume all resources
+    for (const input of recipe.inputs) {
+      resourcesStore.removeResource(input.resourceId, input.amount)
+    }
+
+    return true
+  }
+
+  /**
+   * Produce recipe outputs (called when crafting completes)
+   * @param recipeId - ID of recipe to produce outputs for
+   */
+  function produceRecipeOutputs(recipeId: string): void {
+    const recipe = getRecipeById.value(recipeId)
+    if (!recipe) return
+
+    const resourcesStore = useResourcesStore()
+
+    for (const output of recipe.outputs) {
+      resourcesStore.addResource(output.resourceId, output.amount)
+    }
+  }
+
+  // State Machine - Core functions
+
+  /**
+   * Main state machine tick function
+   * Runs every 100ms to update action progress and handle state transitions
+   */
+  function stateMachineTick(): void {
+    const currentAction = gridState.value.anton.currentAction
+    const now = Date.now()
+
+    // Update last tick time for offline progress
+    updateLastTickTime()
+
+    switch (currentAction) {
+      case 'idle':
+        handleIdleState()
+        break
+
+      case 'movingToSupplyBin':
+        handleMovingToSupplyBinState()
+        break
+
+      case 'gathering':
+        handleGatheringState(now)
+        break
+
+      case 'movingToAnvil':
+        handleMovingToAnvilState()
+        break
+
+      case 'crafting':
+        handleCraftingState(now)
+        break
+
+      case 'moving':
+        // Generic moving state - movement is handled by moveAntonToCell
+        // Just wait for it to complete
+        break
+    }
+  }
+
+  /**
+   * Handle idle state - check queue and start next item
+   */
+  function handleIdleState(): void {
+    // Find next pending item in queue
+    const queue = gridState.value.craftingQueue
+    let foundPending = false
+
+    for (let i = 0; i < queue.length; i++) {
+      if (queue[i].status === 'pending') {
+        // Found a pending item - start processing it
+        gridState.value.currentQueueIndex = i
+        updateQueueItemStatus(i, 'in-progress')
+        setAntonRecipe(queue[i].recipeId)
+        updateAntonAction('movingToSupplyBin')
+        foundPending = true
+        break
+      }
+    }
+
+    // If no pending items, stop the state machine
+    if (!foundPending) {
+      stopStateMachine()
+    }
+  }
+
+  /**
+   * Handle movingToSupplyBin state - move to supply bin and transition to gathering
+   */
+  function handleMovingToSupplyBinState(): void {
+    // If already adjacent to supply bin, transition to gathering
+    if (isAdjacentToSupplyBin.value) {
+      updateAntonAction('gathering')
+      setAntonActionStartTime(Date.now())
+      updateAntonProgress(0)
+      return
+    }
+
+    // If not already moving, start movement to supply bin
+    if (!isProcessingMovement && gridState.value.anton.path.length === 0) {
+      const binPos = supplyBinPosition.value
+      if (!binPos) return
+
+      // Find the closest adjacent walkable cell to Anton
+      const targetCell = findClosestAdjacentWalkableCell(
+        grid.value,
+        binPos,
+        anton.value.position
+      )
+
+      console.log('[Pathfinding] Anton at:', anton.value.position)
+      console.log('[Pathfinding] Supply Bin at:', binPos)
+      console.log('[Pathfinding] Target cell:', targetCell)
+
+      if (!targetCell) {
+        // No path available - pause (stay in this state)
+        console.log('[Pathfinding] No adjacent walkable cell found')
+        return
+      }
+
+      // Check if already at target
+      if (anton.value.position.x === targetCell.x && anton.value.position.y === targetCell.y) {
+        // Already at adjacent cell - transition to gathering
+        updateAntonAction('gathering')
+        setAntonActionStartTime(Date.now())
+        updateAntonProgress(0)
+        return
+      }
+
+      // Calculate and log the path
+      const path = findPath(anton.value.position, targetCell)
+      console.log('[Pathfinding] Path:', path)
+
+      // Start movement
+      isProcessingMovement = true
+      moveAntonToCell(targetCell.x, targetCell.y).then((success) => {
+        isProcessingMovement = false
+        if (success && gridState.value.anton.currentAction === 'movingToSupplyBin') {
+          // Movement complete - check if adjacent now
+          if (isAdjacentToSupplyBin.value) {
+            updateAntonAction('gathering')
+            setAntonActionStartTime(Date.now())
+            updateAntonProgress(0)
+          }
+        }
+      })
+    }
+  }
+
+  /**
+   * Handle gathering state - wait for timer and consume resources
+   */
+  function handleGatheringState(now: number): void {
+    const startTime = gridState.value.anton.actionStartTime
+    if (!startTime) {
+      // Start time not set - set it now
+      setAntonActionStartTime(now)
+      return
+    }
+
+    const recipeId = gridState.value.anton.currentRecipeId
+    if (!recipeId) {
+      // No recipe - go back to idle
+      updateAntonAction('idle')
+      return
+    }
+
+    // Check if resources are available
+    if (!hasRequiredResources(recipeId)) {
+      // Resources not available - pause (reset progress, wait for resources)
+      updateAntonProgress(0)
+      setAntonActionStartTime(now)
+      return
+    }
+
+    // Calculate progress
+    const elapsed = now - startTime
+    const gatherTimeMs = FOUNDRY_CONSTANTS.GATHER_TIME * 1000
+    const progress = Math.min(elapsed / gatherTimeMs, 1)
+    updateAntonProgress(progress)
+
+    // Check if gathering is complete
+    if (progress >= 1) {
+      // Consume resources
+      const consumed = consumeRecipeInputs(recipeId)
+      if (consumed) {
+        // Transition to moving to anvil
+        updateAntonAction('movingToAnvil')
+        setAntonActionStartTime(null)
+        updateAntonProgress(0)
+      } else {
+        // Resources disappeared - reset and wait
+        updateAntonProgress(0)
+        setAntonActionStartTime(now)
+      }
+    }
+  }
+
+  /**
+   * Handle movingToAnvil state - move to anvil and transition to crafting
+   */
+  function handleMovingToAnvilState(): void {
+    // If already adjacent to anvil, transition to crafting
+    if (isAdjacentToAnvil.value) {
+      updateAntonAction('crafting')
+      setAntonActionStartTime(Date.now())
+      updateAntonProgress(0)
+      return
+    }
+
+    // If not already moving, start movement to anvil
+    if (!isProcessingMovement && gridState.value.anton.path.length === 0) {
+      const anvilPos = anvilPosition.value
+      if (!anvilPos) return
+
+      // Find the closest adjacent walkable cell to Anton
+      const targetCell = findClosestAdjacentWalkableCell(
+        grid.value,
+        anvilPos,
+        anton.value.position
+      )
+
+      console.log('[Pathfinding] Anton at:', anton.value.position)
+      console.log('[Pathfinding] Anvil at:', anvilPos)
+      console.log('[Pathfinding] Target cell:', targetCell)
+
+      if (!targetCell) {
+        // No path available - pause (stay in this state)
+        console.log('[Pathfinding] No adjacent walkable cell found')
+        return
+      }
+
+      // Check if already at target
+      if (anton.value.position.x === targetCell.x && anton.value.position.y === targetCell.y) {
+        // Already at adjacent cell - transition to crafting
+        updateAntonAction('crafting')
+        setAntonActionStartTime(Date.now())
+        updateAntonProgress(0)
+        return
+      }
+
+      // Calculate and log the path
+      const path = findPath(anton.value.position, targetCell)
+      console.log('[Pathfinding] Path:', path)
+
+      // Start movement
+      isProcessingMovement = true
+      moveAntonToCell(targetCell.x, targetCell.y).then((success) => {
+        isProcessingMovement = false
+        if (success && gridState.value.anton.currentAction === 'movingToAnvil') {
+          // Movement complete - check if adjacent now
+          if (isAdjacentToAnvil.value) {
+            updateAntonAction('crafting')
+            setAntonActionStartTime(Date.now())
+            updateAntonProgress(0)
+          }
+        }
+      })
+    }
+  }
+
+  /**
+   * Handle crafting state - wait for timer and produce outputs
+   */
+  function handleCraftingState(now: number): void {
+    const startTime = gridState.value.anton.actionStartTime
+    if (!startTime) {
+      // Start time not set - set it now
+      setAntonActionStartTime(now)
+      return
+    }
+
+    const recipeId = gridState.value.anton.currentRecipeId
+    if (!recipeId) {
+      // No recipe - go back to idle
+      updateAntonAction('idle')
+      return
+    }
+
+    const recipe = getRecipeById.value(recipeId)
+    if (!recipe) {
+      // Recipe not found - go back to idle
+      updateAntonAction('idle')
+      return
+    }
+
+    // Calculate progress
+    const elapsed = now - startTime
+    const craftTimeMs = recipe.craftTime * 1000
+    const progress = Math.min(elapsed / craftTimeMs, 1)
+    updateAntonProgress(progress)
+
+    // Check if crafting is complete
+    if (progress >= 1) {
+      // Produce outputs
+      produceRecipeOutputs(recipeId)
+
+      // Mark queue item as completed
+      const queueIndex = gridState.value.currentQueueIndex
+      updateQueueItemStatus(queueIndex, 'completed')
+
+      // Reset Anton state
+      setAntonRecipe(null)
+      setAntonActionStartTime(null)
+      updateAntonProgress(0)
+      updateAntonAction('idle')
+    }
+  }
+
+  /**
+   * Start the state machine
+   * Called when items are added to the queue
+   */
+  function startStateMachine(): void {
+    if (stateMachineInterval) {
+      // Already running
+      return
+    }
+
+    // Run tick immediately, then every 100ms
+    stateMachineTick()
+    stateMachineInterval = setInterval(stateMachineTick, 100)
+  }
+
+  /**
+   * Stop the state machine
+   * Called when queue becomes empty or on reset
+   */
+  function stopStateMachine(): void {
+    if (stateMachineInterval) {
+      clearInterval(stateMachineInterval)
+      stateMachineInterval = null
+    }
+  }
+
+  /**
+   * Restart Anton's state machine
+   * Resets Anton to idle and restarts queue processing
+   * Useful when layout changes invalidate current movement
+   */
+  function restartAnton(): void {
+    // Cancel any ongoing movement
+    if (currentMovementController) {
+      currentMovementController.abort()
+      currentMovementController = null
+    }
+    isProcessingMovement = false
+
+    // Reset Anton to idle state
+    gridState.value.anton.currentAction = 'idle'
+    gridState.value.anton.actionProgress = 0
+    gridState.value.anton.actionStartTime = null
+    gridState.value.anton.path = []
+
+    // Reset current in-progress queue item back to pending
+    const currentIndex = gridState.value.currentQueueIndex
+    if (
+      currentIndex >= 0 &&
+      currentIndex < gridState.value.craftingQueue.length &&
+      gridState.value.craftingQueue[currentIndex].status === 'in-progress'
+    ) {
+      gridState.value.craftingQueue[currentIndex].status = 'pending'
+    }
+    gridState.value.anton.currentRecipeId = null
+
+    // Restart state machine
+    stopStateMachine()
+    const hasPendingItems = gridState.value.craftingQueue.some(
+      (item) => item.status === 'pending' || item.status === 'in-progress'
+    )
+    if (hasPendingItems) {
+      startStateMachine()
+    }
+  }
+
+  /**
+   * Process offline progress
+   * Calculates how much time has passed since last tick and fast-forwards the state machine
+   */
+  function processOfflineProgress(): void {
+    const lastTick = gridState.value.lastTickTime
+    if (!lastTick) return
+
+    const now = Date.now()
+    let elapsedMs = now - lastTick
+
+    // Safety cap - don't process more than 24 hours of offline time
+    const maxOfflineMs = 24 * 60 * 60 * 1000
+    elapsedMs = Math.min(elapsedMs, maxOfflineMs)
+
+    // Fast-forward through timed actions
+    while (elapsedMs > 0) {
+      const currentAction = gridState.value.anton.currentAction
+      const startTime = gridState.value.anton.actionStartTime
+      const recipeId = gridState.value.anton.currentRecipeId
+
+      if (currentAction === 'gathering' && startTime && recipeId) {
+        // Check if we have resources
+        if (!hasRequiredResources(recipeId)) {
+          // Can't proceed without resources - stop processing
+          break
+        }
+
+        const gatherTimeMs = FOUNDRY_CONSTANTS.GATHER_TIME * 1000
+        const timeAlreadySpent = lastTick - startTime
+        const timeRemaining = gatherTimeMs - timeAlreadySpent
+
+        if (elapsedMs >= timeRemaining) {
+          // Gathering complete
+          consumeRecipeInputs(recipeId)
+          elapsedMs -= timeRemaining
+          gridState.value.anton.currentAction = 'movingToAnvil'
+          gridState.value.anton.actionStartTime = null
+          gridState.value.anton.actionProgress = 0
+          // For offline, we skip movement time - assume instant movement
+          gridState.value.anton.currentAction = 'crafting'
+          gridState.value.anton.actionStartTime = now - elapsedMs
+        } else {
+          // Still gathering - update progress
+          gridState.value.anton.actionStartTime = now - elapsedMs - timeAlreadySpent
+          break
+        }
+      } else if (currentAction === 'crafting' && startTime && recipeId) {
+        const recipe = getRecipeById.value(recipeId)
+        if (!recipe) break
+
+        const craftTimeMs = recipe.craftTime * 1000
+        const timeAlreadySpent = lastTick - startTime
+        const timeRemaining = craftTimeMs - timeAlreadySpent
+
+        if (elapsedMs >= timeRemaining) {
+          // Crafting complete
+          produceRecipeOutputs(recipeId)
+          updateQueueItemStatus(gridState.value.currentQueueIndex, 'completed')
+          elapsedMs -= timeRemaining
+
+          // Reset and look for next queue item
+          gridState.value.anton.currentRecipeId = null
+          gridState.value.anton.actionStartTime = null
+          gridState.value.anton.actionProgress = 0
+          gridState.value.anton.currentAction = 'idle'
+
+          // Find next pending item
+          const queue = gridState.value.craftingQueue
+          let foundNext = false
+          for (let i = 0; i < queue.length; i++) {
+            if (queue[i].status === 'pending') {
+              // Check if we have resources for this item
+              if (hasRequiredResources(queue[i].recipeId)) {
+                gridState.value.currentQueueIndex = i
+                gridState.value.craftingQueue[i].status = 'in-progress'
+                gridState.value.anton.currentRecipeId = queue[i].recipeId
+                gridState.value.anton.currentAction = 'gathering'
+                gridState.value.anton.actionStartTime = now - elapsedMs
+                foundNext = true
+                break
+              }
+            }
+          }
+          if (!foundNext) {
+            // No more items to process
+            break
+          }
+        } else {
+          // Still crafting - update start time
+          gridState.value.anton.actionStartTime = now - elapsedMs - timeAlreadySpent
+          break
+        }
+      } else if (currentAction === 'movingToSupplyBin' || currentAction === 'movingToAnvil') {
+        // For offline, we skip movement - assume instant
+        if (currentAction === 'movingToSupplyBin') {
+          gridState.value.anton.currentAction = 'gathering'
+          gridState.value.anton.actionStartTime = now - elapsedMs
+        } else {
+          gridState.value.anton.currentAction = 'crafting'
+          gridState.value.anton.actionStartTime = now - elapsedMs
+        }
+      } else if (currentAction === 'idle') {
+        // Find next pending item
+        const queue = gridState.value.craftingQueue
+        let foundNext = false
+        for (let i = 0; i < queue.length; i++) {
+          if (queue[i].status === 'pending') {
+            if (hasRequiredResources(queue[i].recipeId)) {
+              gridState.value.currentQueueIndex = i
+              gridState.value.craftingQueue[i].status = 'in-progress'
+              gridState.value.anton.currentRecipeId = queue[i].recipeId
+              gridState.value.anton.currentAction = 'gathering'
+              gridState.value.anton.actionStartTime = now - elapsedMs
+              foundNext = true
+              break
+            }
+          }
+        }
+        if (!foundNext) {
+          break
+        }
+      } else {
+        // Unknown state
+        break
+      }
+    }
+
+    // Update last tick time
+    gridState.value.lastTickTime = now
   }
 
   // Watch for changes and auto-save to localStorage
@@ -494,6 +1423,17 @@ export const useFoundryStore = defineStore('foundry', () => {
     { deep: true }
   )
 
+  // Initialize: Process offline progress and start state machine if needed
+  processOfflineProgress()
+
+  // Check if there are pending or in-progress items in the queue
+  const hasPendingItems = gridState.value.craftingQueue.some(
+    (item) => item.status === 'pending' || item.status === 'in-progress'
+  )
+  if (hasPendingItems) {
+    startStateMachine()
+  }
+
   return {
     // State
     grid,
@@ -508,6 +1448,9 @@ export const useFoundryStore = defineStore('foundry', () => {
     anvilPosition,
     currentQueueItem,
     isValidPosition,
+    isMoving,
+    isAdjacentToSupplyBin,
+    isAdjacentToAnvil,
     // Getters - Recipe
     getRecipeById,
     allRecipes,
@@ -521,6 +1464,8 @@ export const useFoundryStore = defineStore('foundry', () => {
     updateAntonProgress,
     setAntonPath,
     setAntonRecipe,
+    findPath,
+    moveAntonToCell,
     // Actions - Queue
     addToQueue,
     removeFromQueue,
@@ -531,6 +1476,10 @@ export const useFoundryStore = defineStore('foundry', () => {
     // Actions - Recipe
     hasRequiredResources,
     getMissingResources,
+    // Actions - State Machine
+    startStateMachine,
+    stopStateMachine,
+    restartAnton,
     // Actions - Utility
     resetFoundry,
   }

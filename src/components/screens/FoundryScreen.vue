@@ -223,6 +223,13 @@ function getCellFeedbackClass(cell: GridCell): string | null {
         >
           {{ isEditMode ? '💾 Save Layout' : '✏️ Edit Layout' }}
         </button>
+        <button
+          class="restart-button"
+          @click="foundryStore.restartAnton()"
+          title="Reset Anton to idle and restart queue processing"
+        >
+          🔄 Restart Anton
+        </button>
       </div>
     </div>
 
@@ -278,7 +285,7 @@ function getCellFeedbackClass(cell: GridCell): string | null {
                   {
                     'cell-selected': isCellSelected(cell),
                     'cell-placement-target': isValidPlacementTarget(cell),
-                    'cell-editable': isEditMode.value && (cell.type === GridCellType.SupplyBin || cell.type === GridCellType.Anvil),
+                    'cell-editable': isEditMode && (cell.type === GridCellType.SupplyBin || cell.type === GridCellType.Anvil),
                   },
                   getCellFeedbackClass(cell)
                 ]"
@@ -388,6 +395,24 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 .edit-mode-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.restart-button {
+  padding: 0.5rem 1rem;
+  border: 2px solid rgba(255, 200, 100, 0.5);
+  border-radius: 6px;
+  background-color: rgba(255, 200, 100, 0.2);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.restart-button:hover {
+  background-color: rgba(255, 200, 100, 0.4);
+  border-color: rgba(255, 200, 100, 0.8);
 }
 
 /* Main Content Layout */

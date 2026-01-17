@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useFoundryStore } from './foundry'
 import { useResourcesStore } from './resources'
@@ -6,10 +6,17 @@ import { GridCellType, FOUNDRY_CONSTANTS } from '@/types/foundry'
 
 describe('useFoundryStore', () => {
   beforeEach(() => {
+    // Use fake timers to prevent state machine interval from running
+    vi.useFakeTimers()
     // Clear localStorage before each test to ensure clean state
     localStorage.clear()
     // Create a fresh pinia instance for each test
     setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    // Restore real timers
+    vi.useRealTimers()
   })
 
   describe('initial state', () => {
@@ -235,7 +242,7 @@ describe('useFoundryStore', () => {
       store.moveSupplyBin(1, 1)
 
       // Wait for watch to trigger and save to localStorage
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await vi.advanceTimersByTimeAsync(10)
 
       // Create new store instance to simulate page reload
       setActivePinia(createPinia())
@@ -250,7 +257,7 @@ describe('useFoundryStore', () => {
       store.updateAntonAction('gathering')
 
       // Wait for watch to trigger and save to localStorage
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      await vi.advanceTimersByTimeAsync(10)
 
       // Create new store instance to simulate page reload
       setActivePinia(createPinia())
@@ -268,8 +275,12 @@ describe('useFoundryStore', () => {
 
       expect(store.craftingQueue).toHaveLength(1)
       expect(store.craftingQueue[0].recipeId).toBe('survival-kit')
-      expect(store.craftingQueue[0].status).toBe('pending')
+      // State machine starts automatically, so item may be 'in-progress' if resources available
+      expect(['pending', 'in-progress']).toContain(store.craftingQueue[0].status)
       expect(store.craftingQueue[0].id).toBeDefined()
+
+      // Stop state machine to prevent side effects in other tests
+      store.stopStateMachine()
     })
 
     it('should add multiple items to queue with quantity', () => {
@@ -449,8 +460,8 @@ describe('useFoundryStore', () => {
       store.addToQueue('hammer')
       store.setCurrentQueueIndex(1)
 
-      // Wait for watch to trigger
-      await new Promise((resolve) => setTimeout(resolve, 10))
+      // Wait for watch to trigger (advance fake timers)
+      await vi.advanceTimersByTimeAsync(10)
 
       // Create new store instance
       setActivePinia(createPinia())
@@ -460,6 +471,10 @@ describe('useFoundryStore', () => {
       expect(newStore.craftingQueue[0].recipeId).toBe('survival-kit')
       expect(newStore.craftingQueue[1].recipeId).toBe('hammer')
       expect(newStore.currentQueueIndex).toBe(1)
+
+      // Cleanup
+      store.stopStateMachine()
+      newStore.stopStateMachine()
     })
   })
 
@@ -551,6 +566,243 @@ describe('useFoundryStore', () => {
       expect(store.anton.currentAction).toBe('idle')
       expect(store.craftingQueue).toHaveLength(0)
       expect(store.currentQueueIndex).toBe(0)
+    })
+  })
+
+  describe('pathfinding', () => {
+    it('should find straight line path (horizontal)', () => {
+      const store = useFoundryStore()
+      // Anton is at (2,2) by default
+      const path = store.findPath({ x: 2, y: 2 }, { x: 4, y: 2 })
+
+      expect(path).toHaveLength(2)
+      expect(path[0]).toEqual({ x: 3, y: 2 })
+      expect(path[1]).toEqual({ x: 4, y: 2 })
+    })
+
+    it('should find straight line path (vertical)', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: 2, y: 2 }, { x: 2, y: 0 })
+
+      expect(path).toHaveLength(2)
+      expect(path[0]).toEqual({ x: 2, y: 1 })
+      expect(path[1]).toEqual({ x: 2, y: 0 })
+    })
+
+    it('should find diagonal path (L-shaped)', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: 0, y: 0 }, { x: 1, y: 1 })
+
+      // BFS will find shortest path, which is 2 steps for diagonal
+      expect(path).toHaveLength(2)
+      // Should go either right then down, or down then right
+      expect(path[1]).toEqual({ x: 1, y: 1 })
+    })
+
+    it('should find path around obstacles', () => {
+      const store = useFoundryStore()
+      // Supply bin at (0,0) and anvil at (4,4) are obstacles
+      // Path from (0,1) to (0,0) should fail because (0,0) is supply bin
+      const path = store.findPath({ x: 1, y: 0 }, { x: 0, y: 0 })
+      expect(path).toHaveLength(0) // No path - target is not traversable
+    })
+
+    it('should return empty array when no path exists', () => {
+      const store = useFoundryStore()
+      // Create a wall of blocked cells to make path impossible
+      store.updateCellType(1, 2, GridCellType.Blocked)
+      store.updateCellType(2, 1, GridCellType.Blocked)
+      store.updateCellType(3, 2, GridCellType.Blocked)
+      store.updateCellType(2, 3, GridCellType.Blocked)
+
+      // Try to path from (2,2) to (3,3) - should be blocked
+      const path = store.findPath({ x: 2, y: 2 }, { x: 3, y: 3 })
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array for invalid start position', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: -1, y: 0 }, { x: 2, y: 2 })
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array for invalid target position', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: 2, y: 2 }, { x: 10, y: 10 })
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array when start equals target', () => {
+      const store = useFoundryStore()
+      const path = store.findPath({ x: 2, y: 2 }, { x: 2, y: 2 })
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array when target is not traversable (supply bin)', () => {
+      const store = useFoundryStore()
+      const supplyBinPos = store.supplyBinPosition!
+      const path = store.findPath({ x: 1, y: 1 }, supplyBinPos)
+      expect(path).toHaveLength(0)
+    })
+
+    it('should return empty array when target is not traversable (anvil)', () => {
+      const store = useFoundryStore()
+      const anvilPos = store.anvilPosition!
+      const path = store.findPath({ x: 3, y: 3 }, anvilPos)
+      expect(path).toHaveLength(0)
+    })
+  })
+
+  describe('movement', () => {
+    it('should move Anton to target cell', async () => {
+      const store = useFoundryStore()
+      // Anton starts at (2,2)
+      expect(store.anton.position).toEqual({ x: 2, y: 2 })
+
+      const movementPromise = store.moveAntonToCell(3, 2)
+      // Advance timers to complete movement (1 cell = 1 second)
+      await vi.advanceTimersByTimeAsync(1500)
+      const result = await movementPromise
+
+      expect(result).toBe(true)
+      expect(store.anton.position).toEqual({ x: 3, y: 2 })
+      expect(store.anton.currentAction).toBe('idle')
+      expect(store.anton.path).toHaveLength(0)
+    })
+
+    it('should return false when no path exists', async () => {
+      const store = useFoundryStore()
+      // Try to move to supply bin (not traversable)
+      const supplyBinPos = store.supplyBinPosition!
+      const result = await store.moveAntonToCell(supplyBinPos.x, supplyBinPos.y)
+
+      expect(result).toBe(false)
+      // Anton should still be at starting position
+      expect(store.anton.position).toEqual(FOUNDRY_CONSTANTS.DEFAULT_ANTON_POSITION)
+    })
+
+    it('should return false for invalid target position', async () => {
+      const store = useFoundryStore()
+      const result = await store.moveAntonToCell(-1, -1)
+
+      expect(result).toBe(false)
+      expect(store.anton.position).toEqual(FOUNDRY_CONSTANTS.DEFAULT_ANTON_POSITION)
+    })
+
+    it('should set action to moving during movement', async () => {
+      const store = useFoundryStore()
+      const movementPromise = store.moveAntonToCell(3, 3)
+
+      // Advance timers slightly to let movement start
+      await vi.advanceTimersByTimeAsync(50)
+      expect(store.anton.currentAction).toBe('moving')
+
+      // Complete movement
+      await vi.advanceTimersByTimeAsync(2000)
+      await movementPromise
+    })
+
+    it('should update path during movement', async () => {
+      const store = useFoundryStore()
+      const movementPromise = store.moveAntonToCell(4, 3)
+
+      // Check path is set during movement
+      await vi.advanceTimersByTimeAsync(50)
+      expect(store.anton.path.length).toBeGreaterThan(0)
+
+      // Complete movement
+      await vi.advanceTimersByTimeAsync(5000)
+      await movementPromise
+      expect(store.anton.path).toHaveLength(0)
+    })
+
+    it('should update isMoving computed property', async () => {
+      const store = useFoundryStore()
+      expect(store.isMoving).toBe(false)
+
+      const movementPromise = store.moveAntonToCell(3, 3)
+
+      // Should be moving
+      await vi.advanceTimersByTimeAsync(50)
+      expect(store.isMoving).toBe(true)
+
+      // Complete movement
+      await vi.advanceTimersByTimeAsync(2000)
+      await movementPromise
+      expect(store.isMoving).toBe(false)
+    })
+
+    it('should handle target becoming invalid during movement', async () => {
+      const store = useFoundryStore()
+
+      // Start a movement from (2,2) to (2,0)
+      const movementPromise = store.moveAntonToCell(2, 0)
+
+      // Advance timer a bit for movement to start
+      await vi.advanceTimersByTimeAsync(100)
+
+      // Block the target cell during movement
+      store.updateCellType(2, 0, GridCellType.Blocked)
+
+      // Complete movement
+      await vi.advanceTimersByTimeAsync(5000)
+      const result = await movementPromise
+
+      expect(result).toBe(false)
+      expect(store.anton.currentAction).toBe('idle')
+      expect(store.anton.path).toHaveLength(0)
+    })
+
+    it('should cancel previous movement when new movement starts', async () => {
+      const store = useFoundryStore()
+
+      // Start first movement
+      const firstMovement = store.moveAntonToCell(4, 3)
+
+      // Advance timer a bit
+      await vi.advanceTimersByTimeAsync(100)
+
+      // Start second movement before first completes
+      const secondMovement = store.moveAntonToCell(0, 3)
+
+      // Complete movements
+      await vi.advanceTimersByTimeAsync(10000)
+
+      const firstResult = await firstMovement
+      const secondResult = await secondMovement
+
+      expect(firstResult).toBe(false) // First movement should be cancelled
+      expect(secondResult).toBe(true) // Second movement should succeed
+      expect(store.anton.position).toEqual({ x: 0, y: 3 })
+    })
+
+    it('should take approximately 1 second per cell', async () => {
+      const store = useFoundryStore()
+
+      // Move 2 cells (from 2,2 to 4,2)
+      const movementPromise = store.moveAntonToCell(4, 2)
+
+      // Advance 2 seconds (1 second per cell)
+      await vi.advanceTimersByTimeAsync(2000)
+      await movementPromise
+
+      // Verify movement completed
+      expect(store.anton.position).toEqual({ x: 4, y: 2 })
+    })
+
+    it('should move Anton through multiple cells in path', async () => {
+      const store = useFoundryStore()
+      // Start at (2,2), move to (0,3) - requires multiple steps
+      const movementPromise = store.moveAntonToCell(0, 3)
+
+      // Advance enough time for movement to complete
+      await vi.advanceTimersByTimeAsync(10000)
+      const result = await movementPromise
+
+      expect(result).toBe(true)
+      expect(store.anton.position).toEqual({ x: 0, y: 3 })
+      expect(store.anton.currentAction).toBe('idle')
+      expect(store.anton.path).toHaveLength(0)
     })
   })
 })
