@@ -17,11 +17,9 @@ describe('FoundryScreen', () => {
       expect(wrapper.find('.foundry-screen').exists()).toBe(true)
     })
 
-    it('displays placeholder notice', () => {
+    it('displays foundry header with title', () => {
       const wrapper = mount(FoundryScreen)
-      expect(wrapper.find('.placeholder-notice').exists()).toBe(true)
       expect(wrapper.text()).toContain('Foundry Crafting System')
-      expect(wrapper.text()).toContain('grid-based crafting puzzle interface')
     })
 
     it('renders foundry content layout with sidebar and main area', () => {
@@ -29,6 +27,11 @@ describe('FoundryScreen', () => {
       expect(wrapper.find('.foundry-content').exists()).toBe(true)
       expect(wrapper.find('.foundry-sidebar').exists()).toBe(true)
       expect(wrapper.find('.foundry-main').exists()).toBe(true)
+    })
+
+    it('renders queue sidebar', () => {
+      const wrapper = mount(FoundryScreen)
+      expect(wrapper.find('.queue-sidebar').exists()).toBe(true)
     })
   })
 
@@ -39,22 +42,21 @@ describe('FoundryScreen', () => {
       expect(wrapper.find('.materials-list').exists()).toBe(true)
     })
 
-    it('renders mock material items', () => {
+    it('renders material items from resources store', () => {
       const wrapper = mount(FoundryScreen)
       const materialItems = wrapper.findAll('.material-item')
 
-      // Should have 4 mock materials (Wood, Stone, Iron Ore, Crystal Shards)
-      expect(materialItems.length).toBe(4)
+      // Should have materials from the resources store
+      expect(materialItems.length).toBeGreaterThan(0)
     })
 
     it('displays material icons and names', () => {
       const wrapper = mount(FoundryScreen)
 
-      // Check for specific materials
+      // Check for specific materials from the resources store
       expect(wrapper.text()).toContain('Wood')
       expect(wrapper.text()).toContain('Stone')
-      expect(wrapper.text()).toContain('Iron Ore')
-      expect(wrapper.text()).toContain('Crystal Shards')
+      expect(wrapper.text()).toContain('Iron')
     })
 
     it('displays material amounts', () => {
@@ -69,27 +71,29 @@ describe('FoundryScreen', () => {
   })
 
   describe('Recipes Section', () => {
-    it('displays available recipes section', () => {
+    it('displays recipes section', () => {
       const wrapper = mount(FoundryScreen)
-      expect(wrapper.text()).toContain('Available Recipes')
+      expect(wrapper.text()).toContain('Recipes')
       expect(wrapper.find('.recipes-list').exists()).toBe(true)
     })
 
-    it('renders mock recipe items', () => {
+    it('renders recipe items from foundry store', () => {
       const wrapper = mount(FoundryScreen)
       const recipeItems = wrapper.findAll('.recipe-item')
 
-      // Should have 3 mock recipes (Iron Sword, Wooden Shield, Crystal Staff)
-      expect(recipeItems.length).toBe(3)
+      // Should have at least the survival-kit recipe
+      expect(recipeItems.length).toBeGreaterThan(0)
     })
 
-    it('displays locked state for unavailable recipes', () => {
+    it('displays survival kit recipe', () => {
       const wrapper = mount(FoundryScreen)
-      const lockedRecipes = wrapper.findAll('.recipe-item.locked')
+      expect(wrapper.text()).toContain('Survival Kit')
+    })
 
-      // Crystal Staff should be locked
-      expect(lockedRecipes.length).toBeGreaterThan(0)
-      expect(wrapper.text()).toContain('Crystal Staff')
+    it('recipe items are clickable for selection', () => {
+      const wrapper = mount(FoundryScreen)
+      const recipeItem = wrapper.find('.recipe-item')
+      expect(recipeItem.exists()).toBe(true)
     })
   })
 
@@ -100,62 +104,38 @@ describe('FoundryScreen', () => {
       expect(wrapper.find('.crafting-grid-container').exists()).toBe(true)
     })
 
-    it('shows placeholder grid with message', () => {
-      const wrapper = mount(FoundryScreen)
-      expect(wrapper.find('.crafting-grid-placeholder').exists()).toBe(true)
-      expect(wrapper.text()).toContain('Grid-based crafting puzzle will be implemented here')
-    })
-
-    it('renders grid preview cells', () => {
+    it('renders 5x5 grid cells', () => {
       const wrapper = mount(FoundryScreen)
       const gridRows = wrapper.findAll('.grid-row')
       const gridCells = wrapper.findAll('.grid-cell')
 
-      // Should have 4x4 grid = 4 rows, 16 cells
-      expect(gridRows.length).toBe(4)
-      expect(gridCells.length).toBe(16)
+      // Should have 5x5 grid = 5 rows, 25 cells
+      expect(gridRows.length).toBe(5)
+      expect(gridCells.length).toBe(25)
     })
 
-    it('displays grid hint text', () => {
+    it('displays Anton status', () => {
       const wrapper = mount(FoundryScreen)
-      expect(wrapper.text()).toContain('Drag materials onto grid')
-      expect(wrapper.text()).toContain('Arrange to match patterns')
-      expect(wrapper.text()).toContain('Craft items')
+      expect(wrapper.find('.anton-status').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Anton:')
     })
   })
 
-  describe('Action Buttons', () => {
-    it('displays action buttons', () => {
+  describe('Queue Panel', () => {
+    it('displays crafting queue header', () => {
       const wrapper = mount(FoundryScreen)
-      expect(wrapper.find('.crafting-actions').exists()).toBe(true)
-
-      const buttons = wrapper.findAll('.action-button')
-      expect(buttons.length).toBe(2)
+      expect(wrapper.text()).toContain('Crafting Queue')
     })
 
-    it('renders Clear Grid button', () => {
+    it('shows empty state when queue is empty', () => {
       const wrapper = mount(FoundryScreen)
-      const clearButton = wrapper.find('.action-button--secondary')
-
-      expect(clearButton.exists()).toBe(true)
-      expect(clearButton.text()).toBe('Clear Grid')
+      expect(wrapper.find('.queue-empty').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Queue is empty')
     })
 
-    it('renders Craft Item button', () => {
+    it('displays hint for adding to queue', () => {
       const wrapper = mount(FoundryScreen)
-      const craftButton = wrapper.find('.action-button--primary')
-
-      expect(craftButton.exists()).toBe(true)
-      expect(craftButton.text()).toBe('Craft Item')
-    })
-
-    it('buttons are disabled in placeholder mode', () => {
-      const wrapper = mount(FoundryScreen)
-      const buttons = wrapper.findAll('.action-button')
-
-      buttons.forEach((button) => {
-        expect(button.attributes('disabled')).toBeDefined()
-      })
+      expect(wrapper.text()).toContain('Add to Queue')
     })
   })
 

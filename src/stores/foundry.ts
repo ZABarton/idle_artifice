@@ -11,6 +11,7 @@ import type {
 import { GridCellType, FOUNDRY_CONSTANTS } from '@/types/foundry'
 import { recipes as recipeDefinitions } from '@/config/recipes'
 import { useResourcesStore } from './resources'
+import { useNotificationsStore } from './notifications'
 
 // LocalStorage key
 const STORAGE_KEY_FOUNDRY = 'idle-artifice-foundry'
@@ -657,19 +658,19 @@ export const useFoundryStore = defineStore('foundry', () => {
       return false
     }
 
-    // Set movement state
-    updateAntonAction('moving')
+    // Set path and progress (don't change action state - let callers manage that)
     setAntonPath(path)
     updateAntonProgress(0)
 
     try {
+      const totalCells = path.length
+
       // Move through each cell in the path
       for (let i = 0; i < path.length; i++) {
         const targetPos = path[i]
 
         // Check if movement was aborted
         if (signal.aborted) {
-          updateAntonAction('idle')
           setAntonPath([])
           updateAntonProgress(0)
           return false
@@ -678,8 +679,7 @@ export const useFoundryStore = defineStore('foundry', () => {
         // Check if target cell is still traversable (edge case handling)
         const cell = getCellAt.value(targetPos.x, targetPos.y)
         if (!isTraversable(cell)) {
-          // Target became invalid during movement - return to idle
-          updateAntonAction('idle')
+          // Target became invalid during movement
           setAntonPath([])
           updateAntonProgress(0)
           return false
@@ -700,10 +700,12 @@ export const useFoundryStore = defineStore('foundry', () => {
             }
 
             currentTick++
-            const progress = Math.min(currentTick / totalTicks, 1)
-            updateAntonProgress(progress)
+            const cellProgress = Math.min(currentTick / totalTicks, 1)
+            // Calculate overall movement progress: (completed cells + current cell progress) / total cells
+            const overallProgress = (i + cellProgress) / totalCells
+            updateAntonProgress(overallProgress)
 
-            if (progress >= 1) {
+            if (cellProgress >= 1) {
               clearInterval(intervalId)
               resolve()
             }
@@ -712,7 +714,6 @@ export const useFoundryStore = defineStore('foundry', () => {
 
         // Check again if movement was aborted during animation
         if (signal.aborted) {
-          updateAntonAction('idle')
           setAntonPath([])
           updateAntonProgress(0)
           return false
@@ -720,14 +721,12 @@ export const useFoundryStore = defineStore('foundry', () => {
 
         // Move Anton to the cell
         updateAntonPosition(targetPos)
-        updateAntonProgress(0)
 
         // Remove this step from the path
         setAntonPath(path.slice(i + 1))
       }
 
-      // Movement complete
-      updateAntonAction('idle')
+      // Movement complete (don't change action state - let callers manage transitions)
       setAntonPath([])
       updateAntonProgress(0)
       currentMovementController = null
@@ -1034,6 +1033,12 @@ export const useFoundryStore = defineStore('foundry', () => {
       isProcessingMovement = true
       moveAntonToCell(targetCell.x, targetCell.y).then((success) => {
         isProcessingMovement = false
+        console.log('[Movement] Supply bin movement complete:', {
+          success,
+          currentAction: gridState.value.anton.currentAction,
+          isAdjacent: isAdjacentToSupplyBin.value,
+          antonPos: anton.value.position,
+        })
         if (success && gridState.value.anton.currentAction === 'movingToSupplyBin') {
           // Movement complete - check if adjacent now
           if (isAdjacentToSupplyBin.value) {
@@ -1066,9 +1071,32 @@ export const useFoundryStore = defineStore('foundry', () => {
 
     // Check if resources are available
     if (!hasRequiredResources(recipeId)) {
-      // Resources not available - pause (reset progress, wait for resources)
+      // Resources not available - skip this queue item and move to next
+      const queueIndex = gridState.value.currentQueueIndex
+      const missing = getMissingResources(recipeId)
+      const recipe = getRecipeById.value(recipeId)
+
+      // Build skip reason from missing resources
+      const missingList = missing
+        .map((m) => `${m.required - m.available} more ${m.resourceId}`)
+        .join(', ')
+      const skipReason = `Insufficient resources: need ${missingList}`
+
+      // Mark queue item as skipped
+      updateQueueItemStatus(queueIndex, 'skipped', skipReason)
+
+      // Show warning notification
+      const notificationsStore = useNotificationsStore()
+      notificationsStore.showWarning(
+        'Craft Skipped',
+        `${recipe?.name || 'Item'}: ${missingList}`
+      )
+
+      // Reset Anton and go back to idle to find next pending item
+      setAntonRecipe(null)
+      setAntonActionStartTime(null)
       updateAntonProgress(0)
-      setAntonActionStartTime(now)
+      updateAntonAction('idle')
       return
     }
 
@@ -1088,9 +1116,28 @@ export const useFoundryStore = defineStore('foundry', () => {
         setAntonActionStartTime(null)
         updateAntonProgress(0)
       } else {
-        // Resources disappeared - reset and wait
+        // Resources disappeared during gathering - skip this queue item
+        const queueIndex = gridState.value.currentQueueIndex
+        const missing = getMissingResources(recipeId)
+        const recipe = getRecipeById.value(recipeId)
+
+        const missingList = missing
+          .map((m) => `${m.required - m.available} more ${m.resourceId}`)
+          .join(', ')
+        const skipReason = `Insufficient resources: need ${missingList}`
+
+        updateQueueItemStatus(queueIndex, 'skipped', skipReason)
+
+        const notificationsStore = useNotificationsStore()
+        notificationsStore.showWarning(
+          'Craft Skipped',
+          `${recipe?.name || 'Item'}: ${missingList}`
+        )
+
+        setAntonRecipe(null)
+        setAntonActionStartTime(null)
         updateAntonProgress(0)
-        setAntonActionStartTime(now)
+        updateAntonAction('idle')
       }
     }
   }
@@ -1146,6 +1193,12 @@ export const useFoundryStore = defineStore('foundry', () => {
       isProcessingMovement = true
       moveAntonToCell(targetCell.x, targetCell.y).then((success) => {
         isProcessingMovement = false
+        console.log('[Movement] Anvil movement complete:', {
+          success,
+          currentAction: gridState.value.anton.currentAction,
+          isAdjacent: isAdjacentToAnvil.value,
+          antonPos: anton.value.position,
+        })
         if (success && gridState.value.anton.currentAction === 'movingToAnvil') {
           // Movement complete - check if adjacent now
           if (isAdjacentToAnvil.value) {
@@ -1193,6 +1246,13 @@ export const useFoundryStore = defineStore('foundry', () => {
     if (progress >= 1) {
       // Produce outputs
       produceRecipeOutputs(recipeId)
+
+      // Show success notification
+      const outputSummary = recipe.outputs
+        .map((o) => `+${o.amount} ${o.resourceId}`)
+        .join(', ')
+      const notificationsStore = useNotificationsStore()
+      notificationsStore.showSuccess(`Crafted ${recipe.name}`, `${recipe.icon || ''} ${outputSummary}`)
 
       // Mark queue item as completed
       const queueIndex = gridState.value.currentQueueIndex
