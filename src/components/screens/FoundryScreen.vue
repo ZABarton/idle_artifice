@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useFoundryStore } from '@/stores/foundry'
+import { useResourcesStore } from '@/stores/resources'
 import { GridCellType } from '@/types/foundry'
-import type { GridCell } from '@/types/foundry'
+import type { GridCell, CraftingQueueItem, Recipe } from '@/types/foundry'
 
 /**
  * FoundryScreen Component
@@ -16,8 +17,9 @@ interface Props {
 
 defineProps<Props>()
 
-// Connect to foundry store
+// Connect to stores
 const foundryStore = useFoundryStore()
+const resourcesStore = useResourcesStore()
 
 // Toggle for coordinate labels
 const showCoordinates = ref(true)
@@ -27,24 +29,94 @@ const isEditMode = ref(false)
 const selectedItem = ref<'supplyBin' | 'anvil' | null>(null)
 const placementFeedback = ref<{ x: number; y: number; success: boolean } | null>(null)
 
+// Recipe selector state
+const selectedRecipeId = ref<string | null>(null)
+const craftQuantity = ref(1)
+
 // Check if Anton is actively crafting (disable editing during crafting)
 const isAntonCrafting = computed(() => {
   return foundryStore.anton.currentAction !== 'idle'
 })
 
-// Mock data for placeholder display
-const mockMaterials = ref([
-  { id: 'wood', name: 'Wood', amount: 25, icon: '🪵' },
-  { id: 'stone', name: 'Stone', amount: 12, icon: '🪨' },
-  { id: 'iron', name: 'Iron Ore', amount: 8, icon: '⛏️' },
-  { id: 'crystal', name: 'Crystal Shards', amount: 3, icon: '💎' },
-])
+// Get materials from resource store (filtered to show relevant crafting materials)
+const materials = computed(() => {
+  return resourcesStore.allResources.filter(r =>
+    ['wood', 'stone', 'iron', 'gold', 'mystical-essence'].includes(r.id)
+  )
+})
 
-const mockRecipes = ref([
-  { id: 'sword', name: 'Iron Sword', unlocked: true, icon: '⚔️' },
-  { id: 'shield', name: 'Wooden Shield', unlocked: true, icon: '🛡️' },
-  { id: 'staff', name: 'Crystal Staff', unlocked: false, icon: '🪄' },
-])
+// Get recipes from foundry store
+const recipes = computed(() => foundryStore.allRecipes)
+
+// Get the selected recipe details
+const selectedRecipe = computed(() => {
+  if (!selectedRecipeId.value) return null
+  return foundryStore.getRecipeById(selectedRecipeId.value)
+})
+
+// Check if selected recipe can be crafted (has resources)
+const canCraftSelected = computed(() => {
+  if (!selectedRecipeId.value) return false
+  return foundryStore.hasRequiredResources(selectedRecipeId.value)
+})
+
+// Get missing resources for selected recipe
+const missingResourcesForSelected = computed(() => {
+  if (!selectedRecipeId.value) return []
+  return foundryStore.getMissingResources(selectedRecipeId.value)
+})
+
+// Queue helpers
+const queueItems = computed(() => foundryStore.craftingQueue)
+const currentQueueItem = computed(() => foundryStore.currentQueueItem)
+const isQueueEmpty = computed(() => foundryStore.craftingQueue.length === 0)
+
+// Get recipe for a queue item
+function getRecipeForQueueItem(item: CraftingQueueItem): Recipe | undefined {
+  return foundryStore.getRecipeById(item.recipeId)
+}
+
+// Get status display info for a queue item
+function getQueueItemStatus(item: CraftingQueueItem): { label: string; class: string } {
+  switch (item.status) {
+    case 'in-progress':
+      return { label: 'Crafting...', class: 'status-in-progress' }
+    case 'completed':
+      return { label: 'Done', class: 'status-completed' }
+    case 'skipped':
+      return { label: 'Skipped', class: 'status-skipped' }
+    default:
+      return { label: 'Pending', class: 'status-pending' }
+  }
+}
+
+// Check if a queue item is the current one being processed
+function isCurrentQueueItem(index: number): boolean {
+  return index === foundryStore.currentQueueIndex &&
+         foundryStore.craftingQueue[index]?.status === 'in-progress'
+}
+
+// Add selected recipe to queue
+function addToQueue(): void {
+  if (!selectedRecipeId.value) return
+  foundryStore.addToQueue(selectedRecipeId.value, craftQuantity.value)
+  craftQuantity.value = 1
+}
+
+// Remove item from queue
+function removeFromQueue(index: number): void {
+  foundryStore.removeFromQueue(index)
+}
+
+// Clear entire queue
+function clearQueue(): void {
+  foundryStore.clearQueue()
+}
+
+// Debug: add resources for testing
+function debugAddWood(): void {
+  resourcesStore.addResource('wood', 10)
+}
 
 /**
  * Get icon for cell type
@@ -238,32 +310,115 @@ function getCellFeedbackClass(cell: GridCell): string | null {
       <aside class="foundry-sidebar">
         <!-- Materials Section -->
         <section class="sidebar-section">
-          <h3 class="section-title">Available Materials</h3>
+          <div class="section-header">
+            <h3 class="section-title">Available Materials</h3>
+            <button class="debug-button" @click="debugAddWood" title="Debug: Add 10 wood">
+              +10 🪵
+            </button>
+          </div>
           <div class="materials-list">
-            <div v-for="material in mockMaterials" :key="material.id" class="material-item">
-              <span class="material-icon">{{ material.icon }}</span>
+            <div v-for="material in materials" :key="material.id" class="material-item">
+              <span class="material-icon">{{ material.icon || '📦' }}</span>
               <div class="material-info">
                 <div class="material-name">{{ material.name }}</div>
                 <div class="material-amount">{{ material.amount }}</div>
               </div>
+            </div>
+            <div v-if="materials.length === 0" class="empty-state">
+              No materials available
             </div>
           </div>
         </section>
 
         <!-- Recipes Section -->
         <section class="sidebar-section">
-          <h3 class="section-title">Available Recipes</h3>
+          <h3 class="section-title">Recipes</h3>
           <div class="recipes-list">
             <div
-              v-for="recipe in mockRecipes"
+              v-for="recipe in recipes"
               :key="recipe.id"
               class="recipe-item"
-              :class="{ locked: !recipe.unlocked }"
+              :class="{
+                selected: selectedRecipeId === recipe.id,
+                'has-resources': foundryStore.hasRequiredResources(recipe.id)
+              }"
+              @click="selectedRecipeId = recipe.id"
             >
-              <span class="recipe-icon">{{ recipe.icon }}</span>
+              <span class="recipe-icon">{{ recipe.icon || '🔧' }}</span>
               <span class="recipe-name">{{ recipe.name }}</span>
-              <span v-if="!recipe.unlocked" class="recipe-lock">🔒</span>
+              <span
+                v-if="!foundryStore.hasRequiredResources(recipe.id)"
+                class="recipe-warning"
+                title="Insufficient resources"
+              >⚠️</span>
             </div>
+            <div v-if="recipes.length === 0" class="empty-state">
+              No recipes available
+            </div>
+          </div>
+        </section>
+
+        <!-- Selected Recipe Details -->
+        <section v-if="selectedRecipe" class="sidebar-section recipe-details">
+          <h3 class="section-title">{{ selectedRecipe.name }}</h3>
+          <p v-if="selectedRecipe.description" class="recipe-description">
+            {{ selectedRecipe.description }}
+          </p>
+
+          <!-- Inputs -->
+          <div class="recipe-io">
+            <h4>Requires:</h4>
+            <div
+              v-for="input in selectedRecipe.inputs"
+              :key="input.resourceId"
+              class="io-item"
+              :class="{ missing: !resourcesStore.hasResource(input.resourceId, input.amount) }"
+            >
+              <span>{{ input.amount }}x {{ input.resourceId }}</span>
+              <span class="io-available">
+                (have: {{ resourcesStore.getResourceAmount(input.resourceId) }})
+              </span>
+            </div>
+          </div>
+
+          <!-- Outputs -->
+          <div class="recipe-io">
+            <h4>Produces:</h4>
+            <div v-for="output in selectedRecipe.outputs" :key="output.resourceId" class="io-item">
+              <span>{{ output.amount }}x {{ output.resourceId }}</span>
+            </div>
+          </div>
+
+          <!-- Craft Time -->
+          <div class="recipe-time">
+            Craft time: {{ selectedRecipe.craftTime }}s
+          </div>
+
+          <!-- Add to Queue Controls -->
+          <div class="add-to-queue-controls">
+            <div class="quantity-selector">
+              <label>Qty:</label>
+              <input
+                type="number"
+                v-model.number="craftQuantity"
+                min="1"
+                max="99"
+                class="quantity-input"
+              />
+            </div>
+            <button
+              class="add-queue-button"
+              :disabled="!canCraftSelected"
+              @click="addToQueue"
+            >
+              Add to Queue
+            </button>
+          </div>
+          <div v-if="missingResourcesForSelected.length > 0" class="missing-resources">
+            <span class="missing-label">Missing:</span>
+            <span v-for="(m, i) in missingResourcesForSelected" :key="m.resourceId">
+              {{ m.required - m.available }} {{ m.resourceId }}{{ i < missingResourcesForSelected.length - 1 ? ', ' : '' }}
+            </span>
           </div>
         </section>
       </aside>
@@ -311,13 +466,87 @@ function getCellFeedbackClass(cell: GridCell): string | null {
             </div>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="crafting-actions">
-            <button class="action-button action-button--secondary" disabled>Clear Grid</button>
-            <button class="action-button action-button--primary" disabled>Craft Item</button>
+          <!-- Anton Status -->
+          <div class="anton-status">
+            <div class="anton-status-label">
+              <span class="anton-icon-small">👷</span>
+              <span>Anton: {{ foundryStore.anton.currentAction }}</span>
+            </div>
+            <div v-if="foundryStore.anton.currentAction !== 'idle'" class="anton-progress-bar">
+              <div
+                class="anton-progress-fill"
+                :style="{ width: `${foundryStore.anton.actionProgress * 100}%` }"
+              ></div>
+            </div>
           </div>
         </div>
       </main>
+
+      <!-- Right Panel: Crafting Queue -->
+      <aside class="queue-sidebar">
+        <div class="queue-header">
+          <h3 class="section-title">Crafting Queue</h3>
+          <button
+            v-if="!isQueueEmpty"
+            class="clear-queue-button"
+            @click="clearQueue"
+            title="Clear all queue items"
+          >
+            Clear All
+          </button>
+        </div>
+
+        <!-- Empty State -->
+        <div v-if="isQueueEmpty" class="queue-empty">
+          <div class="empty-icon">📋</div>
+          <p>Queue is empty</p>
+          <p class="empty-hint">Select a recipe and click "Add to Queue" to start crafting</p>
+        </div>
+
+        <!-- Queue Items List -->
+        <div v-else class="queue-list">
+          <div
+            v-for="(item, index) in queueItems"
+            :key="item.id"
+            class="queue-item"
+            :class="[
+              getQueueItemStatus(item).class,
+              { 'is-current': isCurrentQueueItem(index) }
+            ]"
+          >
+            <div class="queue-item-main">
+              <span class="queue-item-icon">{{ getRecipeForQueueItem(item)?.icon || '🔧' }}</span>
+              <div class="queue-item-info">
+                <div class="queue-item-name">{{ getRecipeForQueueItem(item)?.name || item.recipeId }}</div>
+                <div class="queue-item-status">
+                  <span :class="getQueueItemStatus(item).class">
+                    {{ getQueueItemStatus(item).label }}
+                  </span>
+                  <!-- Progress bar for current item -->
+                  <div v-if="isCurrentQueueItem(index)" class="queue-progress-bar">
+                    <div
+                      class="queue-progress-fill"
+                      :style="{ width: `${foundryStore.anton.actionProgress * 100}%` }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              <button
+                v-if="item.status === 'pending'"
+                class="remove-item-button"
+                @click="removeFromQueue(index)"
+                title="Remove from queue"
+              >
+                ✕
+              </button>
+            </div>
+            <!-- Skip reason for skipped items -->
+            <div v-if="item.status === 'skipped' && item.skipReason" class="queue-item-skip-reason">
+              ⚠️ {{ item.skipReason }}
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
@@ -419,7 +648,7 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 .foundry-content {
   flex: 1;
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 300px 1fr 280px;
   gap: 1.5rem;
   padding: 1.5rem;
   overflow: hidden;
@@ -834,12 +1063,393 @@ function getCellFeedbackClass(cell: GridCell): string | null {
   background: rgba(0, 0, 0, 0.3);
 }
 
+/* Section Header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.debug-button {
+  padding: 0.25rem 0.5rem;
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.debug-button:hover {
+  background-color: #fde68a;
+  border-color: #f59e0b;
+}
+
+/* Recipe Selection Styles */
+.recipe-item {
+  cursor: pointer;
+}
+
+.recipe-item.selected {
+  border-color: #667eea;
+  background-color: #eef2ff;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+}
+
+.recipe-item.has-resources {
+  border-left: 3px solid #10b981;
+}
+
+.recipe-warning {
+  font-size: 1rem;
+  margin-left: auto;
+}
+
+/* Recipe Details Section */
+.recipe-details {
+  background-color: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.recipe-description {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 0.75rem 0;
+}
+
+.recipe-io {
+  margin-bottom: 0.75rem;
+}
+
+.recipe-io h4 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 0.25rem 0;
+}
+
+.io-item {
+  font-size: 0.85rem;
+  color: #334155;
+  padding: 0.25rem 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.io-item.missing {
+  color: #dc2626;
+}
+
+.io-available {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.recipe-time {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+}
+
+.add-to-queue-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.quantity-selector label {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.quantity-input {
+  width: 50px;
+  padding: 0.375rem 0.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.add-queue-button {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-queue-button:hover:not(:disabled) {
+  background-color: #5a67d8;
+}
+
+.add-queue-button:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.missing-resources {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #dc2626;
+}
+
+.missing-label {
+  font-weight: 600;
+}
+
+/* Anton Status */
+.anton-status {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.anton-status-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.anton-icon-small {
+  font-size: 1.25rem;
+}
+
+.anton-progress-bar {
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.anton-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.1s linear;
+}
+
+/* Queue Sidebar */
+.queue-sidebar {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.queue-header .section-title {
+  margin: 0;
+}
+
+.clear-queue-button {
+  padding: 0.375rem 0.75rem;
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-queue-button:hover {
+  background-color: #fee2e2;
+  border-color: #f87171;
+}
+
+/* Queue Empty State */
+.queue-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #64748b;
+  padding: 2rem 1rem;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
+
+.queue-empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.empty-hint {
+  font-size: 0.8rem !important;
+  color: #94a3b8;
+  margin-top: 0.5rem !important;
+}
+
+/* Queue List */
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.queue-item {
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.queue-item.is-current {
+  border-color: #667eea;
+  background-color: #eef2ff;
+}
+
+.queue-item-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.queue-item-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.queue-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.queue-item-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-item-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.status-pending {
+  color: #64748b;
+}
+
+.status-in-progress {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.status-completed {
+  color: #10b981;
+}
+
+.status-skipped {
+  color: #f59e0b;
+}
+
+.queue-progress-bar {
+  height: 4px;
+  background-color: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.queue-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.1s linear;
+}
+
+.remove-item-button {
+  padding: 0.25rem 0.5rem;
+  background-color: transparent;
+  color: #94a3b8;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.remove-item-button:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.queue-item-skip-reason {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 0.75rem;
+  color: #f59e0b;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
 /* Responsive Design */
+@media (max-width: 1200px) {
+  .foundry-content {
+    grid-template-columns: 280px 1fr 240px;
+  }
+}
+
 @media (max-width: 1024px) {
   .foundry-content {
     grid-template-columns: 250px 1fr;
     gap: 1rem;
     padding: 1rem;
+  }
+
+  .queue-sidebar {
+    display: none;
   }
 
   .foundry-header {
@@ -877,6 +1487,10 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 
   .foundry-main {
     order: 1;
+  }
+
+  .queue-sidebar {
+    display: none;
   }
 
   .foundry-header {

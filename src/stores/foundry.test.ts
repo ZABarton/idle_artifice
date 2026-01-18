@@ -689,13 +689,17 @@ describe('useFoundryStore', () => {
       expect(store.anton.position).toEqual(FOUNDRY_CONSTANTS.DEFAULT_ANTON_POSITION)
     })
 
-    it('should set action to moving during movement', async () => {
+    it('should not change action state during movement (callers manage state)', async () => {
       const store = useFoundryStore()
+      // Action starts as 'idle'
+      expect(store.anton.currentAction).toBe('idle')
+
       const movementPromise = store.moveAntonToCell(3, 3)
 
       // Advance timers slightly to let movement start
       await vi.advanceTimersByTimeAsync(50)
-      expect(store.anton.currentAction).toBe('moving')
+      // Action state should remain unchanged - callers (state machine handlers) manage it
+      expect(store.anton.currentAction).toBe('idle')
 
       // Complete movement
       await vi.advanceTimersByTimeAsync(2000)
