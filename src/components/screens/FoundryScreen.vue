@@ -54,9 +54,10 @@ const selectedRecipe = computed(() => {
   return foundryStore.getRecipeById(selectedRecipeId.value)
 })
 
-// Check if selected recipe can be crafted (has resources)
+// Check if selected recipe can be crafted (has resources and not in edit mode)
 const canCraftSelected = computed(() => {
   if (!selectedRecipeId.value) return false
+  if (isEditMode.value) return false
   return foundryStore.hasRequiredResources(selectedRecipeId.value)
 })
 
@@ -96,6 +97,43 @@ function isCurrentQueueItem(index: number): boolean {
          foundryStore.craftingQueue[index]?.status === 'in-progress'
 }
 
+// Calculate overall progress for the current queue item
+// Phases: movingToSupplyBin (15%), gathering (20%), movingToAnvil (15%), crafting (50%)
+const overallProgress = computed(() => {
+  const action = foundryStore.anton.currentAction
+  const stepProgress = foundryStore.anton.actionProgress
+
+  switch (action) {
+    case 'movingToSupplyBin':
+      return stepProgress * 0.15
+    case 'gathering':
+      return 0.15 + stepProgress * 0.20
+    case 'movingToAnvil':
+      return 0.35 + stepProgress * 0.15
+    case 'crafting':
+      return 0.50 + stepProgress * 0.50
+    default:
+      return 0
+  }
+})
+
+// Get the current phase label for display
+const currentPhaseLabel = computed(() => {
+  const action = foundryStore.anton.currentAction
+  switch (action) {
+    case 'movingToSupplyBin':
+      return 'Moving to supplies...'
+    case 'gathering':
+      return 'Gathering materials...'
+    case 'movingToAnvil':
+      return 'Moving to anvil...'
+    case 'crafting':
+      return 'Crafting...'
+    default:
+      return 'Idle'
+  }
+})
+
 // Add selected recipe to queue
 function addToQueue(): void {
   if (!selectedRecipeId.value) return
@@ -108,10 +146,23 @@ function removeFromQueue(index: number): void {
   foundryStore.removeFromQueue(index)
 }
 
-// Clear entire queue
-function clearQueue(): void {
-  foundryStore.clearQueue()
+// Clear only completed and skipped items from queue
+function clearCompletedItems(): void {
+  // Remove items in reverse order to avoid index shifting issues
+  for (let i = foundryStore.craftingQueue.length - 1; i >= 0; i--) {
+    const item = foundryStore.craftingQueue[i]
+    if (item.status === 'completed' || item.status === 'skipped') {
+      foundryStore.removeFromQueue(i)
+    }
+  }
 }
+
+// Check if there are any completed or skipped items to clear
+const hasCompletedItems = computed(() => {
+  return foundryStore.craftingQueue.some(
+    item => item.status === 'completed' || item.status === 'skipped'
+  )
+})
 
 // Debug: add resources for testing
 function debugAddWood(): void {
@@ -470,12 +521,12 @@ function getCellFeedbackClass(cell: GridCell): string | null {
           <div class="anton-status">
             <div class="anton-status-label">
               <span class="anton-icon-small">👷</span>
-              <span>Anton: {{ foundryStore.anton.currentAction }}</span>
+              <span>Anton: {{ currentPhaseLabel }}</span>
             </div>
             <div v-if="foundryStore.anton.currentAction !== 'idle'" class="anton-progress-bar">
               <div
                 class="anton-progress-fill"
-                :style="{ width: `${foundryStore.anton.actionProgress * 100}%` }"
+                :style="{ width: `${overallProgress * 100}%` }"
               ></div>
             </div>
           </div>
@@ -487,12 +538,12 @@ function getCellFeedbackClass(cell: GridCell): string | null {
         <div class="queue-header">
           <h3 class="section-title">Crafting Queue</h3>
           <button
-            v-if="!isQueueEmpty"
+            v-if="hasCompletedItems"
             class="clear-queue-button"
-            @click="clearQueue"
-            title="Clear all queue items"
+            @click="clearCompletedItems"
+            title="Clear completed and skipped items"
           >
-            Clear All
+            Clear Done
           </button>
         </div>
 
@@ -519,14 +570,17 @@ function getCellFeedbackClass(cell: GridCell): string | null {
               <div class="queue-item-info">
                 <div class="queue-item-name">{{ getRecipeForQueueItem(item)?.name || item.recipeId }}</div>
                 <div class="queue-item-status">
-                  <span :class="getQueueItemStatus(item).class">
+                  <span v-if="!isCurrentQueueItem(index)" :class="getQueueItemStatus(item).class">
                     {{ getQueueItemStatus(item).label }}
                   </span>
-                  <!-- Progress bar for current item -->
+                  <span v-else class="status-phase">
+                    {{ currentPhaseLabel }}
+                  </span>
+                  <!-- Overall progress bar for current item -->
                   <div v-if="isCurrentQueueItem(index)" class="queue-progress-bar">
                     <div
                       class="queue-progress-fill"
-                      :style="{ width: `${foundryStore.anton.actionProgress * 100}%` }"
+                      :style="{ width: `${overallProgress * 100}%` }"
                     ></div>
                   </div>
                 </div>
@@ -1386,6 +1440,12 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 
 .status-skipped {
   color: #f59e0b;
+}
+
+.status-phase {
+  color: #667eea;
+  font-weight: 500;
+  font-size: 0.7rem;
 }
 
 .queue-progress-bar {

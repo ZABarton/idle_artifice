@@ -663,6 +663,8 @@ export const useFoundryStore = defineStore('foundry', () => {
     updateAntonProgress(0)
 
     try {
+      const totalCells = path.length
+
       // Move through each cell in the path
       for (let i = 0; i < path.length; i++) {
         const targetPos = path[i]
@@ -698,10 +700,12 @@ export const useFoundryStore = defineStore('foundry', () => {
             }
 
             currentTick++
-            const progress = Math.min(currentTick / totalTicks, 1)
-            updateAntonProgress(progress)
+            const cellProgress = Math.min(currentTick / totalTicks, 1)
+            // Calculate overall movement progress: (completed cells + current cell progress) / total cells
+            const overallProgress = (i + cellProgress) / totalCells
+            updateAntonProgress(overallProgress)
 
-            if (progress >= 1) {
+            if (cellProgress >= 1) {
               clearInterval(intervalId)
               resolve()
             }
@@ -717,7 +721,6 @@ export const useFoundryStore = defineStore('foundry', () => {
 
         // Move Anton to the cell
         updateAntonPosition(targetPos)
-        updateAntonProgress(0)
 
         // Remove this step from the path
         setAntonPath(path.slice(i + 1))
