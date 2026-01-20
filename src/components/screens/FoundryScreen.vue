@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useFoundryStore } from '@/stores/foundry'
 import { useResourcesStore } from '@/stores/resources'
 import { GridCellType } from '@/types/foundry'
@@ -23,6 +23,18 @@ const resourcesStore = useResourcesStore()
 
 // Toggle for coordinate labels
 const showCoordinates = ref(true)
+
+// Responsive window width tracking for Anton position calculation
+const windowWidth = ref(window.innerWidth)
+function updateWindowWidth() {
+  windowWidth.value = window.innerWidth
+}
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+})
 
 // Edit mode state
 const isEditMode = ref(false)
@@ -207,6 +219,68 @@ function getCellClass(cell: GridCell): string {
 function isAntonAt(x: number, y: number): boolean {
   return foundryStore.anton.position.x === x && foundryStore.anton.position.y === y
 }
+
+/**
+ * Get Anton's pixel position for smooth animation
+ * Responsive cell sizes: 80px (desktop), 70px (tablet), 55px (mobile)
+ * Gap: 8px, Padding: 2rem (desktop) or 1rem (mobile)
+ */
+const antonPixelPosition = computed(() => {
+  // Use windowWidth.value to make this reactive to resize
+  const width = windowWidth.value
+
+  // Match CSS media query breakpoints
+  let cellSize: number
+  let padding: number
+
+  if (width <= 768) {
+    cellSize = 55
+    padding = 16 // 1rem
+  } else if (width <= 1024) {
+    cellSize = 70
+    padding = 32 // 2rem
+  } else {
+    cellSize = 80
+    padding = 32 // 2rem
+  }
+
+  const gap = 8
+  const x = padding + foundryStore.anton.position.x * (cellSize + gap)
+  const y = padding + foundryStore.anton.position.y * (cellSize + gap)
+  return { x, y }
+})
+
+/**
+ * Check if a cell is adjacent to the supply bin
+ */
+function isCellAdjacentToSupplyBin(x: number, y: number): boolean {
+  const binPos = foundryStore.supplyBinPosition
+  if (!binPos) return false
+  const dx = Math.abs(x - binPos.x)
+  const dy = Math.abs(y - binPos.y)
+  return (dx === 1 && dy === 0) || (dx === 0 && dy === 1)
+}
+
+/**
+ * Check if a cell is adjacent to the anvil
+ */
+function isCellAdjacentToAnvil(x: number, y: number): boolean {
+  const anvilPos = foundryStore.anvilPosition
+  if (!anvilPos) return false
+  const dx = Math.abs(x - anvilPos.x)
+  const dy = Math.abs(y - anvilPos.y)
+  return (dx === 1 && dy === 0) || (dx === 0 && dy === 1)
+}
+
+/**
+ * Check if Anton is currently at a cell adjacent to supply bin
+ */
+const isAntonAdjacentToSupplyBin = computed(() => foundryStore.isAdjacentToSupplyBin)
+
+/**
+ * Check if Anton is currently at a cell adjacent to anvil
+ */
+const isAntonAdjacentToAnvil = computed(() => foundryStore.isAdjacentToAnvil)
 
 /**
  * Toggle edit mode
@@ -492,6 +566,10 @@ function getCellFeedbackClass(cell: GridCell): string | null {
                     'cell-selected': isCellSelected(cell),
                     'cell-placement-target': isValidPlacementTarget(cell),
                     'cell-editable': isEditMode && (cell.type === GridCellType.SupplyBin || cell.type === GridCellType.Anvil),
+                    'cell-adjacent-supply': isAntonAdjacentToSupplyBin && isCellAdjacentToSupplyBin(cell.x, cell.y) && isAntonAt(cell.x, cell.y),
+                    'cell-adjacent-anvil': isAntonAdjacentToAnvil && isCellAdjacentToAnvil(cell.x, cell.y) && isAntonAt(cell.x, cell.y),
+                    'cell-highlight-supply': isAntonAdjacentToSupplyBin && cell.type === GridCellType.SupplyBin,
+                    'cell-highlight-anvil': isAntonAdjacentToAnvil && cell.type === GridCellType.Anvil,
                   },
                   getCellFeedbackClass(cell)
                 ]"
@@ -499,12 +577,6 @@ function getCellFeedbackClass(cell: GridCell): string | null {
               >
                 <!-- Cell Icon (Supply Bin, Anvil, etc.) -->
                 <span v-if="getCellIcon(cell)" class="cell-icon">{{ getCellIcon(cell) }}</span>
-
-                <!-- Anton's Position -->
-                <div v-if="isAntonAt(cell.x, cell.y)" class="anton-marker">
-                  <span class="anton-icon">👷</span>
-                  <span class="anton-label">Anton</span>
-                </div>
 
                 <!-- Coordinate Labels -->
                 <span v-if="showCoordinates" class="cell-coordinates">({{ cell.x }},{{ cell.y }})</span>
@@ -514,6 +586,17 @@ function getCellFeedbackClass(cell: GridCell): string | null {
                   <span class="preview-icon">{{ selectedItem === 'supplyBin' ? '📦' : '🔨' }}</span>
                 </div>
               </div>
+            </div>
+
+            <!-- Anton Overlay - Positioned absolutely for smooth animation -->
+            <div
+              class="anton-overlay"
+              :style="{
+                transform: `translate(${antonPixelPosition.x}px, ${antonPixelPosition.y}px)`
+              }"
+            >
+              <span class="anton-icon">👷</span>
+              <span class="anton-label">Anton</span>
             </div>
           </div>
 
@@ -852,6 +935,7 @@ function getCellFeedbackClass(cell: GridCell): string | null {
   flex-direction: column;
   gap: 8px;
   align-self: center;
+  position: relative;
 }
 
 .grid-row {
@@ -870,6 +954,7 @@ function getCellFeedbackClass(cell: GridCell): string | null {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Cell Type Styles */
@@ -901,31 +986,74 @@ function getCellFeedbackClass(cell: GridCell): string | null {
   z-index: 1;
 }
 
-/* Anton Marker */
-.anton-marker {
+/* Anton Overlay - Positioned absolutely for smooth movement animation */
+.anton-overlay {
   position: absolute;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  z-index: 20;
   pointer-events: none;
+  transition: transform 1s ease-in-out;
+  box-sizing: border-box;
 }
 
-.anton-icon {
+/* Anton Icon - Centered in the cell */
+.anton-overlay .anton-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 2rem;
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-.anton-label {
+/* Anton Label - Positioned at bottom center */
+.anton-overlay .anton-label {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.75);
   color: white;
   padding: 0.125rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Adjacent Cell Highlighting */
+.cell-highlight-supply {
+  box-shadow: 0 0 12px 4px rgba(59, 130, 246, 0.5) !important;
+  border-color: #3b82f6 !important;
+  animation: glow-supply 1.5s ease-in-out infinite;
+}
+
+.cell-highlight-anvil {
+  box-shadow: 0 0 12px 4px rgba(245, 158, 11, 0.5) !important;
+  border-color: #f59e0b !important;
+  animation: glow-anvil 1.5s ease-in-out infinite;
+}
+
+@keyframes glow-supply {
+  0%, 100% {
+    box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px 6px rgba(59, 130, 246, 0.6);
+  }
+}
+
+@keyframes glow-anvil {
+  0%, 100% {
+    box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px 6px rgba(245, 158, 11, 0.6);
+  }
 }
 
 /* Coordinate Labels */
@@ -1529,7 +1657,12 @@ function getCellFeedbackClass(cell: GridCell): string | null {
     font-size: 2rem;
   }
 
-  .anton-icon {
+  .anton-overlay {
+    width: 70px;
+    height: 70px;
+  }
+
+  .anton-overlay .anton-icon {
     font-size: 1.75rem;
   }
 }
@@ -1572,12 +1705,18 @@ function getCellFeedbackClass(cell: GridCell): string | null {
     font-size: 1.5rem;
   }
 
-  .anton-icon {
+  .anton-overlay {
+    width: 55px;
+    height: 55px;
+  }
+
+  .anton-overlay .anton-icon {
     font-size: 1.5rem;
   }
 
-  .anton-label {
-    font-size: 0.6rem;
+  .anton-overlay .anton-label {
+    font-size: 0.55rem;
+    bottom: 1px;
   }
 
   .cell-coordinates {
