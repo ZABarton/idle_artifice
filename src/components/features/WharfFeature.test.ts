@@ -11,7 +11,7 @@ describe('WharfFeature', () => {
     it('renders description text', () => {
       const wrapper = mount(WharfFeature)
 
-      expect(wrapper.text()).toContain('Manage ship departures and arrivals')
+      expect(wrapper.text()).toContain('Manage ship departures, arrivals, and cargo operations')
     })
 
     it('renders open wharf button', () => {
