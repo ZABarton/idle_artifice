@@ -1372,6 +1372,16 @@ export const useFoundryStore = defineStore('foundry', () => {
           gridState.value.anton.actionStartTime = null
           gridState.value.anton.actionProgress = 0
           // For offline, we skip movement time - assume instant movement
+          // Update position to be adjacent to anvil
+          const anvilPos = anvilPosition.value
+          if (anvilPos) {
+            const adjacentCell = findAdjacentWalkableCell(grid.value, anvilPos)
+            if (adjacentCell) {
+              gridState.value.anton.position = { ...adjacentCell }
+            }
+          }
+          // Clear the path since movement is complete
+          gridState.value.anton.path = []
           gridState.value.anton.currentAction = 'crafting'
           gridState.value.anton.actionStartTime = now - elapsedMs
         } else {
@@ -1409,6 +1419,14 @@ export const useFoundryStore = defineStore('foundry', () => {
                 gridState.value.currentQueueIndex = i
                 gridState.value.craftingQueue[i].status = 'in-progress'
                 gridState.value.anton.currentRecipeId = queue[i].recipeId
+                // Update position to be adjacent to supply bin (skipping movement)
+                const binPos = supplyBinPosition.value
+                if (binPos) {
+                  const adjacentCell = findAdjacentWalkableCell(grid.value, binPos)
+                  if (adjacentCell) {
+                    gridState.value.anton.position = { ...adjacentCell }
+                  }
+                }
                 gridState.value.anton.currentAction = 'gathering'
                 gridState.value.anton.actionStartTime = now - elapsedMs
                 foundNext = true
@@ -1426,13 +1444,89 @@ export const useFoundryStore = defineStore('foundry', () => {
           break
         }
       } else if (currentAction === 'movingToSupplyBin' || currentAction === 'movingToAnvil') {
-        // For offline, we skip movement - assume instant
-        if (currentAction === 'movingToSupplyBin') {
-          gridState.value.anton.currentAction = 'gathering'
-          gridState.value.anton.actionStartTime = now - elapsedMs
+        // For offline progress, calculate movement time based on path length
+        // Movement takes 1 second per cell
+        const pathLength = gridState.value.anton.path.length
+        let movementTimeMs = pathLength * FOUNDRY_CONSTANTS.MOVE_TIME_PER_CELL * 1000
+
+        // If no path is stored, calculate it now to determine movement time
+        if (pathLength === 0) {
+          const targetPos = currentAction === 'movingToSupplyBin'
+            ? supplyBinPosition.value
+            : anvilPosition.value
+
+          if (targetPos) {
+            const adjacentCell = findClosestAdjacentWalkableCell(
+              grid.value,
+              targetPos,
+              anton.value.position
+            )
+            if (adjacentCell) {
+              const calculatedPath = findPath(anton.value.position, adjacentCell)
+              movementTimeMs = calculatedPath.length * FOUNDRY_CONSTANTS.MOVE_TIME_PER_CELL * 1000
+            }
+          }
+        }
+
+        if (elapsedMs >= movementTimeMs) {
+          // Movement complete - consume the time and transition to next state
+          elapsedMs -= movementTimeMs
+
+          if (currentAction === 'movingToSupplyBin') {
+            const binPos = supplyBinPosition.value
+            if (binPos) {
+              // If Anton has a path, use the last position in the path (the destination)
+              // Otherwise, find any adjacent walkable cell
+              let adjacentCell: GridPosition | null = null
+              if (gridState.value.anton.path.length > 0) {
+                const destination = gridState.value.anton.path[gridState.value.anton.path.length - 1]
+                // Verify it's still walkable and adjacent
+                if (areAdjacent(binPos, destination) && isTraversable(grid.value[destination.y]?.[destination.x])) {
+                  adjacentCell = destination
+                }
+              }
+              // Fallback to finding any adjacent cell
+              if (!adjacentCell) {
+                adjacentCell = findAdjacentWalkableCell(grid.value, binPos)
+              }
+              if (adjacentCell) {
+                gridState.value.anton.position = { ...adjacentCell }
+              }
+            }
+            // Clear the path since movement is complete
+            gridState.value.anton.path = []
+            gridState.value.anton.currentAction = 'gathering'
+            gridState.value.anton.actionStartTime = now - elapsedMs
+          } else {
+            const anvilPos = anvilPosition.value
+            if (anvilPos) {
+              // If Anton has a path, use the last position in the path (the destination)
+              // Otherwise, find any adjacent walkable cell
+              let adjacentCell: GridPosition | null = null
+              if (gridState.value.anton.path.length > 0) {
+                const destination = gridState.value.anton.path[gridState.value.anton.path.length - 1]
+                // Verify it's still walkable and adjacent
+                if (areAdjacent(anvilPos, destination) && isTraversable(grid.value[destination.y]?.[destination.x])) {
+                  adjacentCell = destination
+                }
+              }
+              // Fallback to finding any adjacent cell
+              if (!adjacentCell) {
+                adjacentCell = findAdjacentWalkableCell(grid.value, anvilPos)
+              }
+              if (adjacentCell) {
+                gridState.value.anton.position = { ...adjacentCell }
+              }
+            }
+            // Clear the path since movement is complete
+            gridState.value.anton.path = []
+            gridState.value.anton.currentAction = 'crafting'
+            gridState.value.anton.actionStartTime = now - elapsedMs
+          }
         } else {
-          gridState.value.anton.currentAction = 'crafting'
-          gridState.value.anton.actionStartTime = now - elapsedMs
+          // Still moving - stay in this state
+          // Can't partially complete movement in offline progress, so just wait
+          break
         }
       } else if (currentAction === 'idle') {
         // Find next pending item
@@ -1444,6 +1538,14 @@ export const useFoundryStore = defineStore('foundry', () => {
               gridState.value.currentQueueIndex = i
               gridState.value.craftingQueue[i].status = 'in-progress'
               gridState.value.anton.currentRecipeId = queue[i].recipeId
+              // Update position to be adjacent to supply bin (skipping movement)
+              const binPos = supplyBinPosition.value
+              if (binPos) {
+                const adjacentCell = findAdjacentWalkableCell(grid.value, binPos)
+                if (adjacentCell) {
+                  gridState.value.anton.position = { ...adjacentCell }
+                }
+              }
               gridState.value.anton.currentAction = 'gathering'
               gridState.value.anton.actionStartTime = now - elapsedMs
               foundNext = true
@@ -1454,6 +1556,13 @@ export const useFoundryStore = defineStore('foundry', () => {
         if (!foundNext) {
           break
         }
+      } else if (currentAction === 'moving') {
+        // Generic moving state - movement was interrupted during page close
+        // Clear the path and transition to idle to let state machine figure out what to do next
+        gridState.value.anton.path = []
+        gridState.value.anton.currentAction = 'idle'
+        gridState.value.anton.actionProgress = 0
+        // Don't break - continue processing in idle state
       } else {
         // Unknown state
         break
