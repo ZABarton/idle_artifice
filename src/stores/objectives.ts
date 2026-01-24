@@ -278,6 +278,13 @@ export const useObjectivesStore = defineStore('objectives', () => {
     // Evaluate discovery conditions to potentially reveal new objectives
     evaluateDiscoveryConditions()
 
+    // Evaluate dialog triggers for this objective completion
+    // Fire-and-forget: don't block objective completion on dialog display
+    import('@/composables/useDialogTriggers').then(({ useDialogTriggers }) => {
+      const { evaluateTriggersForEvent } = useDialogTriggers()
+      evaluateTriggersForEvent('objective-complete', id)
+    })
+
     // Auto-switch to next main objective if the completed one was tracked
     if (trackedObjectiveId.value === id) {
       // Find next uncompleted main objective in order

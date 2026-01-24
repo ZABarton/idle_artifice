@@ -538,6 +538,13 @@ export const useDialogsStore = defineStore('dialogs', () => {
       objectivesStore.updateSubtask('explore-features', 'visit-tavern', true)
     }
 
+    // Evaluate dialog triggers for this dialog completion
+    // Fire-and-forget: don't block conversation cleanup on trigger evaluation
+    import('@/composables/useDialogTriggers').then(({ useDialogTriggers }) => {
+      const { evaluateTriggersForEvent } = useDialogTriggers()
+      evaluateTriggersForEvent('dialog-complete', conversationId)
+    })
+
     // Clear active conversation
     activeConversation.value = null
   }

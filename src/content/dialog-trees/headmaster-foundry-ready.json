@@ -5,13 +5,6 @@
     "path": "images/portraits/headmaster.png",
     "alt": "Gustav Torrek"
   },
-  "triggerConditions": [
-    {
-      "type": "objective",
-      "id": "explore-features",
-      "description": "Complete 'Inspect Academy Features' by visiting the Foundry"
-    }
-  ],
   "startNodeId": "start",
   "nodes": {
     "start": {

@@ -417,19 +417,13 @@ describe('useObjectivesStore', () => {
       store.objectives.find((o) => o.id === 'talk-to-headmaster')!.status = 'active'
       store.completeObjective('talk-to-headmaster')
 
-      // Complete explore-features to reveal resource-creation
+      // Complete explore-features to reveal talk-to-anton-foundry
       const exploreFeaturesObjective = store.getObjectiveById('explore-features')
       exploreFeaturesObjective!.status = 'active'
       store.completeObjective('explore-features')
 
-      const resourceCreationObjective = store.getObjectiveById('resource-creation')
-      expect(resourceCreationObjective?.status).toBe('active')
-
-      // Complete resource-creation to reveal gather-wood
-      store.completeObjective('resource-creation')
-
-      const gatherWoodObjective = store.getObjectiveById('gather-wood')
-      expect(gatherWoodObjective?.status).toBe('active')
+      const talkToAntonObjective = store.getObjectiveById('talk-to-anton-foundry')
+      expect(talkToAntonObjective?.status).toBe('active')
     })
   })
 })
