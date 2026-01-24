@@ -1,0 +1,51 @@
+{
+  "id": "headmaster-foundry-ready",
+  "characterName": "Gustav Torrek, Head Swordfellow",
+  "portrait": {
+    "path": "images/portraits/headmaster.png",
+    "alt": "Gustav Torrek"
+  },
+  "triggerConditions": [
+    {
+      "type": "objective",
+      "id": "explore-features",
+      "description": "Complete 'Inspect Academy Features' by visiting the Foundry"
+    }
+  ],
+  "startNodeId": "start",
+  "nodes": {
+    "start": {
+      "id": "start",
+      "message": "So you see, camp is in a sorry state right now, but soon enough we'll be ready to make another go of it. My men have already been moving your ship's cargo while you've been getting yourself acquainted.",
+      "responses": [
+        {
+          "text": "Anton seems nice!",
+          "nextNodeId": "about-anton"
+        },
+        {
+          "text": "Creach seems interesting!",
+          "nextNodeId": "about-creach"
+        },
+        {
+          "text": "Camille seems optimistic!",
+          "nextNodeId": "about-camille"
+        }
+      ]
+    },
+    "about-anton": {
+      "id": "about-anton",
+      "message": "Don't let the laborious nature of his work fool you. Anton's wit is as sharp as the blades his forge produces. ",
+      "responses": []
+    },
+    "about-creach": {
+      "id": "about-creach",
+      "message": "Creach is a former Swordfellow and military man through and through.",
+      "responses": []
+    },
+    "about-camille": {
+      "id": "about-camille",
+      "message": "If you've lost half the men that Camille's lost...",
+      "responses": []
+    }
+  }
+}

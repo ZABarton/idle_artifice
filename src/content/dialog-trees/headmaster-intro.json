@@ -1,9 +1,9 @@
 {
   "id": "headmaster-intro",
-  "characterName": "Headmaster Steinerhausen",
+  "characterName": "Gustav Torrek, Head Swordfellow",
   "portrait": {
     "path": "images/portraits/headmaster.png",
-    "alt": "Headmaster portrait"
+    "alt": "Gustav Torrek"
   },
   "startNodeId": "welcome",
   "nodes": {

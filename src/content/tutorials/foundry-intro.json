@@ -1,0 +1,12 @@
+{
+  "id": "foundry-intro",
+  "title": "You have unlocked The Foundry",
+  "content": "The Foundry allows you to create items for use in exploring the frontier and building up your camp. Click on the 'Enter Foundry' button to view the feature.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Triggered after completing the introductory quest"
+    }
+  ],
+  "showOnce": true
+}

@@ -1,0 +1,12 @@
+{
+  "id": "foundry-edit-layout",
+  "title": "Editing the Foundry Layout",
+  "content": "You can improve Anton's efficiency by re-arranging items in the Foundry. Try moving either the anvil or the supply bin closer together to reduce the amount of travel time Anton needs to finish the work.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Triggered after completing the first crafting recipe"
+    }
+  ],
+  "showOnce": true
+}

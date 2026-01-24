@@ -1,0 +1,12 @@
+{
+  "id": "foundry-queue",
+  "title": "Crafting Queue",
+  "content": "Available recipes are shown on the left side of the Foundry. Selecting a recipe will display the required ingredients and allow you to queue up Anton to begin working on crafting the item. You can queue multiple items to be crafted in succession.\n\nOnce Anton starts working, you can monitor the progress of each item in the crafting queue on the right side of the Foundry screen.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Triggered after entering the Foundry for the first time"
+    }
+  ],
+  "showOnce": true
+}

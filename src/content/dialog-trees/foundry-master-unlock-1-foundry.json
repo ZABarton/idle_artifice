@@ -1,0 +1,25 @@
+{
+  "id": "foundry-master-unlock-1-foundry",
+  "characterName": "Anton DeCassieur",
+  "portrait": {
+    "path": "images/portraits/smith.png",
+    "alt": "Anton DeCassieur"
+  },
+  "startNodeId": "start",
+  "nodes": {
+    "start": {
+      "id": "start",
+      "message": "Ah! A veritable bounty of materials has arrived! Come, and watch the master at work! Watch the wonders of creation!",
+      "responses": [
+        {
+          "text": "Indeed!",
+          "nextNodeId": null
+        },
+        {
+          "text": "Okay...",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

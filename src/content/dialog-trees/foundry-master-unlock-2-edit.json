@@ -1,0 +1,21 @@
+{
+  "id": "foundry-master-unlock-2-edit",
+  "characterName": "Anton DeCassieur",
+  "portrait": {
+    "path": "images/portraits/smith.png",
+    "alt": "Anton DeCassieur"
+  },
+  "startNodeId": "start",
+  "nodes": {
+    "start": {
+      "id": "start",
+      "message": "It's been so long since I've worked with fresh steel! Ah hah! So invigorating. I must continue - but this workshop should be straightened up so that I may devote myself to my craft. Come, help me bring those supplies closer!",
+      "responses": [
+        {
+          "text": "Sure thing!",
+          "nextNodeId": null
+        }
+      ]
+    }
+  }
+}

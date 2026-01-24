@@ -78,9 +78,9 @@
       ]
     },
     {
-      "id": "resource-creation",
-      "title": "Resource Generation",
-      "description": "Learn about generating resources for your Academy.",
+      "id": "talk-to-anton-foundry",
+      "title": "Learn More About the Foundry from Anton",
+      "description": "Learn how to use the Foundry to craft equipment and supplies for Camp Sagora.",
       "status": "hidden",
       "category": "main",
       "order": 5,
