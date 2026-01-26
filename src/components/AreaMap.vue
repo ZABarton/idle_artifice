@@ -338,7 +338,8 @@ const getNPCIndicatorDisplays = (feature: Feature) => {
     component: markRaw(NPCIndicator),
     props: {
       npcName: npc.name,
-      icon: npc.icon || '💬',
+      portraitPath: npc.portrait.path,
+      portraitAlt: npc.portrait.alt,
       hasAvailableConversation: isNPCConversationAvailable(npc),
       showBadge: isNPCConversationAvailable(npc),
       badgeText: '!',
@@ -424,27 +425,25 @@ const handleFeatureExpandToggle = (feature: Feature) => {
           @click="handleFeatureClick"
           @toggle-expand="handleFeatureExpandToggle"
         >
-          <!-- Minimized view: Speech bubble indicator + NPC indicators + display components from config -->
+          <!-- Minimized view: NPC indicators + display components from config -->
           <template #minimized>
             <div
               v-if="
-                hasNewConversations(feature) ||
                 getNPCIndicatorDisplays(feature).length > 0 ||
                 getMinimizedDisplays(feature).length > 0
               "
               class="minimized-displays-container"
             >
-              <!-- Speech bubble indicator (shown when there are new conversations) -->
-              <div v-if="hasNewConversations(feature)" class="conversation-indicator">💬</div>
-
-              <!-- NPC Indicators (auto-generated from feature.npcs) -->
-              <component
-                :is="npcDisplay.component"
-                v-for="npcDisplay in getNPCIndicatorDisplays(feature)"
-                :key="`npc-${npcDisplay.npcId}`"
-                v-bind="npcDisplay.props"
-                @npc-click="handleNPCClick(npcDisplay.npcId, npcDisplay.featureId)"
-              />
+              <!-- NPC Indicators (portraits with names) -->
+              <div v-if="getNPCIndicatorDisplays(feature).length > 0" class="npc-row">
+                <component
+                  :is="npcDisplay.component"
+                  v-for="npcDisplay in getNPCIndicatorDisplays(feature)"
+                  :key="`npc-${npcDisplay.npcId}`"
+                  v-bind="npcDisplay.props"
+                  @npc-click="handleNPCClick(npcDisplay.npcId, npcDisplay.featureId)"
+                />
+              </div>
 
               <!-- Other display components from config -->
               <component
@@ -456,14 +455,28 @@ const handleFeatureExpandToggle = (feature: Feature) => {
             </div>
           </template>
 
-          <!-- Expanded view: dynamic feature component from config -->
-          <component
-            :is="getFeatureComponent(feature)"
-            :feature="feature"
-            :feature-config="getFeatureConfig(feature)"
-            @navigate="handleFeatureNavigate(feature.id)"
-            @npc-click="(npcId: string) => handleNPCClick(npcId, feature.id)"
-          />
+          <!-- Expanded view: NPC indicators + dynamic feature component from config -->
+          <div class="expanded-content">
+            <!-- NPC Indicators (portraits with names) - shown in expanded view too -->
+            <div v-if="getNPCIndicatorDisplays(feature).length > 0" class="npc-row">
+              <component
+                :is="npcDisplay.component"
+                v-for="npcDisplay in getNPCIndicatorDisplays(feature)"
+                :key="`npc-expanded-${npcDisplay.npcId}`"
+                v-bind="npcDisplay.props"
+                @npc-click="handleNPCClick(npcDisplay.npcId, npcDisplay.featureId)"
+              />
+            </div>
+
+            <!-- Feature component content -->
+            <component
+              :is="getFeatureComponent(feature)"
+              :feature="feature"
+              :feature-config="getFeatureConfig(feature)"
+              @navigate="handleFeatureNavigate(feature.id)"
+              @npc-click="(npcId: string) => handleNPCClick(npcId, feature.id)"
+            />
+          </div>
         </FeatureCard>
       </div>
     </div>
@@ -565,17 +578,25 @@ const handleFeatureExpandToggle = (feature: Feature) => {
 .minimized-displays-container {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
   width: 100%;
 }
 
-/* Conversation Indicator */
-.conversation-indicator {
-  font-size: 1.25rem;
-  text-align: center;
-  padding: 0.25rem;
-  pointer-events: none;
-  user-select: none;
+/* NPC Row - horizontal layout for NPC portraits */
+.npc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+/* Expanded Content Container */
+.expanded-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
 }
 
 .area-map-header__close {
