@@ -1085,7 +1085,7 @@ describe('dialogs store', () => {
 
       expect(tree).not.toBeNull()
       expect(tree?.id).toBe('headmaster-intro')
-      expect(tree?.characterName).toBe('Headmaster Steinerhausen')
+      expect(tree?.characterName).toBe('Gustav Torrek, Head Swordfellow')
       expect(tree?.startNodeId).toBe('welcome')
     })
 

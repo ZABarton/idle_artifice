@@ -76,6 +76,7 @@ export const academyConfig: AreaMapConfig = {
             featureId: 'academy-foundry',
             icon: '🔨',
             variant: 'primary',
+            disabled: true,
           },
         },
       ],

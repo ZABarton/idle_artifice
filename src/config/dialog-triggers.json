@@ -1,0 +1,25 @@
+{
+  "triggers": [
+    {
+      "id": "headmaster-foundry-ready",
+      "dialogTreeId": "headmaster-foundry-ready",
+      "conditions": [
+        { "type": "objective-complete", "id": "explore-features" },
+        { "type": "dialog-complete", "id": "foundry-master-intro" },
+        { "type": "dialog-complete", "id": "quartermaster-intro" },
+        { "type": "dialog-complete", "id": "tavern-keeper-intro" }
+      ],
+      "priority": 10,
+      "description": "Headmaster explains Foundry is ready after all three NPC dialogs complete"
+    },
+    {
+      "id": "anton-efficiency-prompt",
+      "dialogTreeId": "anton-efficiency",
+      "conditions": [
+        { "type": "craft-complete", "value": 1, "operator": "eq" }
+      ],
+      "priority": 10,
+      "description": "Anton comments on inefficiency after first craft"
+    }
+  ]
+}

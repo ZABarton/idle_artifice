@@ -136,6 +136,13 @@ This is a Vue.js project designed to run in a web browser. See Vue.js style guid
 - Component structure should remain router-compatible (use props/emits appropriately)
 - View state managed through Pinia store
 
+**Data-Driven Design**
+- Prefer configuration over code for game content and behavior
+- Handlers (stores, composables) should be abstract executors, not contain branching logic for specific content
+- Event responses (dialog completion, triggers, etc.) should be defined in config files or content JSON, not hardcoded in handlers
+- This keeps content authoring separate from code and allows non-code changes for game tuning
+- Examples: dialog trees define `onComplete` actions, triggers define conditions and actions in JSON
+
 ## Core Components
 
 ### World Map
