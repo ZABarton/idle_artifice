@@ -55,7 +55,7 @@ export const academyConfig: AreaMapConfig = {
             path: 'images/portraits/smith.png',
             alt: 'Anton DeCassieur, the Foundry Master',
           },
-          dialogTreeId: 'foundry-master-unlock',
+          dialogTreeId: 'foundry-master-intro',
           fallbackDialogTreeId: 'foundry-master-tips',
           icon: '🔨',
         },
