@@ -77,7 +77,7 @@ import NPCIndicator from '@/components/displays/NPCIndicator.vue'
 <template>
   <!-- NPC with available conversation -->
   <NPCIndicator
-    npc-name="Quartermaster Jones"
+    npc-name="Theodore Creach"
     icon="🧙"
     :has-available-conversation="true"
     :show-badge="true"

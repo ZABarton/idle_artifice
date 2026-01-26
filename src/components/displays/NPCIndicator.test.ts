@@ -7,11 +7,11 @@ describe('NPCIndicator', () => {
     it('renders NPC name and default icon', () => {
       const wrapper = mount(NPCIndicator, {
         props: {
-          npcName: 'Quartermaster Jones',
+          npcName: 'Theodore Creach',
         },
       })
 
-      expect(wrapper.find('.npc-name').text()).toBe('Quartermaster Jones')
+      expect(wrapper.find('.npc-name').text()).toBe('Theodore Creach')
       expect(wrapper.find('.npc-icon').text()).toBe('💬')
     })
 
