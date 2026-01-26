@@ -48,7 +48,7 @@ const handleClick = (event: MouseEvent) => {
     class="npc-indicator"
     :class="{
       available: hasAvailableConversation,
-      clickable: !!npcId
+      clickable: !!npcId,
     }"
     @click="handleClick"
   >

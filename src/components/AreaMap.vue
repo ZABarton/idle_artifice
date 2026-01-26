@@ -7,11 +7,15 @@ import { useDialogsStore } from '@/stores/dialogs'
 import { useObjectivesStore } from '@/stores/objectives'
 import { useResourcesStore } from '@/stores/resources'
 import { useNotificationsStore } from '@/stores/notifications'
+import { useNPCLocationsStore } from '@/stores/npcLocations'
 import FeatureCard from './FeatureCard.vue'
 import NPCIndicator from '@/components/displays/NPCIndicator.vue'
 import type { Feature } from '@/types/feature'
 import type { AreaMapConfig, NPCConfig } from '@/types/areaMapConfig'
+import type { NPCConfig as CentralizedNPCConfig } from '@/types/npc'
 import { getAreaConfigByCoords, getActiveLayout } from '@/config/area-maps'
+import { getNPCById } from '@/config/npcs'
+import { useNPCDialog } from '@/composables/useNPCDialog'
 import { executeTriggers, createTriggerContext } from '@/services/areaTriggers'
 
 /**
@@ -39,6 +43,8 @@ const dialogsStore = useDialogsStore()
 const objectivesStore = useObjectivesStore()
 const resourcesStore = useResourcesStore()
 const notificationsStore = useNotificationsStore()
+const npcLocationsStore = useNPCLocationsStore()
+const { hasAvailableProgressionDialog, initiateNPCDialog } = useNPCDialog()
 
 // Get the tile data for this area
 const tile = computed(() => worldMapStore.getTileAt(props.q, props.r))
@@ -191,44 +197,121 @@ const getMinimizedDisplays = (feature: Feature) => {
   return featureConfig?.minimizedDisplays ?? []
 }
 
-// Get NPCs from feature config
-const getNPCs = (feature: Feature): NPCConfig[] => {
+/**
+ * Unified NPC type for internal use
+ * Combines fields from both legacy NPCConfig and centralized NPCConfig
+ */
+interface UnifiedNPC {
+  id: string
+  name: string
+  icon: string
+  portrait: { path: string | null; alt: string }
+  // Legacy fields for backward compatibility
+  dialogTreeId?: string
+  fallbackDialogTreeId?: string
+  // Flag to indicate which system this NPC uses
+  useCentralizedSystem: boolean
+}
+
+/**
+ * Convert a centralized NPC config to unified format
+ */
+function convertCentralizedNPC(npc: CentralizedNPCConfig): UnifiedNPC {
+  return {
+    id: npc.id,
+    name: npc.name,
+    icon: npc.icon,
+    portrait: npc.portrait,
+    useCentralizedSystem: true,
+  }
+}
+
+/**
+ * Convert a legacy NPC config to unified format
+ */
+function convertLegacyNPC(npc: NPCConfig): UnifiedNPC {
+  return {
+    id: npc.id,
+    name: npc.name,
+    icon: npc.icon || '💬',
+    portrait: npc.portrait,
+    dialogTreeId: npc.dialogTreeId,
+    fallbackDialogTreeId: npc.fallbackDialogTreeId,
+    useCentralizedSystem: false,
+  }
+}
+
+// Get NPCs from feature config (supports both new npcIds and legacy npcs patterns)
+const getNPCs = (feature: Feature): UnifiedNPC[] => {
   if (!areaConfig.value) return []
 
   const featureConfig = areaConfig.value.features.find((f) => f.id === feature.id)
-  return featureConfig?.npcs ?? []
+  if (!featureConfig) return []
+
+  // New pattern: use npcIds with centralized registry and location filtering
+  if (featureConfig.npcIds && featureConfig.npcIds.length > 0) {
+    return featureConfig.npcIds
+      .filter((npcId) => npcLocationsStore.isNPCAtFeature(npcId, feature.id))
+      .map((npcId) => getNPCById(npcId))
+      .filter((npc): npc is CentralizedNPCConfig => npc !== undefined)
+      .map(convertCentralizedNPC)
+  }
+
+  // Legacy pattern: use inline npcs array
+  if (featureConfig.npcs && featureConfig.npcs.length > 0) {
+    return featureConfig.npcs.map(convertLegacyNPC)
+  }
+
+  return []
 }
 
-// Check if NPC conversation is available (not completed)
-const isNPCConversationAvailable = (npc: NPCConfig): boolean => {
-  return !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
+// Check if NPC has available progression dialog (shows indicator)
+const isNPCConversationAvailable = (npc: UnifiedNPC): boolean => {
+  if (npc.useCentralizedSystem) {
+    // New system: use dialog progression logic
+    return hasAvailableProgressionDialog(npc.id)
+  }
+  // Legacy system: check if primary dialog is completed
+  return npc.dialogTreeId ? !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId) : false
 }
 
 // Handle NPC click - trigger dialog
 const handleNPCClick = async (npcId: string, featureId: string) => {
   if (!areaConfig.value) return
 
-  // Find the NPC config
-  const featureConfig = areaConfig.value.features.find((f) => f.id === featureId)
-  const npc = featureConfig?.npcs?.find((n) => n.id === npcId)
+  // Find the NPC in the unified list
+  const feature = features.value.find((f) => f.id === featureId)
+  if (!feature) {
+    console.error(`Feature ${featureId} not found`)
+    return
+  }
+
+  const npcs = getNPCs(feature)
+  const npc = npcs.find((n) => n.id === npcId)
 
   if (!npc) {
     console.error(`NPC ${npcId} not found in feature ${featureId}`)
     return
   }
 
-  // Check if this is a new conversation (not completed yet)
-  const isNewConversation = !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
+  // Check if this is a new conversation (for objective tracking)
+  const isNewConversation = isNPCConversationAvailable(npc)
 
-  // Determine which dialog tree to show
-  // If primary dialog is completed and fallback exists, show fallback
-  // Otherwise, show primary dialog
-  const hasPrimaryDialog = !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
-  const dialogTreeId =
-    hasPrimaryDialog || !npc.fallbackDialogTreeId ? npc.dialogTreeId : npc.fallbackDialogTreeId
+  if (npc.useCentralizedSystem) {
+    // New system: use dialog progression logic
+    await initiateNPCDialog(npcId)
+  } else {
+    // Legacy system: use dialogTreeId / fallbackDialogTreeId
+    const hasPrimaryDialog = npc.dialogTreeId
+      ? !dialogsStore.hasCompletedDialogTree(npc.dialogTreeId)
+      : false
+    const dialogTreeId =
+      hasPrimaryDialog || !npc.fallbackDialogTreeId ? npc.dialogTreeId : npc.fallbackDialogTreeId
 
-  // Show dialog tree
-  await dialogsStore.showDialogTree(dialogTreeId)
+    if (dialogTreeId) {
+      await dialogsStore.showDialogTree(dialogTreeId)
+    }
+  }
 
   // If this was a new conversation, check for and complete any related objectives
   if (isNewConversation) {
@@ -325,11 +408,7 @@ const handleFeatureExpandToggle = (feature: Feature) => {
   <div class="area-map-container" :style="{ backgroundColor }">
     <!-- Header Bar -->
     <header class="area-map-header">
-      <button
-        class="area-map-header__close"
-        aria-label="Back"
-        @click="handleBackClick"
-      >
+      <button class="area-map-header__close" aria-label="Back" @click="handleBackClick">
         ← Back
       </button>
       <h1 class="area-map-header__title">{{ areaTitle }}</h1>

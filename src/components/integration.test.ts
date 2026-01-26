@@ -451,7 +451,7 @@ describe('Integration Tests', () => {
       // Navigate to Harbor Area Map first
       navigationStore.navigateToAreaMap(-1, 0, 'harbor')
       await wrapper.vm.$nextTick()
-      
+
       let initialButtons = statusColumn.findAll('button')
       let hasCurrentLocation = initialButtons.some((btn) => btn.text().includes('📍'))
       expect(hasCurrentLocation).toBe(true)

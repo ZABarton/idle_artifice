@@ -96,9 +96,7 @@ describe('useSaveManager', () => {
       const saveFile = saveManager.exportGameState()
 
       expect(saveFile.gameState.worldMap.hexTiles).toBeInstanceOf(Array)
-      const academyTile = saveFile.gameState.worldMap.hexTiles.find(
-        (t) => t.q === 0 && t.r === 0
-      )
+      const academyTile = saveFile.gameState.worldMap.hexTiles.find((t) => t.q === 0 && t.r === 0)
       expect(academyTile?.explorationStatus).toBe('explored')
     })
 

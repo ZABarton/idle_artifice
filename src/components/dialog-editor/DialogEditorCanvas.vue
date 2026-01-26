@@ -168,17 +168,17 @@ onMounted(() => {
       :edges="edges"
       :node-types="{ dialogNode: DialogTreeNode as any }"
       :edge-types="{ responseEdge: ResponseEdge as any }"
-      @node-drag-stop="handleNodeDragStop"
       fit-view-on-init
       :default-viewport="{ zoom: 0.8 }"
+      @node-drag-stop="handleNodeDragStop"
     >
       <Background pattern-color="#ddd" :gap="16" />
       <Controls />
       <MiniMap />
 
       <Panel position="top-right" class="controls-panel">
-        <button @click="performAutoLayout" class="panel-btn">Auto Layout</button>
-        <button @click="handleAddNode" class="panel-btn">Add Node</button>
+        <button class="panel-btn" @click="performAutoLayout">Auto Layout</button>
+        <button class="panel-btn" @click="handleAddNode">Add Node</button>
       </Panel>
     </VueFlow>
   </div>

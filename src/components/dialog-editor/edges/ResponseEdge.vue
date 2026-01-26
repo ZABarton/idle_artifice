@@ -3,10 +3,12 @@ import { computed } from 'vue'
 import { EdgeLabelRenderer, getBezierPath } from '@vue-flow/core'
 import type { EdgeProps } from '@vue-flow/core'
 
-const props = defineProps<EdgeProps<{
-  responseText: string
-  responseIndex: number
-}>>()
+const props = defineProps<
+  EdgeProps<{
+    responseText: string
+    responseIndex: number
+  }>
+>()
 
 const path = computed(() => {
   const [edgePath] = getBezierPath({

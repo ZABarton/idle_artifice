@@ -21,7 +21,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   variant: 'primary',
-  disabled: false
+  disabled: false,
 })
 
 const navigationStore = useNavigationStore()
@@ -34,7 +34,12 @@ const handleClick = (event: MouseEvent) => {
 </script>
 
 <template>
-  <button class="navigation-button" :class="[`navigation-button--${variant}`,{ 'navigation-button--disabled': disabled }]" :disabled="disabled" @click="handleClick">
+  <button
+    class="navigation-button"
+    :class="[`navigation-button--${variant}`, { 'navigation-button--disabled': disabled }]"
+    :disabled="disabled"
+    @click="handleClick"
+  >
     <span v-if="icon" class="navigation-button__icon">{{ icon }}</span>
     <span class="navigation-button__label">{{ label }}</span>
   </button>

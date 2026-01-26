@@ -1,11 +1,4 @@
-import {
-  defineHex,
-  Grid,
-  distance,
-  neighborOf,
-  Direction,
-  Orientation,
-} from 'honeycomb-grid'
+import { defineHex, Grid, distance, neighborOf, Direction, Orientation } from 'honeycomb-grid'
 import type { HexTile } from '@/types/hex'
 
 /**

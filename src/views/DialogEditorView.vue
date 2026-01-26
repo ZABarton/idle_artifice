@@ -150,14 +150,14 @@ onBeforeUnmount(() => {
         <span v-if="store.isDirty" class="dirty-indicator">*</span>
       </div>
       <div class="header-actions">
-        <button @click="handlePreview" :disabled="!store.activeTree" class="btn-preview">
+        <button :disabled="!store.activeTree" class="btn-preview" @click="handlePreview">
           Preview
         </button>
-        <button @click="handleSave" :disabled="isSaving || !store.activeTree" class="btn-save">
+        <button :disabled="isSaving || !store.activeTree" class="btn-save" @click="handleSave">
           {{ isSaving ? 'Saving...' : 'Save' }}
         </button>
-        <button @click="handleExport" class="btn-export">Export JSON</button>
-        <button @click="handleBackToGame" class="btn-back">Back to Game</button>
+        <button class="btn-export" @click="handleExport">Export JSON</button>
+        <button class="btn-back" @click="handleBackToGame">Back to Game</button>
       </div>
     </header>
 
@@ -193,13 +193,17 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="showUnsavedChangesModal" class="modal-overlay" @click="showUnsavedChangesModal = false">
+    <div
+      v-if="showUnsavedChangesModal"
+      class="modal-overlay"
+      @click="showUnsavedChangesModal = false"
+    >
       <div class="modal-content" @click.stop>
         <h2>Unsaved Changes</h2>
         <p>You have unsaved changes. Are you sure you want to leave?</p>
         <div class="modal-actions">
-          <button @click="showUnsavedChangesModal = false" class="btn-cancel">Cancel</button>
-          <button @click="confirmLeave" class="btn-danger">Discard Changes</button>
+          <button class="btn-cancel" @click="showUnsavedChangesModal = false">Cancel</button>
+          <button class="btn-danger" @click="confirmLeave">Discard Changes</button>
         </div>
       </div>
     </div>
@@ -209,7 +213,7 @@ onBeforeUnmount(() => {
         <h2>Save Successful</h2>
         <p>{{ saveMessage }}</p>
         <p class="success-note">The dialog tree has been updated in your project files.</p>
-        <button @click="showSaveSuccessModal = false" class="btn-primary">OK</button>
+        <button class="btn-primary" @click="showSaveSuccessModal = false">OK</button>
       </div>
     </div>
 

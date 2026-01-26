@@ -180,7 +180,10 @@ onMounted(() => {
               title="On expedition"
               >●</span
             >
-            <span v-else-if="explorer.status === 'resting'" class="status-badge resting" title="Resting"
+            <span
+              v-else-if="explorer.status === 'resting'"
+              class="status-badge resting"
+              title="Resting"
               >●</span
             >
           </div>
@@ -192,7 +195,11 @@ onMounted(() => {
     <div v-if="mockRecentExpeditions.length > 0" class="section">
       <h4 class="section-title">Recent Expeditions</h4>
       <div class="expeditions-list">
-        <div v-for="(expedition, index) in mockRecentExpeditions" :key="index" class="expedition-item">
+        <div
+          v-for="(expedition, index) in mockRecentExpeditions"
+          :key="index"
+          class="expedition-item"
+        >
           <span class="expedition-icon">✓</span>
           <div class="expedition-details">
             <div class="expedition-explorer">{{ expedition.explorer }}</div>

@@ -31,10 +31,7 @@ const handleClick = (event: MouseEvent) => {
 </script>
 
 <template>
-  <div
-    class="npc-portrait clickable"
-    @click="handleClick"
-  >
+  <div class="npc-portrait clickable" @click="handleClick">
     <div class="portrait-frame">
       <img
         v-if="npc.portrait.path"
@@ -45,7 +42,11 @@ const handleClick = (event: MouseEvent) => {
       <div v-else class="portrait-placeholder">
         <span class="placeholder-icon">{{ npc.icon || '💬' }}</span>
       </div>
-      <div v-if="hasAvailableConversation" class="conversation-badge" title="Conversation available">
+      <div
+        v-if="hasAvailableConversation"
+        class="conversation-badge"
+        title="Conversation available"
+      >
         💬
       </div>
     </div>

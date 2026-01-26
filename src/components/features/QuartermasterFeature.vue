@@ -131,9 +131,7 @@ onMounted(() => {
     </div>
 
     <div class="actions">
-      <button class="action-button primary" @click="handleRequestSupplies">
-        Request Supplies
-      </button>
+      <button class="action-button primary" @click="handleRequestSupplies">Request Supplies</button>
       <button class="action-button secondary" @click="handleTalkToQuartermaster">
         Talk to Quartermaster
       </button>

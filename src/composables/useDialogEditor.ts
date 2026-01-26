@@ -15,9 +15,7 @@ export function autoLayoutNodes(tree: DialogTree): Map<string, NodePosition> {
 
   // BFS from start node to assign levels
   const levels: string[][] = []
-  const queue: Array<{ nodeId: string; level: number }> = [
-    { nodeId: tree.startNodeId, level: 0 },
-  ]
+  const queue: Array<{ nodeId: string; level: number }> = [{ nodeId: tree.startNodeId, level: 0 }]
 
   while (queue.length > 0) {
     const { nodeId, level } = queue.shift()!

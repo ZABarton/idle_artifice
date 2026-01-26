@@ -278,7 +278,15 @@ onUnmounted(() => {
         <!-- Academy icon: Building with triangular roof -->
         <symbol id="academy-icon" viewBox="0 0 24 24">
           <!-- Building base (rectangle) -->
-          <rect x="6" y="10" width="12" height="10" fill="#8B4513" stroke="#5D2E0F" stroke-width="0.5" />
+          <rect
+            x="6"
+            y="10"
+            width="12"
+            height="10"
+            fill="#8B4513"
+            stroke="#5D2E0F"
+            stroke-width="0.5"
+          />
           <!-- Roof (triangle) -->
           <path d="M 4 10 L 12 4 L 20 10 Z" fill="#A0522D" stroke="#5D2E0F" stroke-width="0.5" />
           <!-- Door -->
@@ -358,7 +366,14 @@ onUnmounted(() => {
       >
         <g v-if="hexesWithActiveObjectives.has(`${hex.tile.q},${hex.tile.r}`)">
           <!-- Yellow circle background -->
-          <circle :cx="hex.center.x" :cy="hex.center.y - 15" r="8" fill="#FFD700" stroke="#DAA520" stroke-width="1" />
+          <circle
+            :cx="hex.center.x"
+            :cy="hex.center.y - 15"
+            r="8"
+            fill="#FFD700"
+            stroke="#DAA520"
+            stroke-width="1"
+          />
           <!-- Exclamation mark -->
           <text
             :x="hex.center.x"

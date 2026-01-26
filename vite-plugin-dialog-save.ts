@@ -51,11 +51,7 @@ export function dialogSavePlugin(): Plugin {
             }
 
             // Write file to disk
-            const filePath = resolve(
-              process.cwd(),
-              'src/content/dialog-trees',
-              `${treeId}.json`
-            )
+            const filePath = resolve(process.cwd(), 'src/content/dialog-trees', `${treeId}.json`)
 
             await writeFile(filePath, content, 'utf-8')
 
