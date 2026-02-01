@@ -13,8 +13,11 @@ import { recipes as recipeDefinitions } from '@/config/recipes'
 import { useResourcesStore } from './resources'
 import { useNotificationsStore } from './notifications'
 
-// LocalStorage key
+// LocalStorage keys
 const STORAGE_KEY_FOUNDRY = 'idle-artifice-foundry'
+const STORAGE_KEY_FOUNDRY_VISITED = 'idle-artifice-foundry-screen-visited'
+const STORAGE_KEY_CRAFTS_COUNT = 'idle-artifice-foundry-crafts-count'
+const STORAGE_KEY_EDIT_LAYOUT_UNLOCKED = 'idle-artifice-foundry-edit-layout-unlocked'
 
 // Track if we've shown storage warning to avoid spam
 let hasShownStorageWarning = false
@@ -322,6 +325,29 @@ function findPathBFS(
 }
 
 /**
+ * Load a boolean value from localStorage
+ */
+function loadBooleanFromStorage(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === 'true'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Load a number value from localStorage
+ */
+function loadNumberFromStorage(key: string): number {
+  try {
+    const value = localStorage.getItem(key)
+    return value ? parseInt(value, 10) : 0
+  } catch {
+    return 0
+  }
+}
+
+/**
  * Foundry Store
  * Manages the foundry grid, Anton's state, and crafting queue
  */
@@ -331,6 +357,11 @@ export const useFoundryStore = defineStore('foundry', () => {
 
   // Recipes are not persisted (defined in config)
   const recipes = ref<Recipe[]>(recipeDefinitions)
+
+  // Questline tracking state
+  const hasVisitedFoundryScreen = ref<boolean>(loadBooleanFromStorage(STORAGE_KEY_FOUNDRY_VISITED))
+  const completedCraftsCount = ref<number>(loadNumberFromStorage(STORAGE_KEY_CRAFTS_COUNT))
+  const isEditLayoutUnlocked = ref<boolean>(loadBooleanFromStorage(STORAGE_KEY_EDIT_LAYOUT_UNLOCKED))
 
   // Getters - Grid queries
   const grid = computed(() => gridState.value.grid)
@@ -855,6 +886,46 @@ export const useFoundryStore = defineStore('foundry', () => {
     }
   }
 
+  // Questline tracking actions
+
+  /**
+   * Mark the Foundry screen as visited (for first-visit tutorials)
+   */
+  function markFoundryScreenVisited(): void {
+    if (hasVisitedFoundryScreen.value) return
+    hasVisitedFoundryScreen.value = true
+    try {
+      localStorage.setItem(STORAGE_KEY_FOUNDRY_VISITED, 'true')
+    } catch (error) {
+      console.error('Failed to save foundry visit state:', error)
+    }
+  }
+
+  /**
+   * Increment the completed crafts count (called after each successful craft)
+   */
+  function incrementCraftsCount(): void {
+    completedCraftsCount.value++
+    try {
+      localStorage.setItem(STORAGE_KEY_CRAFTS_COUNT, completedCraftsCount.value.toString())
+    } catch (error) {
+      console.error('Failed to save crafts count:', error)
+    }
+  }
+
+  /**
+   * Unlock the Edit Layout feature
+   */
+  function unlockEditLayout(): void {
+    if (isEditLayoutUnlocked.value) return
+    isEditLayoutUnlocked.value = true
+    try {
+      localStorage.setItem(STORAGE_KEY_EDIT_LAYOUT_UNLOCKED, 'true')
+    } catch (error) {
+      console.error('Failed to save edit layout unlock:', error)
+    }
+  }
+
   // State Machine - Helper functions
 
   /**
@@ -910,6 +981,23 @@ export const useFoundryStore = defineStore('foundry', () => {
     for (const output of recipe.outputs) {
       resourcesStore.addResource(output.resourceId, output.amount)
     }
+
+    // Track craft completion for questline
+    incrementCraftsCount()
+
+    // Update craft-first-items objective progress
+    // Use dynamic import to avoid circular dependencies
+    import('./objectives').then(({ useObjectivesStore }) => {
+      const objectivesStore = useObjectivesStore()
+      objectivesStore.updateProgress('craft-first-items', completedCraftsCount.value)
+    })
+
+    // Evaluate dialog triggers for craft completion
+    // Use dynamic import to avoid circular dependencies and defer execution
+    import('@/composables/useDialogTriggers').then(({ useDialogTriggers }) => {
+      const { evaluateTriggersForEvent } = useDialogTriggers()
+      evaluateTriggersForEvent('craft-complete')
+    })
   }
 
   // State Machine - Core functions
@@ -1602,6 +1690,10 @@ export const useFoundryStore = defineStore('foundry', () => {
     craftingQueue,
     currentQueueIndex,
     recipes,
+    // Questline tracking state
+    hasVisitedFoundryScreen,
+    completedCraftsCount,
+    isEditLayoutUnlocked,
     // Getters - Grid
     getCellAt,
     supplyBinPosition,
@@ -1642,5 +1734,8 @@ export const useFoundryStore = defineStore('foundry', () => {
     restartAnton,
     // Actions - Utility
     resetFoundry,
+    // Actions - Questline tracking
+    markFoundryScreenVisited,
+    unlockEditLayout,
   }
 })

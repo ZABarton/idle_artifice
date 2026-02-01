@@ -197,6 +197,19 @@ const getMinimizedDisplays = (feature: Feature) => {
   return featureConfig?.minimizedDisplays ?? []
 }
 
+// Compute props for a minimized display, adding feature-state-based props
+const getDisplayProps = (display: { props?: Record<string, unknown> }, feature: Feature) => {
+  const baseProps = display.props ?? {}
+  // If the display has a featureId prop (like NavigationButton), add disabled based on feature state
+  if ('featureId' in baseProps) {
+    return {
+      ...baseProps,
+      disabled: feature.state === 'locked',
+    }
+  }
+  return baseProps
+}
+
 /**
  * Unified NPC type for internal use
  * Combines fields from both legacy NPCConfig and centralized NPCConfig
@@ -450,7 +463,7 @@ const handleFeatureExpandToggle = (feature: Feature) => {
                 :is="display.component"
                 v-for="(display, index) in getMinimizedDisplays(feature)"
                 :key="`display-${index}`"
-                v-bind="display.props"
+                v-bind="getDisplayProps(display, feature)"
               />
             </div>
           </template>

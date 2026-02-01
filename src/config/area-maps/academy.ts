@@ -44,7 +44,7 @@ export const academyConfig: AreaMapConfig = {
       name: 'Foundry',
       description: 'Craft equipment for your explorers.',
       icon: '🔨',
-      state: 'unlocked',
+      state: 'locked',
       isActive: false,
       interactionType: 'inline',
       npcIds: ['anton'],
@@ -64,7 +64,7 @@ export const academyConfig: AreaMapConfig = {
             featureId: 'academy-foundry',
             icon: '🔨',
             variant: 'primary',
-            disabled: true,
+            // disabled is now computed from feature state in FeatureCard
           },
         },
       ],

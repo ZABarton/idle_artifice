@@ -94,6 +94,24 @@
       ]
     },
     {
+      "id": "craft-first-items",
+      "title": "Learn the Foundry",
+      "description": "Craft two items to learn the basics of the Foundry system.",
+      "status": "hidden",
+      "category": "main",
+      "order": 6,
+      "targetLocation": "0,0",
+      "currentProgress": 0,
+      "maxProgress": 2,
+      "discoveryConditions": [
+        {
+          "type": "objective",
+          "id": "talk-to-anton-foundry",
+          "description": "Complete 'Learn More About the Foundry from Anton'"
+        }
+      ]
+    },
+    {
       "id": "gather-wood",
       "title": "Gather Wood Resources",
       "description": "Collect wood to fuel your crafting operations.",

@@ -179,6 +179,7 @@ export type CompletionAction =
   | { type: 'showTutorial'; tutorialId: string }
   | { type: 'showDialogTree'; dialogTreeId: string }
   | { type: 'unlockFeature'; featureId: string }
+  | { type: 'unlockEditLayout' }
   | { type: 'addResource'; resourceId: string; amount: number }
   | { type: 'setFlag'; flagId: string; value: boolean }
 

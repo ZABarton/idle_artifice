@@ -6,6 +6,7 @@
     "alt": "Anton DeCassieur"
   },
   "onComplete": [
+    { "type": "unlockEditLayout" },
     { "type": "showTutorial", "tutorialId": "foundry-edit-layout" }
   ],
   "startNodeId": "start",
