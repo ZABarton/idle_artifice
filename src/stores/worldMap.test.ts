@@ -20,8 +20,8 @@ describe('useWorldMapStore', () => {
       const store = useWorldMapStore()
       expect(store.exploredTiles).toHaveLength(6)
 
-      const harbor = store.exploredTiles.find(tile => tile.type === 'harbor')
-      const oceanTiles = store.exploredTiles.filter(tile => tile.type === 'ocean')
+      const harbor = store.exploredTiles.find((tile) => tile.type === 'harbor')
+      const oceanTiles = store.exploredTiles.filter((tile) => tile.type === 'ocean')
 
       expect(harbor).toBeDefined()
       expect(oceanTiles).toHaveLength(5)
@@ -53,9 +53,9 @@ describe('useWorldMapStore', () => {
 
     it('should have 5 ocean hexes that are not clickable', () => {
       const store = useWorldMapStore()
-      const oceanTiles = store.hexTiles.filter(tile => tile.type === 'ocean')
+      const oceanTiles = store.hexTiles.filter((tile) => tile.type === 'ocean')
       expect(oceanTiles).toHaveLength(5)
-      oceanTiles.forEach(tile => {
+      oceanTiles.forEach((tile) => {
         expect(tile.explorationStatus).toBe('explored')
         expect(tile.clickable).toBe(false)
       })

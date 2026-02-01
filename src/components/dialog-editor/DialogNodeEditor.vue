@@ -66,12 +66,7 @@ function handleAddResponse() {
 
 function handleUpdateResponse(index: number, text: string, nextNodeId: string) {
   if (store.selectedNodeId) {
-    store.updateResponse(
-      store.selectedNodeId,
-      index,
-      text,
-      nextNodeId === '' ? null : nextNodeId
-    )
+    store.updateResponse(store.selectedNodeId, index, text, nextNodeId === '' ? null : nextNodeId)
   }
 }
 
@@ -124,16 +119,16 @@ const availableNodeIds = computed(() => {
       </label>
       <textarea
         v-model="localMessage"
-        @blur="saveMessage"
         rows="6"
         placeholder="Enter node message..."
         class="message-input"
+        @blur="saveMessage"
       />
     </div>
 
     <div class="editor-section">
       <label class="section-label">
-        <input type="checkbox" v-model="usePortraitOverride" @change="savePortrait" />
+        <input v-model="usePortraitOverride" type="checkbox" @change="savePortrait" />
         Override Portrait
       </label>
 
@@ -141,13 +136,18 @@ const availableNodeIds = computed(() => {
         <label class="field-label">Path</label>
         <input
           v-model="localPortraitPath"
-          @blur="savePortrait"
           type="text"
           placeholder="images/portraits/character.png (or /images/portraits/character.png)"
+          @blur="savePortrait"
         />
 
         <label class="field-label">Alt Text</label>
-        <input v-model="localPortraitAlt" @blur="savePortrait" type="text" placeholder="Portrait description" />
+        <input
+          v-model="localPortraitAlt"
+          type="text"
+          placeholder="Portrait description"
+          @blur="savePortrait"
+        />
 
         <!-- Image Preview -->
         <div v-if="localPortraitPath" class="portrait-preview">
@@ -156,8 +156,8 @@ const availableNodeIds = computed(() => {
             <img
               :src="getPublicImagePath(localPortraitPath)"
               :alt="localPortraitAlt || 'Portrait preview'"
-              @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
               class="preview-image"
+              @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
             />
           </div>
         </div>
@@ -165,9 +165,7 @@ const availableNodeIds = computed(() => {
     </div>
 
     <div class="editor-section">
-      <label class="section-label">
-        Responses ({{ store.selectedNode.responses.length }})
-      </label>
+      <label class="section-label"> Responses ({{ store.selectedNode.responses.length }}) </label>
 
       <div class="responses-list">
         <div
@@ -179,18 +177,18 @@ const availableNodeIds = computed(() => {
             <span>Response {{ index + 1 }}</span>
             <div class="reorder-buttons">
               <button
-                @click="handleMoveResponse(index, 'up')"
                 :disabled="index === 0"
                 class="btn-reorder"
                 title="Move up"
+                @click="handleMoveResponse(index, 'up')"
               >
                 ▲
               </button>
               <button
-                @click="handleMoveResponse(index, 'down')"
                 :disabled="index === store.selectedNode.responses.length - 1"
                 class="btn-reorder"
                 title="Move down"
+                @click="handleMoveResponse(index, 'down')"
               >
                 ▼
               </button>
@@ -200,6 +198,9 @@ const availableNodeIds = computed(() => {
           <label class="field-label">Text</label>
           <input
             :value="response.text"
+            type="text"
+            placeholder="Response text..."
+            class="response-text"
             @change="
               (e) =>
                 handleUpdateResponse(
@@ -208,47 +209,38 @@ const availableNodeIds = computed(() => {
                   response.nextNodeId || ''
                 )
             "
-            type="text"
-            placeholder="Response text..."
-            class="response-text"
           />
 
           <label class="field-label">Next Node</label>
           <div class="next-node-controls">
             <select
               :value="response.nextNodeId || ''"
+              class="next-node-select"
               @change="
                 (e) =>
-                  handleUpdateResponse(
-                    index,
-                    response.text,
-                    (e.target as HTMLSelectElement).value
-                  )
+                  handleUpdateResponse(index, response.text, (e.target as HTMLSelectElement).value)
               "
-              class="next-node-select"
             >
               <option value="">(End conversation)</option>
               <option v-for="nodeId in availableNodeIds" :key="nodeId" :value="nodeId">
                 {{ nodeId }}
               </option>
             </select>
-            <button @click="handleCreateNodeFromResponse(index)" class="btn-create-node">
-              +
-            </button>
+            <button class="btn-create-node" @click="handleCreateNodeFromResponse(index)">+</button>
           </div>
 
-          <button @click="handleDeleteResponse(index)" class="btn-delete-response">
+          <button class="btn-delete-response" @click="handleDeleteResponse(index)">
             Delete Response
           </button>
         </div>
       </div>
 
-      <button @click="handleAddResponse" class="btn-add-response">Add Response</button>
+      <button class="btn-add-response" @click="handleAddResponse">Add Response</button>
     </div>
 
     <div class="editor-actions">
-      <button @click="handleSetStartNode" class="btn-set-start">Set as Start Node</button>
-      <button @click="handleDeleteNode" class="btn-delete-node">Delete Node</button>
+      <button class="btn-set-start" @click="handleSetStartNode">Set as Start Node</button>
+      <button class="btn-delete-node" @click="handleDeleteNode">Delete Node</button>
     </div>
   </div>
 </template>

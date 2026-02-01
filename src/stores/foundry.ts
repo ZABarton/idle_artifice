@@ -135,10 +135,7 @@ function areAdjacent(pos1: GridPosition, pos2: GridPosition): boolean {
  * Find a walkable cell adjacent to target position
  * Returns the first traversable cell found, or null if none exists
  */
-function findAdjacentWalkableCell(
-  grid: GridCell[][],
-  target: GridPosition
-): GridPosition | null {
+function findAdjacentWalkableCell(grid: GridCell[][], target: GridPosition): GridPosition | null {
   const directions = [
     { x: 0, y: -1 }, // up
     { x: 1, y: 0 }, // right
@@ -1000,11 +997,7 @@ export const useFoundryStore = defineStore('foundry', () => {
       if (!binPos) return
 
       // Find the closest adjacent walkable cell to Anton
-      const targetCell = findClosestAdjacentWalkableCell(
-        grid.value,
-        binPos,
-        anton.value.position
-      )
+      const targetCell = findClosestAdjacentWalkableCell(grid.value, binPos, anton.value.position)
 
       console.log('[Pathfinding] Anton at:', anton.value.position)
       console.log('[Pathfinding] Supply Bin at:', binPos)
@@ -1087,10 +1080,7 @@ export const useFoundryStore = defineStore('foundry', () => {
 
       // Show warning notification
       const notificationsStore = useNotificationsStore()
-      notificationsStore.showWarning(
-        'Craft Skipped',
-        `${recipe?.name || 'Item'}: ${missingList}`
-      )
+      notificationsStore.showWarning('Craft Skipped', `${recipe?.name || 'Item'}: ${missingList}`)
 
       // Reset Anton and go back to idle to find next pending item
       setAntonRecipe(null)
@@ -1129,10 +1119,7 @@ export const useFoundryStore = defineStore('foundry', () => {
         updateQueueItemStatus(queueIndex, 'skipped', skipReason)
 
         const notificationsStore = useNotificationsStore()
-        notificationsStore.showWarning(
-          'Craft Skipped',
-          `${recipe?.name || 'Item'}: ${missingList}`
-        )
+        notificationsStore.showWarning('Craft Skipped', `${recipe?.name || 'Item'}: ${missingList}`)
 
         setAntonRecipe(null)
         setAntonActionStartTime(null)
@@ -1160,11 +1147,7 @@ export const useFoundryStore = defineStore('foundry', () => {
       if (!anvilPos) return
 
       // Find the closest adjacent walkable cell to Anton
-      const targetCell = findClosestAdjacentWalkableCell(
-        grid.value,
-        anvilPos,
-        anton.value.position
-      )
+      const targetCell = findClosestAdjacentWalkableCell(grid.value, anvilPos, anton.value.position)
 
       console.log('[Pathfinding] Anton at:', anton.value.position)
       console.log('[Pathfinding] Anvil at:', anvilPos)
@@ -1248,11 +1231,12 @@ export const useFoundryStore = defineStore('foundry', () => {
       produceRecipeOutputs(recipeId)
 
       // Show success notification
-      const outputSummary = recipe.outputs
-        .map((o) => `+${o.amount} ${o.resourceId}`)
-        .join(', ')
+      const outputSummary = recipe.outputs.map((o) => `+${o.amount} ${o.resourceId}`).join(', ')
       const notificationsStore = useNotificationsStore()
-      notificationsStore.showSuccess(`Crafted ${recipe.name}`, `${recipe.icon || ''} ${outputSummary}`)
+      notificationsStore.showSuccess(
+        `Crafted ${recipe.name}`,
+        `${recipe.icon || ''} ${outputSummary}`
+      )
 
       // Mark queue item as completed
       const queueIndex = gridState.value.currentQueueIndex
@@ -1451,9 +1435,8 @@ export const useFoundryStore = defineStore('foundry', () => {
 
         // If no path is stored, calculate it now to determine movement time
         if (pathLength === 0) {
-          const targetPos = currentAction === 'movingToSupplyBin'
-            ? supplyBinPosition.value
-            : anvilPosition.value
+          const targetPos =
+            currentAction === 'movingToSupplyBin' ? supplyBinPosition.value : anvilPosition.value
 
           if (targetPos) {
             const adjacentCell = findClosestAdjacentWalkableCell(
@@ -1479,9 +1462,13 @@ export const useFoundryStore = defineStore('foundry', () => {
               // Otherwise, find any adjacent walkable cell
               let adjacentCell: GridPosition | null = null
               if (gridState.value.anton.path.length > 0) {
-                const destination = gridState.value.anton.path[gridState.value.anton.path.length - 1]
+                const destination =
+                  gridState.value.anton.path[gridState.value.anton.path.length - 1]
                 // Verify it's still walkable and adjacent
-                if (areAdjacent(binPos, destination) && isTraversable(grid.value[destination.y]?.[destination.x])) {
+                if (
+                  areAdjacent(binPos, destination) &&
+                  isTraversable(grid.value[destination.y]?.[destination.x])
+                ) {
                   adjacentCell = destination
                 }
               }
@@ -1504,9 +1491,13 @@ export const useFoundryStore = defineStore('foundry', () => {
               // Otherwise, find any adjacent walkable cell
               let adjacentCell: GridPosition | null = null
               if (gridState.value.anton.path.length > 0) {
-                const destination = gridState.value.anton.path[gridState.value.anton.path.length - 1]
+                const destination =
+                  gridState.value.anton.path[gridState.value.anton.path.length - 1]
                 // Verify it's still walkable and adjacent
-                if (areAdjacent(anvilPos, destination) && isTraversable(grid.value[destination.y]?.[destination.x])) {
+                if (
+                  areAdjacent(anvilPos, destination) &&
+                  isTraversable(grid.value[destination.y]?.[destination.x])
+                ) {
                   adjacentCell = destination
                 }
               }

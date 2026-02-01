@@ -150,9 +150,8 @@ function evaluateDialogComplete(condition: TriggerCondition, context: TriggerCon
  *
  * This will be implemented in a future milestone when complex conditions are needed.
  */
-export function evaluateComplexCondition(
+export function evaluateComplexCondition(): boolean {
   /* condition: ComplexCondition, context: TriggerContext */
-): boolean {
   // TODO: Implement in future milestone
   console.warn('[Condition] Complex conditions not yet implemented')
   return false

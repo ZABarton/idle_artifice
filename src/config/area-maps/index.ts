@@ -113,9 +113,7 @@ export function getActiveLayout(config: AreaMapConfig, windowWidth: number) {
 
   // Fallback: return the first layout if no match found
   const fallbackName = Object.keys(config.layouts)[0]
-  console.warn(
-    `No layout found for window width ${windowWidth}px, using fallback: ${fallbackName}`
-  )
+  console.warn(`No layout found for window width ${windowWidth}px, using fallback: ${fallbackName}`)
   return {
     name: fallbackName,
     config: config.layouts[fallbackName],

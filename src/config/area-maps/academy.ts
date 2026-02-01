@@ -47,19 +47,7 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
-      npcs: [
-        {
-          id: 'foundry-master',
-          name: 'Anton DeCassieur',
-          portrait: {
-            path: 'images/portraits/smith.png',
-            alt: 'Anton DeCassieur, the Foundry Master',
-          },
-          dialogTreeId: 'foundry-master-intro',
-          fallbackDialogTreeId: 'foundry-master-tips',
-          icon: '🔨',
-        },
-      ],
+      npcIds: ['anton'],
       minimizedDisplays: [
         {
           component: markRaw(StatusText),
@@ -91,19 +79,7 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
-      npcs: [
-        {
-          id: 'quartermaster',
-          name: 'Quartermaster Jones',
-          portrait: {
-            path: 'images/portraits/quartermaster.png',
-            alt: 'Quartermaster Jones',
-          },
-          dialogTreeId: 'quartermaster-intro',
-          fallbackDialogTreeId: 'quartermaster-tips',
-          icon: '📦',
-        },
-      ],
+      npcIds: ['quartermaster'],
       minimizedDisplays: [
         {
           component: markRaw(StatusText),
@@ -125,19 +101,7 @@ export const academyConfig: AreaMapConfig = {
       state: 'unlocked',
       isActive: false,
       interactionType: 'navigation',
-      npcs: [
-        {
-          id: 'tavern-keeper',
-          name: 'Camille Adai',
-          portrait: {
-            path: 'images/portraits/ranger.png',
-            alt: 'Camille Adai, the Tavern Keeper',
-          },
-          dialogTreeId: 'tavern-keeper-intro',
-          fallbackDialogTreeId: 'tavern-keeper-tips',
-          icon: '🍺',
-        },
-      ],
+      npcIds: ['tavern-keeper'],
       minimizedDisplays: [
         {
           component: markRaw(StatusText),

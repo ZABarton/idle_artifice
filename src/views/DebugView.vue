@@ -104,8 +104,8 @@ async function handleFileSelect(event: Event) {
       gameState.objectives?.objectives?.filter((o: any) => o.status === 'completed').length || 0
     const resourcesCount = gameState.resources?.resources?.length || 0
     const exploredTiles =
-      gameState.worldMap?.hexTiles?.filter((t: any) => t.explorationStatus === 'explored')
-        .length || 0
+      gameState.worldMap?.hexTiles?.filter((t: any) => t.explorationStatus === 'explored').length ||
+      0
     const totalTiles = gameState.worldMap?.hexTiles?.length || 0
 
     importSummary.value = `
@@ -296,14 +296,14 @@ function cancelImport() {
     <div class="verification-section">
       <h2>Save Management</h2>
       <div class="save-actions">
-        <button @click="exportSave()" class="export-button">📥 Export Save File</button>
-        <button @click="triggerImport()" class="import-button">📤 Import Save File</button>
+        <button class="export-button" @click="exportSave()">📥 Export Save File</button>
+        <button class="import-button" @click="triggerImport()">📤 Import Save File</button>
         <input
           ref="fileInput"
           type="file"
           accept=".json"
-          @change="handleFileSelect"
           style="display: none"
+          @change="handleFileSelect"
         />
       </div>
       <p class="save-info">
@@ -345,8 +345,8 @@ function cancelImport() {
           ⚠️ This will OVERWRITE all your current progress. This action cannot be undone.
         </p>
         <div class="modal-actions">
-          <button @click="confirmImport()" class="confirm-button">Confirm Import</button>
-          <button @click="cancelImport()" class="cancel-button">Cancel</button>
+          <button class="confirm-button" @click="confirmImport()">Confirm Import</button>
+          <button class="cancel-button" @click="cancelImport()">Cancel</button>
         </div>
       </div>
     </div>

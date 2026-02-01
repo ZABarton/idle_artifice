@@ -1,9 +1,9 @@
 {
   "id": "quartermaster-tips",
-  "characterName": "Quartermaster Jones",
+  "characterName": "Theodore Creach",
   "portrait": {
     "path": "images/portraits/quartermaster.png",
-    "alt": "Quartermaster Jones"
+    "alt": "Theodore Creach"
   },
   "startNodeId": "greeting",
   "nodes": {

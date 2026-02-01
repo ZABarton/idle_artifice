@@ -35,22 +35,19 @@ export function useFeatureObjectives() {
    * @param featureId - The feature ID to check
    * @returns Array of objectives that have subtasks referencing this feature
    */
-  const getObjectivesForFeature = computed(
-    () =>
-      (featureId: string): Objective[] => {
-        const activeObjectives = objectivesStore.visibleObjectives.filter(
-          (obj) => obj.status === 'active'
-        )
+  const getObjectivesForFeature = computed(() => (featureId: string): Objective[] => {
+    const activeObjectives = objectivesStore.visibleObjectives.filter(
+      (obj) => obj.status === 'active'
+    )
 
-        return activeObjectives.filter((objective) => {
-          if (!objective.subtasks) return false
+    return activeObjectives.filter((objective) => {
+      if (!objective.subtasks) return false
 
-          return objective.subtasks.some(
-            (subtask) => subtask.featureId === featureId && !subtask.completed
-          )
-        })
-      }
-  )
+      return objective.subtasks.some(
+        (subtask) => subtask.featureId === featureId && !subtask.completed
+      )
+    })
+  })
 
   /**
    * Get the specific subtask associated with a feature

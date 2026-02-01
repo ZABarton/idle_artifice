@@ -17,9 +17,7 @@ const expandedConversationId = ref<string | null>(null)
 // Get completed tutorials
 const completedTutorials = computed(() => {
   const allTutorials = Array.from(dialogsStore.loadedTutorials.values())
-  return allTutorials.filter((tutorial) =>
-    dialogsStore.completedTutorials.has(tutorial.id)
-  )
+  return allTutorials.filter((tutorial) => dialogsStore.completedTutorials.has(tutorial.id))
 })
 
 // Get conversation history
@@ -112,10 +110,10 @@ function formatMessageTime(date: Date): string {
           >
             <div class="help-card-header">
               <div class="conversation-summary">
-                <h3 class="help-card-title">
-                  Conversation with {{ conversation.characterName }}
-                </h3>
-                <div class="conversation-timestamp">{{ formatTimestamp(conversation.startedAt) }}</div>
+                <h3 class="help-card-title">Conversation with {{ conversation.characterName }}</h3>
+                <div class="conversation-timestamp">
+                  {{ formatTimestamp(conversation.startedAt) }}
+                </div>
               </div>
               <span class="expand-icon">{{
                 isConversationExpanded(conversation.conversationId) ? '▼' : '▶'
@@ -123,7 +121,10 @@ function formatMessageTime(date: Date): string {
             </div>
 
             <!-- Expanded Conversation Transcript -->
-            <div v-if="isConversationExpanded(conversation.conversationId)" class="help-card-content">
+            <div
+              v-if="isConversationExpanded(conversation.conversationId)"
+              class="help-card-content"
+            >
               <div class="transcript">
                 <div
                   v-for="(entry, index) in conversation.transcript"
@@ -144,10 +145,7 @@ function formatMessageTime(date: Date): string {
       </section>
 
       <!-- Empty State -->
-      <div
-        v-if="completedTutorials.length === 0 && conversations.length === 0"
-        class="empty-state"
-      >
+      <div v-if="completedTutorials.length === 0 && conversations.length === 0" class="empty-state">
         <p>No tutorials completed or conversations recorded yet.</p>
         <p class="empty-state-hint">
           Complete tutorials and talk to characters to see them appear here.

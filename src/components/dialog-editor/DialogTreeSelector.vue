@@ -111,7 +111,7 @@ function createNewTree() {
 
     <div class="selector-section">
       <h3>Project Files</h3>
-      <select v-model="selectedTreePath" @change="loadProjectTree" :disabled="isLoading">
+      <select v-model="selectedTreePath" :disabled="isLoading" @change="loadProjectTree">
         <option value="">-- Select a tree --</option>
         <option v-for="tree in availableTrees" :key="tree.path" :value="tree.path">
           {{ tree.id }}
@@ -124,17 +124,15 @@ function createNewTree() {
       <input
         type="file"
         accept=".json"
-        @change="handleFileUpload"
         :disabled="isLoading"
         class="file-input"
+        @change="handleFileUpload"
       />
     </div>
 
     <div class="selector-section">
       <h3>Create New</h3>
-      <button @click="createNewTree" :disabled="isLoading" class="btn-new">
-        New Dialog Tree
-      </button>
+      <button :disabled="isLoading" class="btn-new" @click="createNewTree">New Dialog Tree</button>
     </div>
 
     <div v-if="isLoading" class="loading">Loading...</div>
@@ -148,10 +146,7 @@ function createNewTree() {
           <input
             type="text"
             :value="store.activeTree.id"
-            @input="
-              (e) =>
-                store.updateTreeMetadata({ id: (e.target as HTMLInputElement).value })
-            "
+            @input="(e) => store.updateTreeMetadata({ id: (e.target as HTMLInputElement).value })"
           />
         </div>
         <div class="metadata-row">
@@ -205,8 +200,8 @@ function createNewTree() {
             <img
               :src="getPublicImagePath(store.activeTree.portrait.path)"
               :alt="store.activeTree.portrait.alt"
-              @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
               class="portrait-preview-image"
+              @error="(e) => ((e.target as HTMLImageElement).style.display = 'none')"
             />
           </div>
         </div>

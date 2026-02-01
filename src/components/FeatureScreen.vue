@@ -60,11 +60,7 @@ const handleBackClick = () => {
   <div class="feature-screen-container">
     <!-- Header Bar -->
     <header class="feature-screen-header">
-      <button
-        class="feature-screen-header__back"
-        aria-label="Back"
-        @click="handleBackClick"
-      >
+      <button class="feature-screen-header__back" aria-label="Back" @click="handleBackClick">
         ← Back
       </button>
       <h1 class="feature-screen-header__title">{{ featureTitle }}</h1>

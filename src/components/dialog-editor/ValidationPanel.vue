@@ -5,9 +5,7 @@ import { useDialogEditorStore } from '@/stores/dialogEditor'
 const store = useDialogEditorStore()
 const isExpanded = ref(true)
 
-const totalIssues = computed(
-  () => store.validationErrors.length + store.validationWarnings.length
-)
+const totalIssues = computed(() => store.validationErrors.length + store.validationWarnings.length)
 
 const statusMessage = computed(() => {
   if (store.validationErrors.length > 0) {
@@ -47,7 +45,10 @@ function highlightNode(nodeId: string | undefined) {
     </div>
 
     <div v-if="isExpanded" class="panel-content">
-      <div v-if="store.validationErrors.length === 0 && store.validationWarnings.length === 0" class="no-issues">
+      <div
+        v-if="store.validationErrors.length === 0 && store.validationWarnings.length === 0"
+        class="no-issues"
+      >
         <span class="success-icon">✓</span>
         All validation checks passed
       </div>
@@ -63,7 +64,7 @@ function highlightNode(nodeId: string | undefined) {
           <div class="issue-content">
             <div class="issue-message">{{ error.message }}</div>
             <div v-if="error.nodeId" class="issue-actions">
-              <button @click="highlightNode(error.nodeId)" class="btn-highlight">
+              <button class="btn-highlight" @click="highlightNode(error.nodeId)">
                 Show Node: {{ error.nodeId }}
               </button>
             </div>
@@ -84,7 +85,7 @@ function highlightNode(nodeId: string | undefined) {
           <div class="issue-content">
             <div class="issue-message">{{ warning.message }}</div>
             <div v-if="warning.nodeId" class="issue-actions">
-              <button @click="highlightNode(warning.nodeId)" class="btn-highlight">
+              <button class="btn-highlight" @click="highlightNode(warning.nodeId)">
                 Show Node: {{ warning.nodeId }}
               </button>
             </div>

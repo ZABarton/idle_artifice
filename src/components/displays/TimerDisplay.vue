@@ -65,7 +65,10 @@ const barColor = computed(() => {
     <div v-if="label" class="timer-label">{{ label }}</div>
     <div class="progress-container">
       <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: `${percentage}%`, backgroundColor: barColor }"></div>
+        <div
+          class="progress-fill"
+          :style="{ width: `${percentage}%`, backgroundColor: barColor }"
+        ></div>
       </div>
       <div class="progress-value">{{ displayValue }}</div>
     </div>

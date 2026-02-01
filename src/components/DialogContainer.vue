@@ -27,7 +27,12 @@ const isDialog = computed(() => currentModal.value?.type === 'dialog')
 // Check if we're displaying a dialog tree (branching conversation)
 const isDialogTree = computed(() => {
   const result = dialogsStore.activeDialogTree !== null
-  console.log('[DialogContainer] isDialogTree:', result, 'activeDialogTree:', dialogsStore.activeDialogTree?.id)
+  console.log(
+    '[DialogContainer] isDialogTree:',
+    result,
+    'activeDialogTree:',
+    dialogsStore.activeDialogTree?.id
+  )
   return result
 })
 

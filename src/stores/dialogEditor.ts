@@ -75,7 +75,9 @@ export const useDialogEditorStore = defineStore('dialogEditor', () => {
   /**
    * Update tree-level metadata
    */
-  function updateTreeMetadata(updates: Partial<Pick<DialogTree, 'id' | 'characterName' | 'portrait'>>) {
+  function updateTreeMetadata(
+    updates: Partial<Pick<DialogTree, 'id' | 'characterName' | 'portrait'>>
+  ) {
     if (!activeTree.value) return
     if (updates.id !== undefined) activeTree.value.id = updates.id
     if (updates.characterName !== undefined) activeTree.value.characterName = updates.characterName
@@ -219,7 +221,12 @@ export const useDialogEditorStore = defineStore('dialogEditor', () => {
   /**
    * Update a response
    */
-  function updateResponse(nodeId: string, responseIndex: number, text: string, nextNodeId: string | null) {
+  function updateResponse(
+    nodeId: string,
+    responseIndex: number,
+    text: string,
+    nextNodeId: string | null
+  ) {
     if (!activeTree.value || !activeTree.value.nodes[nodeId]) return
     const node = activeTree.value.nodes[nodeId]
     if (responseIndex < 0 || responseIndex >= node.responses.length) return

@@ -310,9 +310,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
     for (const [nodeId, node] of Object.entries(tree.nodes)) {
       // Check node ID matches key
       if (node.id !== nodeId) {
-        errors.push(
-          `Node key "${nodeId}" doesn't match node.id "${node.id}". These should match.`
-        )
+        errors.push(`Node key "${nodeId}" doesn't match node.id "${node.id}". These should match.`)
       }
 
       // Check if node has terminal responses (ends conversation)
@@ -329,9 +327,7 @@ export const useDialogsStore = defineStore('dialogs', () => {
 
         // Check referenced node exists (if not terminal)
         if (response.nextNodeId !== null && !nodeIds.has(response.nextNodeId)) {
-          errors.push(
-            `Node "${nodeId}" references non-existent node "${response.nextNodeId}"`
-          )
+          errors.push(`Node "${nodeId}" references non-existent node "${response.nextNodeId}"`)
         }
       })
     }
@@ -637,7 +633,10 @@ export const useDialogsStore = defineStore('dialogs', () => {
     })
 
     console.log('[Dialog Tree] Queue length after push:', modalQueue.value.length)
-    console.log('[Dialog Tree] Modal pushed to queue with message:', startNode.message.substring(0, 50))
+    console.log(
+      '[Dialog Tree] Modal pushed to queue with message:',
+      startNode.message.substring(0, 50)
+    )
   }
 
   /**
@@ -744,7 +743,12 @@ export const useDialogsStore = defineStore('dialogs', () => {
       completeConversation()
     }
 
-    console.log('[Modal] Before shift - queue length:', modalQueue.value.length, 'activeDialogTree:', activeDialogTree.value?.id)
+    console.log(
+      '[Modal] Before shift - queue length:',
+      modalQueue.value.length,
+      'activeDialogTree:',
+      activeDialogTree.value?.id
+    )
 
     // Remove from queue FIRST (shift removes first element)
     // This must happen before clearing dialog tree state to prevent

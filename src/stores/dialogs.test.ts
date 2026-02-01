@@ -49,9 +49,7 @@ describe('dialogs store', () => {
 
         store.markTutorialCompleted('new-tutorial')
 
-        const saved = JSON.parse(
-          localStorage.getItem('idle-artifice-completed-tutorials') || '[]'
-        )
+        const saved = JSON.parse(localStorage.getItem('idle-artifice-completed-tutorials') || '[]')
         expect(saved).toContain('new-tutorial')
       })
 
@@ -182,9 +180,7 @@ describe('dialogs store', () => {
 
         store.markFeatureInteracted('foundry')
 
-        const saved = JSON.parse(
-          localStorage.getItem('idle-artifice-interacted-features') || '[]'
-        )
+        const saved = JSON.parse(localStorage.getItem('idle-artifice-interacted-features') || '[]')
         expect(saved).toContain('foundry')
       })
 
@@ -328,9 +324,7 @@ describe('dialogs store', () => {
         store.markTutorialCompleted('tutorial-1')
         store.markTutorialCompleted('tutorial-2')
 
-        const saved = JSON.parse(
-          localStorage.getItem('idle-artifice-completed-tutorials') || '[]'
-        )
+        const saved = JSON.parse(localStorage.getItem('idle-artifice-completed-tutorials') || '[]')
         expect(saved).toContain('tutorial-1')
         expect(saved).toContain('tutorial-2')
         expect(saved).toHaveLength(2)
@@ -618,9 +612,7 @@ describe('dialogs store', () => {
         store.markFeatureInteracted('foundry')
         store.markFeatureInteracted('shop')
 
-        const saved = JSON.parse(
-          localStorage.getItem('idle-artifice-interacted-features') || '[]'
-        )
+        const saved = JSON.parse(localStorage.getItem('idle-artifice-interacted-features') || '[]')
         expect(saved).toContain('foundry')
         expect(saved).toContain('shop')
         expect(saved).toHaveLength(2)

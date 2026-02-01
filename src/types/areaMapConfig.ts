@@ -37,9 +37,9 @@ export interface LayoutConfig {
  * Defines when triggers should fire
  */
 export type TriggerEvent =
-  | 'onFirstVisit'    // First time player enters this area
-  | 'onEnter'         // Every time player enters this area
-  | 'onExit'          // When player leaves this area
+  | 'onFirstVisit' // First time player enters this area
+  | 'onEnter' // Every time player enters this area
+  | 'onExit' // When player leaves this area
   | 'onFeatureInteract' // When player interacts with a specific feature
 
 /**
@@ -47,16 +47,16 @@ export type TriggerEvent =
  * Common actions that can be executed declaratively
  */
 export type TriggerActionType =
-  | 'showDialog'          // Show a dialog modal
-  | 'showDialogTree'      // Show a branching dialog tree
-  | 'showTutorial'        // Show a tutorial modal
-  | 'completeObjective'   // Mark an objective as complete
-  | 'unlockObjective'     // Make an objective visible/active
-  | 'unlockFeature'       // Unlock a feature
-  | 'hideFeature'         // Hide a feature
-  | 'addResource'         // Add resources to player inventory
-  | 'removeResource'      // Remove resources from player inventory
-  | 'exploreTile'         // Mark a world map tile as explored
+  | 'showDialog' // Show a dialog modal
+  | 'showDialogTree' // Show a branching dialog tree
+  | 'showTutorial' // Show a tutorial modal
+  | 'completeObjective' // Mark an objective as complete
+  | 'unlockObjective' // Make an objective visible/active
+  | 'unlockFeature' // Unlock a feature
+  | 'hideFeature' // Hide a feature
+  | 'addResource' // Add resources to player inventory
+  | 'removeResource' // Remove resources from player inventory
+  | 'exploreTile' // Mark a world map tile as explored
 
 /**
  * Trigger action definition
@@ -193,8 +193,16 @@ export interface FeatureConfig extends Omit<Feature, 'position'> {
   props?: Record<string, any>
   /** Display components to show in minimized view (optional) */
   minimizedDisplays?: DisplayConfig[]
-  /** NPCs associated with this feature (optional) */
+  /**
+   * NPCs associated with this feature (legacy inline config)
+   * @deprecated Use npcIds instead for centralized NPC management
+   */
   npcs?: NPCConfig[]
+  /**
+   * NPC IDs associated with this feature (new centralized config)
+   * References NPCs in src/config/npcs/ registry
+   */
+  npcIds?: string[]
 }
 
 /**

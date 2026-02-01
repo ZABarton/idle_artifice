@@ -52,7 +52,7 @@ const isAntonCrafting = computed(() => {
 
 // Get materials from resource store (filtered to show relevant crafting materials)
 const materials = computed(() => {
-  return resourcesStore.allResources.filter(r =>
+  return resourcesStore.allResources.filter((r) =>
     ['wood', 'stone', 'iron', 'gold', 'mystical-essence'].includes(r.id)
   )
 })
@@ -105,8 +105,10 @@ function getQueueItemStatus(item: CraftingQueueItem): { label: string; class: st
 
 // Check if a queue item is the current one being processed
 function isCurrentQueueItem(index: number): boolean {
-  return index === foundryStore.currentQueueIndex &&
-         foundryStore.craftingQueue[index]?.status === 'in-progress'
+  return (
+    index === foundryStore.currentQueueIndex &&
+    foundryStore.craftingQueue[index]?.status === 'in-progress'
+  )
 }
 
 // Calculate overall progress for the current queue item
@@ -119,11 +121,11 @@ const overallProgress = computed(() => {
     case 'movingToSupplyBin':
       return stepProgress * 0.15
     case 'gathering':
-      return 0.15 + stepProgress * 0.20
+      return 0.15 + stepProgress * 0.2
     case 'movingToAnvil':
       return 0.35 + stepProgress * 0.15
     case 'crafting':
-      return 0.50 + stepProgress * 0.50
+      return 0.5 + stepProgress * 0.5
     default:
       return 0
   }
@@ -172,7 +174,7 @@ function clearCompletedItems(): void {
 // Check if there are any completed or skipped items to clear
 const hasCompletedItems = computed(() => {
   return foundryStore.craftingQueue.some(
-    item => item.status === 'completed' || item.status === 'skipped'
+    (item) => item.status === 'completed' || item.status === 'skipped'
   )
 })
 
@@ -408,22 +410,22 @@ function getCellFeedbackClass(cell: GridCell): string | null {
       <h2>Foundry Crafting System</h2>
       <div class="header-controls">
         <label class="coordinate-toggle">
-          <input type="checkbox" v-model="showCoordinates" />
+          <input v-model="showCoordinates" type="checkbox" />
           <span>Show Coordinates</span>
         </label>
         <button
           class="edit-mode-button"
           :class="{ active: isEditMode }"
           :disabled="isAntonCrafting"
-          @click="toggleEditMode"
           :title="isAntonCrafting ? 'Cannot edit while Anton is crafting' : ''"
+          @click="toggleEditMode"
         >
           {{ isEditMode ? '💾 Save Layout' : '✏️ Edit Layout' }}
         </button>
         <button
           class="restart-button"
-          @click="foundryStore.restartAnton()"
           title="Reset Anton to idle and restart queue processing"
+          @click="foundryStore.restartAnton()"
         >
           🔄 Restart Anton
         </button>
@@ -437,7 +439,7 @@ function getCellFeedbackClass(cell: GridCell): string | null {
         <section class="sidebar-section">
           <div class="section-header">
             <h3 class="section-title">Available Materials</h3>
-            <button class="debug-button" @click="debugAddWood" title="Debug: Add 10 wood">
+            <button class="debug-button" title="Debug: Add 10 wood" @click="debugAddWood">
               +10 🪵
             </button>
           </div>
@@ -449,9 +451,7 @@ function getCellFeedbackClass(cell: GridCell): string | null {
                 <div class="material-amount">{{ material.amount }}</div>
               </div>
             </div>
-            <div v-if="materials.length === 0" class="empty-state">
-              No materials available
-            </div>
+            <div v-if="materials.length === 0" class="empty-state">No materials available</div>
           </div>
         </section>
 
@@ -465,7 +465,7 @@ function getCellFeedbackClass(cell: GridCell): string | null {
               class="recipe-item"
               :class="{
                 selected: selectedRecipeId === recipe.id,
-                'has-resources': foundryStore.hasRequiredResources(recipe.id)
+                'has-resources': foundryStore.hasRequiredResources(recipe.id),
               }"
               @click="selectedRecipeId = recipe.id"
             >
@@ -475,11 +475,10 @@ function getCellFeedbackClass(cell: GridCell): string | null {
                 v-if="!foundryStore.hasRequiredResources(recipe.id)"
                 class="recipe-warning"
                 title="Insufficient resources"
-              >⚠️</span>
+                >⚠️</span
+              >
             </div>
-            <div v-if="recipes.length === 0" class="empty-state">
-              No recipes available
-            </div>
+            <div v-if="recipes.length === 0" class="empty-state">No recipes available</div>
           </div>
         </section>
 
@@ -515,34 +514,29 @@ function getCellFeedbackClass(cell: GridCell): string | null {
           </div>
 
           <!-- Craft Time -->
-          <div class="recipe-time">
-            Craft time: {{ selectedRecipe.craftTime }}s
-          </div>
+          <div class="recipe-time">Craft time: {{ selectedRecipe.craftTime }}s</div>
 
           <!-- Add to Queue Controls -->
           <div class="add-to-queue-controls">
             <div class="quantity-selector">
               <label>Qty:</label>
               <input
-                type="number"
                 v-model.number="craftQuantity"
+                type="number"
                 min="1"
                 max="99"
                 class="quantity-input"
               />
             </div>
-            <button
-              class="add-queue-button"
-              :disabled="!canCraftSelected"
-              @click="addToQueue"
-            >
+            <button class="add-queue-button" :disabled="!canCraftSelected" @click="addToQueue">
               Add to Queue
             </button>
           </div>
           <div v-if="missingResourcesForSelected.length > 0" class="missing-resources">
             <span class="missing-label">Missing:</span>
             <span v-for="(m, i) in missingResourcesForSelected" :key="m.resourceId">
-              {{ m.required - m.available }} {{ m.resourceId }}{{ i < missingResourcesForSelected.length - 1 ? ', ' : '' }}
+              {{ m.required - m.available }} {{ m.resourceId
+              }}{{ i < missingResourcesForSelected.length - 1 ? ', ' : '' }}
             </span>
           </div>
         </section>
@@ -551,7 +545,9 @@ function getCellFeedbackClass(cell: GridCell): string | null {
       <!-- Main Panel: Crafting Grid -->
       <main class="foundry-main">
         <div class="crafting-grid-container">
-          <h3 class="section-title">Crafting Grid ({{ foundryStore.gridSize.width }}x{{ foundryStore.gridSize.height }})</h3>
+          <h3 class="section-title">
+            Crafting Grid ({{ foundryStore.gridSize.width }}x{{ foundryStore.gridSize.height }})
+          </h3>
 
           <!-- Actual Grid from Store -->
           <div class="crafting-grid" :class="{ 'edit-mode': isEditMode }">
@@ -565,13 +561,23 @@ function getCellFeedbackClass(cell: GridCell): string | null {
                   {
                     'cell-selected': isCellSelected(cell),
                     'cell-placement-target': isValidPlacementTarget(cell),
-                    'cell-editable': isEditMode && (cell.type === GridCellType.SupplyBin || cell.type === GridCellType.Anvil),
-                    'cell-adjacent-supply': isAntonAdjacentToSupplyBin && isCellAdjacentToSupplyBin(cell.x, cell.y) && isAntonAt(cell.x, cell.y),
-                    'cell-adjacent-anvil': isAntonAdjacentToAnvil && isCellAdjacentToAnvil(cell.x, cell.y) && isAntonAt(cell.x, cell.y),
-                    'cell-highlight-supply': isAntonAdjacentToSupplyBin && cell.type === GridCellType.SupplyBin,
-                    'cell-highlight-anvil': isAntonAdjacentToAnvil && cell.type === GridCellType.Anvil,
+                    'cell-editable':
+                      isEditMode &&
+                      (cell.type === GridCellType.SupplyBin || cell.type === GridCellType.Anvil),
+                    'cell-adjacent-supply':
+                      isAntonAdjacentToSupplyBin &&
+                      isCellAdjacentToSupplyBin(cell.x, cell.y) &&
+                      isAntonAt(cell.x, cell.y),
+                    'cell-adjacent-anvil':
+                      isAntonAdjacentToAnvil &&
+                      isCellAdjacentToAnvil(cell.x, cell.y) &&
+                      isAntonAt(cell.x, cell.y),
+                    'cell-highlight-supply':
+                      isAntonAdjacentToSupplyBin && cell.type === GridCellType.SupplyBin,
+                    'cell-highlight-anvil':
+                      isAntonAdjacentToAnvil && cell.type === GridCellType.Anvil,
                   },
-                  getCellFeedbackClass(cell)
+                  getCellFeedbackClass(cell),
                 ]"
                 @click="handleCellClick(cell)"
               >
@@ -579,7 +585,9 @@ function getCellFeedbackClass(cell: GridCell): string | null {
                 <span v-if="getCellIcon(cell)" class="cell-icon">{{ getCellIcon(cell) }}</span>
 
                 <!-- Coordinate Labels -->
-                <span v-if="showCoordinates" class="cell-coordinates">({{ cell.x }},{{ cell.y }})</span>
+                <span v-if="showCoordinates" class="cell-coordinates"
+                  >({{ cell.x }},{{ cell.y }})</span
+                >
 
                 <!-- Placement Preview -->
                 <div v-if="isValidPlacementTarget(cell) && selectedItem" class="placement-preview">
@@ -592,7 +600,7 @@ function getCellFeedbackClass(cell: GridCell): string | null {
             <div
               class="anton-overlay"
               :style="{
-                transform: `translate(${antonPixelPosition.x}px, ${antonPixelPosition.y}px)`
+                transform: `translate(${antonPixelPosition.x}px, ${antonPixelPosition.y}px)`,
               }"
             >
               <span class="anton-icon">👷</span>
@@ -623,8 +631,8 @@ function getCellFeedbackClass(cell: GridCell): string | null {
           <button
             v-if="hasCompletedItems"
             class="clear-queue-button"
-            @click="clearCompletedItems"
             title="Clear completed and skipped items"
+            @click="clearCompletedItems"
           >
             Clear Done
           </button>
@@ -643,15 +651,14 @@ function getCellFeedbackClass(cell: GridCell): string | null {
             v-for="(item, index) in queueItems"
             :key="item.id"
             class="queue-item"
-            :class="[
-              getQueueItemStatus(item).class,
-              { 'is-current': isCurrentQueueItem(index) }
-            ]"
+            :class="[getQueueItemStatus(item).class, { 'is-current': isCurrentQueueItem(index) }]"
           >
             <div class="queue-item-main">
               <span class="queue-item-icon">{{ getRecipeForQueueItem(item)?.icon || '🔧' }}</span>
               <div class="queue-item-info">
-                <div class="queue-item-name">{{ getRecipeForQueueItem(item)?.name || item.recipeId }}</div>
+                <div class="queue-item-name">
+                  {{ getRecipeForQueueItem(item)?.name || item.recipeId }}
+                </div>
                 <div class="queue-item-status">
                   <span v-if="!isCurrentQueueItem(index)" :class="getQueueItemStatus(item).class">
                     {{ getQueueItemStatus(item).label }}
@@ -671,8 +678,8 @@ function getCellFeedbackClass(cell: GridCell): string | null {
               <button
                 v-if="item.status === 'pending'"
                 class="remove-item-button"
-                @click="removeFromQueue(index)"
                 title="Remove from queue"
+                @click="removeFromQueue(index)"
               >
                 ✕
               </button>
@@ -1039,7 +1046,8 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 }
 
 @keyframes glow-supply {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 8px 2px rgba(59, 130, 246, 0.4);
   }
   50% {
@@ -1048,7 +1056,8 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 }
 
 @keyframes glow-anvil {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 8px 2px rgba(245, 158, 11, 0.4);
   }
   50% {
@@ -1098,7 +1107,8 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 }
 
 @keyframes pulse-border {
-  0%, 100% {
+  0%,
+  100% {
     border-color: #3b82f6;
     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
   }
@@ -1167,11 +1177,14 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 }
 
 @keyframes flash-failure {
-  0%, 50%, 100% {
+  0%,
+  50%,
+  100% {
     background-color: rgba(239, 68, 68, 0.3);
     border-color: #ef4444;
   }
-  25%, 75% {
+  25%,
+  75% {
     background-color: rgba(239, 68, 68, 0.6);
     border-color: #dc2626;
     transform: translateX(-4px);
