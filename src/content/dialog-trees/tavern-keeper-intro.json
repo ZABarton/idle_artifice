@@ -5,6 +5,9 @@
     "path": "images/portraits/ranger.png",
     "alt": "Camille Adai portrait"
   },
+  "onComplete": [
+    { "type": "updateSubtask", "objectiveId": "explore-features", "subtaskId": "visit-tavern" }
+  ],
   "startNodeId": "welcome",
   "nodes": {
     "welcome": {

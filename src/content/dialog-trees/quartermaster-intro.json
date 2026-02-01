@@ -5,6 +5,9 @@
     "path": "images/portraits/quartermaster.png",
     "alt": "Theodore Creach portrait"
   },
+  "onComplete": [
+    { "type": "updateSubtask", "objectiveId": "explore-features", "subtaskId": "visit-quartermaster" }
+  ],
   "startNodeId": "welcome",
   "nodes": {
     "welcome": {

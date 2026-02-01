@@ -169,6 +169,20 @@ export interface DialogNode {
 }
 
 /**
+ * Completion action types for dialog tree onComplete handlers
+ * These define what happens when a dialog conversation ends
+ */
+export type CompletionAction =
+  | { type: 'completeObjective'; objectiveId: string }
+  | { type: 'updateSubtask'; objectiveId: string; subtaskId: string }
+  | { type: 'exploreTile'; coordinates: string }
+  | { type: 'showTutorial'; tutorialId: string }
+  | { type: 'showDialogTree'; dialogTreeId: string }
+  | { type: 'unlockFeature'; featureId: string }
+  | { type: 'addResource'; resourceId: string; amount: number }
+  | { type: 'setFlag'; flagId: string; value: boolean }
+
+/**
  * Represents a complete branching dialog tree structure
  * Enables complex conversations with player choices and looping
  */
@@ -183,4 +197,6 @@ export interface DialogTree {
   startNodeId: string
   /** Map of all nodes in this tree (key = node ID) */
   nodes: Record<string, DialogNode>
+  /** Actions to execute when the conversation completes */
+  onComplete?: CompletionAction[]
 }
