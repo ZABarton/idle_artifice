@@ -12,6 +12,7 @@ import type {
 import { useNotificationsStore } from './notifications'
 import { useObjectivesStore } from './objectives'
 import { useWorldMapStore } from './worldMap'
+import { useAreaMapStore } from './areaMap'
 
 // LocalStorage keys
 const STORAGE_KEY_COMPLETED_TUTORIALS = 'idle-artifice-completed-tutorials'
@@ -537,10 +538,11 @@ export const useDialogsStore = defineStore('dialogs', () => {
           }, 0)
           break
 
-        case 'unlockFeature':
-          // TODO: Implement when feature unlock system is in place
-          console.log(`[Dialog] Would unlock feature: ${action.featureId}`)
+        case 'unlockFeature': {
+          const areaMapStore = useAreaMapStore()
+          areaMapStore.updateFeatureState(action.featureId, 'unlocked')
           break
+        }
 
         case 'addResource':
           // TODO: Implement when resource system is in place

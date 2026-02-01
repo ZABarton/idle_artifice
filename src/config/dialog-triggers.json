@@ -14,12 +14,12 @@
     },
     {
       "id": "anton-efficiency-prompt",
-      "dialogTreeId": "anton-efficiency",
+      "dialogTreeId": "foundry-master-unlock-2-edit",
       "conditions": [
         { "type": "craft-complete", "value": 1, "operator": "eq" }
       ],
       "priority": 10,
-      "description": "Anton comments on inefficiency after first craft"
+      "description": "Anton comments on inefficiency after first craft, unlocks Edit Layout"
     }
   ]
 }

@@ -15,6 +15,17 @@ export const antonConfig: NPCConfig = {
     alt: 'Anton DeCassieur, the Foundry Master',
   },
   icon: '🔨',
-  dialogProgression: [{ id: 'foundry-master-intro' }],
+  dialogProgression: [
+    { id: 'foundry-master-intro' },
+    {
+      id: 'foundry-master-unlock-1-foundry',
+      conditions: [
+        {
+          type: 'objectiveComplete',
+          objectiveId: 'explore-features',
+        },
+      ],
+    },
+  ],
   fallbackProgression: [{ id: 'foundry-master-tips', priority: 0 }],
 }

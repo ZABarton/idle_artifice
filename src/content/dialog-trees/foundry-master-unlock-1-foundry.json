@@ -5,6 +5,10 @@
     "path": "images/portraits/smith.png",
     "alt": "Anton DeCassieur"
   },
+  "onComplete": [
+    { "type": "completeObjective", "objectiveId": "talk-to-anton-foundry" },
+    { "type": "unlockFeature", "featureId": "academy-foundry" }
+  ],
   "startNodeId": "start",
   "nodes": {
     "start": {
