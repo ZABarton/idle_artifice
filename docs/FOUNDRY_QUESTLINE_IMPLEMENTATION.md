@@ -1,1140 +1,483 @@
-# Foundry Quest Chain Implementation Guide
+# Quest System Guide
+
+This document explains how to create quest chains using Idle Artifice's data-driven quest systems.
+
+---
 
 ## Overview
 
-This document details the implementation steps for a quest chain that guides the player through the Foundry feature:
+The quest system consists of several interconnected components:
 
-1. Lock the "Enter Foundry" button until quest completion
-2. Show Headmaster dialog after completing "explore-features"
-3. New objective: "Talk to Anton at the Foundry"
-4. Anton dialog unlocks "Enter Foundry" button
-5. First Foundry visit triggers tutorial sequence
-6. First recipe completion triggers Anton dialog about efficiency, unlocking "Edit Layout"
-7. Second recipe completion completes the objective
+| Component | Purpose | Location |
+|-----------|---------|----------|
+| **Objectives** | Track player progress through quests | `src/config/objectives.json` |
+| **Dialog Trees** | Branching NPC conversations | `src/content/dialog-trees/*.json` |
+| **Dialog Triggers** | Auto-trigger dialogs based on conditions | `src/config/dialog-triggers.json` |
+| **Tutorials** | Instructional modals | `src/content/tutorials/*.json` |
+| **NPC Configs** | NPC dialog progressions | `src/config/npcs/*.ts` |
+| **Area Map Configs** | Feature states and triggers | `src/config/area-maps/*.ts` |
 
 ---
 
-## Current Quest Chain (Before Implementation)
+## Core Concepts
+
+### Data-Driven Design
+
+Quest behavior is defined in configuration files, not code. Handlers (stores, composables) are abstract executors that process these configurations. This separation allows:
+
+- Non-code changes for quest tuning
+- Clear ownership (content in JSON, logic in TypeScript)
+- Easier testing and debugging
+
+### The Quest Chain Pattern
 
 ```
-talk-to-harbormaster (active)
-  ↓
-visit-academy (hidden → active)
-  ↓
-talk-to-headmaster (hidden → active)
-  ↓
-explore-features (hidden → active, 3 subtasks: foundry, quartermaster, tavern)
-  ↓
-resource-creation (hidden → active)
-```
-
-## New Quest Chain (After Implementation)
-
-```
-talk-to-harbormaster (active)
-  ↓
-visit-academy
-  ↓
-talk-to-headmaster
-  ↓
-explore-features (3 subtasks)
-  ↓
-talk-to-anton-foundry (NEW) ← Headmaster dialog triggers this
-  ↓
-craft-first-items (NEW) ← Anton unlocks Foundry, tutorials play
-  ↓
-resource-creation
+Objective A (active)
+  ↓ completes via dialog onComplete
+Objective B (hidden → active via discoveryConditions)
+  ↓ unlocks feature via dialog onComplete
+Feature Screen with tutorials
+  ↓ player action triggers dialog via dialog-triggers.json
+Objective C (hidden → active → completed)
 ```
 
 ---
 
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/content/dialog-trees/headmaster-foundry-ready.json` | Headmaster explaining resources are ready |
-| `src/content/dialog-trees/anton-foundry-unlock.json` | Anton conversation that unlocks Enter Foundry |
-| `src/content/dialog-trees/anton-efficiency.json` | Anton's "too inefficient" dialog after first craft |
-| `src/content/tutorials/foundry-intro.json` | First tutorial on entering Foundry |
-| `src/content/tutorials/foundry-queue.json` | Tutorial on adding recipes to queue |
-| `src/content/tutorials/foundry-edit-layout.json` | Tutorial on Edit Layout feature |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/config/objectives.json` | Add new objectives for the questline |
-| `src/config/area-maps/academy.ts` | Change Foundry state to 'locked', update NPC dialog reference |
-| `src/stores/dialogs.ts` | Add completion handlers for new dialog trees |
-| `src/stores/objectives.ts` | Trigger Headmaster dialog when explore-features completes |
-| `src/stores/foundry.ts` | Track first visit, craft count, Edit Layout unlock state |
-| `src/components/screens/FoundryScreen.vue` | Add locked state for "Edit Layout" button, first visit tutorials |
-| `src/components/displays/NavigationButton.vue` | Support disabled/locked prop |
-
----
-
-## Detailed Implementation Steps
-
-### Step 1: Lock the "Enter Foundry" Button
-
-**File: `src/config/area-maps/academy.ts`**
-
-Change the Foundry feature's initial state from `'unlocked'` to `'locked'` (line 47):
-
-```typescript
-// Before
-state: 'unlocked',
-
-// After
-state: 'locked',
-```
-
-**File: `src/components/displays/NavigationButton.vue`**
-
-Add support for a `disabled` prop:
-
-```typescript
-interface Props {
-  label: string
-  featureId: string
-  icon?: string
-  variant?: 'primary' | 'secondary'
-  disabled?: boolean  // NEW
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  variant: 'primary',
-  disabled: false,  // NEW
-})
-```
-
-Update the template:
-
-```html
-<button
-  class="navigation-button"
-  :class="[
-    `navigation-button--${variant}`,
-    { 'navigation-button--disabled': disabled }
-  ]"
-  :disabled="disabled"
-  @click="handleClick"
->
-```
-
-Add CSS for disabled state:
-
-```css
-.navigation-button--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background-color: #94a3b8;
-}
-
-.navigation-button--disabled:hover {
-  transform: none;
-  box-shadow: none;
-}
-```
-
-**File: `src/config/area-maps/academy.ts`**
-
-The NavigationButton needs to check feature state. Update minimizedDisplays to pass disabled:
-
-```typescript
-minimizedDisplays: [
-  {
-    component: markRaw(StatusText),
-    props: {
-      text: 'Crafting available',
-      variant: 'success',
-      icon: '✓',
-    },
-  },
-  {
-    component: markRaw(NavigationButton),
-    props: {
-      label: 'Enter Foundry',
-      featureId: 'academy-foundry',
-      icon: '🔨',
-      variant: 'primary',
-      // disabled will be computed based on feature state in FeatureCard
-    },
-  },
-],
-```
-
-**Note**: The `FeatureCard.vue` component that renders minimizedDisplays needs to pass the feature's locked state to NavigationButton. Check how minimizedDisplays are rendered and inject `disabled: feature.state === 'locked'` into the props.
-
----
-
-### Step 2: Headmaster Dialog After "explore-features" Completion
-
-**File: `src/content/dialog-trees/headmaster-foundry-ready.json`** (NEW)
-
-```json
-{
-  "id": "headmaster-foundry-ready",
-  "characterName": "Headmaster Steinerhausen",
-  "portrait": {
-    "path": "images/portraits/headmaster.png",
-    "alt": "Headmaster Steinerhausen Portrait"
-  },
-  "startNodeId": "start",
-  "nodes": {
-    "start": {
-      "id": "start",
-      "message": "Excellent work getting acquainted with our facilities! Now that you've seen what we have, it's time to put it to use. Anton at the Foundry has been waiting for someone with authority to help coordinate our crafting operations. He should have everything ready for you.",
-      "responses": [
-        {
-          "text": "I'll head over to speak with him.",
-          "nextNodeId": null
-        }
-      ]
-    }
-  }
-}
-```
-
-**File: `src/stores/objectives.ts`**
-
-Dialog trees don't have automatic trigger conditions like tutorials. You must call `showDialogTree()` programmatically.
-
-In the `completeObjective()` function, add a check for `explore-features` completion. Insert after the tutorial trigger (around line 277):
-
-```typescript
-// Line 275-277 (existing code)
-const { triggerObjectiveTutorial } = useTutorials()
-triggerObjectiveTutorial(id)
-
-// NEW: Trigger Headmaster dialog when explore-features completes
-if (id === 'explore-features') {
-  // Use dynamic import to avoid circular dependency (dialogs.ts imports objectives.ts)
-  import('./dialogs').then(({ useDialogsStore }) => {
-    const dialogsStore = useDialogsStore()
-    dialogsStore.showDialogTree('headmaster-foundry-ready')
-  })
-}
-
-// Evaluate discovery conditions... (existing code continues)
-```
-
-**Why dynamic import?** The `dialogs.ts` store already imports `objectives.ts`, so a static import would create a circular dependency. Using dynamic `import()` defers the resolution.
-
-**Alternative approach:** If you prefer static imports, you could:
-1. Move the dialog trigger logic to `dialogs.ts` by watching for objective completion
-2. Create a separate event bus/emitter for cross-store communication
-
----
-
-### Step 3: New Objective - Talk to Anton
+## Creating Objectives
 
 **File: `src/config/objectives.json`**
 
-Add after the `explore-features` objective (insert before `resource-creation`):
+### Basic Objective
 
 ```json
 {
-  "id": "talk-to-anton-foundry",
-  "title": "Talk to Anton at the Foundry",
-  "description": "Speak with Anton DeCassieur at the Foundry to learn about crafting operations.",
+  "id": "gather-wood",
+  "title": "Gather Wood",
+  "description": "Collect 10 wood from the forest.",
   "status": "hidden",
   "category": "main",
   "order": 5,
-  "targetLocation": "0,0",
+  "targetLocation": "1,0",
   "discoveryConditions": [
     {
       "type": "objective",
-      "id": "explore-features",
-      "description": "Complete 'Inspect Academy Features'"
+      "id": "previous-objective-id",
+      "description": "Complete the previous objective"
     }
   ]
 }
 ```
 
-**Update order numbers:**
-- `resource-creation`: change order from 5 to 7
-- Add `craft-first-items` at order 6 (see Step 8)
-
----
-
-### Step 4: Anton Dialog Unlocks "Enter Foundry"
-
-**File: `src/content/dialog-trees/anton-foundry-unlock.json`** (NEW)
-
-```json
-{
-  "id": "anton-foundry-unlock",
-  "characterName": "Anton DeCassieur",
-  "portrait": {
-    "path": "images/portraits/smith.png",
-    "alt": "Anton DeCassieur Portrait"
-  },
-  "startNodeId": "ready",
-  "nodes": {
-    "ready": {
-      "id": "ready",
-      "message": "The Headmaster sent word that you'd be coming. The Foundry is prepped and ready for your inspection. I've organized the workspace so you can observe our crafting operations firsthand.",
-      "responses": [
-        {
-          "text": "Show me what we're working with.",
-          "nextNodeId": "explain"
-        }
-      ]
-    },
-    "explain": {
-      "id": "explain",
-      "message": "Inside, you'll find our main crafting grid. I've set up a supply bin for raw materials and an anvil for the actual forging. Once you're ready, you can enter and start queuing up recipes.",
-      "responses": [
-        {
-          "text": "Let's get started.",
-          "nextNodeId": null
-        }
-      ]
-    }
-  }
-}
-```
-
-**File: `src/config/area-maps/academy.ts`**
-
-Update the Foundry NPC's dialog tree reference to use the new unlock dialog:
-
-```typescript
-npcs: [
-  {
-    id: 'foundry-master',
-    name: 'Anton DeCassieur',
-    portrait: {
-      path: 'images/portraits/smith.png',
-      alt: 'Anton DeCassieur, the Foundry Master',
-    },
-    dialogTreeId: 'anton-foundry-unlock',  // Changed from 'foundry-master-intro'
-    fallbackDialogTreeId: 'foundry-master-tips',
-    icon: '🔨',
-  },
-],
-```
-
-**File: `src/stores/dialogs.ts`**
-
-Add handler in `completeConversation()` function (around line 522):
-
-```typescript
-} else if (conversationId === 'headmaster-foundry-ready') {
-  // Dialog just informs player, objective unlocks via discovery conditions
-} else if (conversationId === 'anton-foundry-unlock') {
-  objectivesStore.completeObjective('talk-to-anton-foundry')
-  // Unlock the Enter Foundry button
-  const areaMapStore = useAreaMapStore()
-  areaMapStore.updateFeatureState('academy-foundry', 'unlocked')
-}
-```
-
-**Import needed at top of `dialogs.ts`:**
-```typescript
-import { useAreaMapStore } from './areaMap'
-```
-
----
-
-### Step 5: Foundry First Visit Tutorial Sequence
-
-**File: `src/content/tutorials/foundry-intro.json`** (NEW)
-
-```json
-{
-  "id": "foundry-intro",
-  "title": "Welcome to the Foundry",
-  "content": "This is the **Foundry**, where you'll craft equipment for your explorers.\n\nThe main area shows Anton's crafting grid. He'll move between the **Supply Bin** (📦) to gather materials and the **Anvil** (🔨) to craft items.",
-  "triggerConditions": [
-    {
-      "type": "immediate",
-      "description": "Triggered on first Foundry screen visit"
-    }
-  ],
-  "showOnce": true
-}
-```
-
-**File: `src/content/tutorials/foundry-queue.json`** (NEW)
-
-```json
-{
-  "id": "foundry-queue",
-  "title": "Crafting Queue",
-  "content": "To craft an item:\n\n1. Select a **Recipe** from the left sidebar\n2. Set the **Quantity** you want to craft\n3. Click **Add to Queue**\n\nAnton will automatically work through the queue, gathering materials and crafting each item in order.",
-  "triggerConditions": [
-    {
-      "type": "immediate",
-      "description": "Triggered after foundry-intro"
-    }
-  ],
-  "showOnce": true
-}
-```
-
-**File: `src/stores/foundry.ts`**
-
-Add state tracking for first Foundry visit:
-
-```typescript
-// Add to state section (near other refs)
-const hasVisitedFoundryScreen = ref(false)
-
-// Add storage key constant
-const STORAGE_KEY_FOUNDRY_VISITED = 'idle-artifice-foundry-screen-visited'
-
-// Add to loadFromLocalStorage function or create new load function
-function loadFoundryVisitState(): void {
-  try {
-    const visited = localStorage.getItem(STORAGE_KEY_FOUNDRY_VISITED)
-    hasVisitedFoundryScreen.value = visited === 'true'
-  } catch (error) {
-    console.error('Failed to load foundry visit state:', error)
-  }
-}
-
-// Add action to mark as visited
-function markFoundryScreenVisited(): void {
-  if (hasVisitedFoundryScreen.value) return
-  hasVisitedFoundryScreen.value = true
-  try {
-    localStorage.setItem(STORAGE_KEY_FOUNDRY_VISITED, 'true')
-  } catch (error) {
-    console.error('Failed to save foundry visit state:', error)
-  }
-}
-
-// Call loadFoundryVisitState() in the store initialization
-
-// Export in return statement
-return {
-  // ... existing exports
-  hasVisitedFoundryScreen,
-  markFoundryScreenVisited,
-}
-```
-
-**File: `src/components/screens/FoundryScreen.vue`**
-
-Add import and onMounted logic:
-
-```typescript
-import { useDialogsStore } from '@/stores/dialogs'
-
-// Inside setup
-const dialogsStore = useDialogsStore()
-
-onMounted(() => {
-  // Existing resize listener setup...
-  window.addEventListener('resize', updateWindowWidth)
-
-  // Check if first visit to show tutorials
-  if (!foundryStore.hasVisitedFoundryScreen) {
-    foundryStore.markFoundryScreenVisited()
-    dialogsStore.showTutorial('foundry-intro')
-    dialogsStore.showTutorial('foundry-queue')
-  }
-})
-```
-
----
-
-### Step 6: First Craft Triggers Efficiency Dialog & Edit Layout Unlock
-
-**File: `src/content/dialog-trees/anton-efficiency.json`** (NEW)
-
-```json
-{
-  "id": "anton-efficiency",
-  "characterName": "Anton DeCassieur",
-  "portrait": {
-    "path": "images/portraits/smith.png",
-    "alt": "Anton DeCassieur Portrait"
-  },
-  "startNodeId": "start",
-  "nodes": {
-    "start": {
-      "id": "start",
-      "message": "Hmm. The item is crafted, yes, but look at how much time I wasted walking back and forth! This layout is terribly inefficient. If only we could rearrange the workspace...",
-      "responses": [
-        {
-          "text": "Can we move things around?",
-          "nextNodeId": "explain"
-        }
-      ]
-    },
-    "explain": {
-      "id": "explain",
-      "message": "Indeed! The **Edit Layout** button will let you reposition the Supply Bin and Anvil. Place them closer together and I'll spend less time walking, meaning faster crafts overall.",
-      "responses": [
-        {
-          "text": "I'll optimize the layout.",
-          "nextNodeId": null
-        }
-      ]
-    }
-  }
-}
-```
-
-**File: `src/content/tutorials/foundry-edit-layout.json`** (NEW)
-
-```json
-{
-  "id": "foundry-edit-layout",
-  "title": "Edit Layout",
-  "content": "Click **Edit Layout** to rearrange the workspace.\n\n1. Click the **Supply Bin** (📦) or **Anvil** (🔨) to select it\n2. Click an empty cell to move it there\n3. Click **Save Layout** when done\n\nPlacing them closer together reduces Anton's walking time!",
-  "triggerConditions": [
-    {
-      "type": "immediate",
-      "description": "Triggered after efficiency dialog"
-    }
-  ],
-  "showOnce": true
-}
-```
-
-**File: `src/stores/foundry.ts`**
-
-Add craft tracking and Edit Layout unlock state:
-
-```typescript
-// Add to state section
-const completedCraftsCount = ref(0)
-const isEditLayoutUnlocked = ref(false)
-
-// Add storage keys
-const STORAGE_KEY_CRAFTS_COUNT = 'idle-artifice-foundry-crafts-count'
-const STORAGE_KEY_EDIT_LAYOUT_UNLOCKED = 'idle-artifice-foundry-edit-layout-unlocked'
-
-// Add load functions
-function loadCraftingProgress(): void {
-  try {
-    const count = localStorage.getItem(STORAGE_KEY_CRAFTS_COUNT)
-    completedCraftsCount.value = count ? parseInt(count, 10) : 0
-
-    const unlocked = localStorage.getItem(STORAGE_KEY_EDIT_LAYOUT_UNLOCKED)
-    isEditLayoutUnlocked.value = unlocked === 'true'
-  } catch (error) {
-    console.error('Failed to load crafting progress:', error)
-  }
-}
-
-// Add action to unlock edit layout
-function unlockEditLayout(): void {
-  isEditLayoutUnlocked.value = true
-  try {
-    localStorage.setItem(STORAGE_KEY_EDIT_LAYOUT_UNLOCKED, 'true')
-  } catch (error) {
-    console.error('Failed to save edit layout unlock:', error)
-  }
-}
-
-// Call loadCraftingProgress() in store initialization
-```
-
-**Modify the craft completion logic in the state machine:**
-
-Find where crafting completes (likely in `tick()` or similar function where `produceRecipeOutputs` is called) and add:
-
-```typescript
-// After successful craft completion (after produceRecipeOutputs)
-completedCraftsCount.value++
-try {
-  localStorage.setItem(STORAGE_KEY_CRAFTS_COUNT, completedCraftsCount.value.toString())
-} catch (error) {
-  console.error('Failed to save crafts count:', error)
-}
-
-// Trigger efficiency dialog after first craft
-if (completedCraftsCount.value === 1 && !isEditLayoutUnlocked.value) {
-  // Use nextTick or setTimeout to avoid state machine conflicts
-  setTimeout(() => {
-    const dialogsStore = useDialogsStore()
-    dialogsStore.showDialogTree('anton-efficiency')
-  }, 500)
-}
-```
-
-**Add import at top of `foundry.ts`:**
-```typescript
-import { useDialogsStore } from './dialogs'
-```
-
-**Export in return statement:**
-```typescript
-return {
-  // ... existing exports
-  completedCraftsCount,
-  isEditLayoutUnlocked,
-  unlockEditLayout,
-}
-```
-
-**File: `src/stores/dialogs.ts`**
-
-Add handler for `anton-efficiency` completion in `completeConversation()`:
-
-```typescript
-} else if (conversationId === 'anton-efficiency') {
-  const foundryStore = useFoundryStore()
-  foundryStore.unlockEditLayout()
-  showTutorial('foundry-edit-layout')
-}
-```
-
-**Add import:**
-```typescript
-import { useFoundryStore } from './foundry'
-```
-
-**File: `src/components/screens/FoundryScreen.vue`**
-
-Update the Edit Layout button to respect locked state:
-
-```typescript
-// Add computed
-const isEditLayoutAvailable = computed(() => {
-  return foundryStore.isEditLayoutUnlocked && !isAntonCrafting.value
-})
-
-const editLayoutTitle = computed(() => {
-  if (!foundryStore.isEditLayoutUnlocked) {
-    return 'Complete your first craft to unlock'
-  }
-  if (isAntonCrafting.value) {
-    return 'Cannot edit while Anton is crafting'
-  }
-  return ''
-})
-```
-
-Update the button template (around line 414-422):
-
-```html
-<button
-  class="edit-mode-button"
-  :class="{
-    active: isEditMode,
-    locked: !foundryStore.isEditLayoutUnlocked
-  }"
-  :disabled="!isEditLayoutAvailable"
-  @click="toggleEditMode"
-  :title="editLayoutTitle"
->
-  {{ !foundryStore.isEditLayoutUnlocked
-    ? '🔒 Edit Layout'
-    : isEditMode
-      ? '💾 Save Layout'
-      : '✏️ Edit Layout'
-  }}
-</button>
-```
-
-Add CSS for locked state:
-
-```css
-.edit-mode-button.locked {
-  opacity: 0.6;
-  background-color: rgba(100, 100, 100, 0.3);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-```
-
----
-
-### Step 7: Second Craft Completion
-
-**File: `src/stores/foundry.ts`**
-
-In the craft completion logic (same location as Step 6), add:
-
-```typescript
-// After incrementing completedCraftsCount
-if (completedCraftsCount.value === 2) {
-  setTimeout(() => {
-    const objectivesStore = useObjectivesStore()
-    objectivesStore.completeObjective('craft-first-items')
-  }, 500)
-}
-```
-
-**Add import:**
-```typescript
-import { useObjectivesStore } from './objectives'
-```
-
----
-
-### Step 8: New Crafting Objective
-
-**File: `src/config/objectives.json`**
-
-Add after `talk-to-anton-foundry`:
+### Objective with Progress Tracking
 
 ```json
 {
   "id": "craft-first-items",
   "title": "Learn the Foundry",
-  "description": "Craft two items to learn the basics of the Foundry system.",
+  "description": "Craft two items to learn the basics.",
   "status": "hidden",
   "category": "main",
   "order": 6,
-  "targetLocation": "0,0",
   "currentProgress": 0,
   "maxProgress": 2,
   "discoveryConditions": [
     {
       "type": "objective",
-      "id": "talk-to-anton-foundry",
-      "description": "Complete 'Talk to Anton at the Foundry'"
+      "id": "talk-to-anton-foundry"
     }
   ]
 }
 ```
 
-**Update `resource-creation` order:**
+### Objective with Subtasks
+
 ```json
 {
-  "id": "resource-creation",
-  "title": "Resource Generation",
-  "description": "Learn about generating resources for your Academy.",
+  "id": "explore-features",
+  "title": "Inspect Academy Features",
+  "description": "Meet the key personnel at Camp Sagora.",
   "status": "hidden",
   "category": "main",
-  "order": 7,  // Changed from 5
-  // ... rest unchanged
+  "order": 4,
+  "subtasks": [
+    { "id": "visit-foundry", "label": "Visit the Foundry", "completed": false },
+    { "id": "visit-quartermaster", "label": "Visit the Quartermaster", "completed": false },
+    { "id": "visit-tavern", "label": "Visit the Tavern", "completed": false }
+  ],
+  "discoveryConditions": [
+    { "type": "objective", "id": "talk-to-headmaster" }
+  ]
 }
 ```
 
-**Alternative: Use progress updates instead of direct completion:**
+### Discovery Condition Types
 
-If using `maxProgress`, update the foundry store to call `updateProgress` instead:
+| Type | Description |
+|------|-------------|
+| `objective` | Requires another objective to be completed |
+| `resource` | Requires a resource threshold |
+| `feature` | Requires a feature to be unlocked |
+| `tile` | Requires a map tile to be explored |
 
-```typescript
-// In craft completion logic
-const objectivesStore = useObjectivesStore()
-objectivesStore.updateProgress('craft-first-items', completedCraftsCount.value)
-// Auto-completes when currentProgress reaches maxProgress
+---
+
+## Creating Dialog Trees
+
+**File: `src/content/dialog-trees/{dialog-id}.json`**
+
+### Basic Structure
+
+```json
+{
+  "id": "npc-intro",
+  "characterName": "NPC Name",
+  "portrait": {
+    "path": "images/portraits/npc.png",
+    "alt": "NPC portrait"
+  },
+  "onComplete": [
+    { "type": "completeObjective", "objectiveId": "talk-to-npc" }
+  ],
+  "startNodeId": "start",
+  "nodes": {
+    "start": {
+      "id": "start",
+      "message": "Hello, traveler!",
+      "responses": [
+        { "text": "Hello!", "nextNodeId": "greeting" },
+        { "text": "Goodbye.", "nextNodeId": null }
+      ]
+    },
+    "greeting": {
+      "id": "greeting",
+      "message": "Nice to meet you!",
+      "responses": [
+        { "text": "Likewise.", "nextNodeId": null }
+      ]
+    }
+  }
+}
+```
+
+### onComplete Action Types
+
+Actions execute when the dialog completes (player reaches a `nextNodeId: null` response).
+
+| Action Type | Parameters | Description |
+|-------------|------------|-------------|
+| `completeObjective` | `objectiveId` | Mark an objective as complete |
+| `updateSubtask` | `objectiveId`, `subtaskId` | Mark a subtask as complete |
+| `exploreTile` | `coordinates` (e.g., "0,0") | Explore a world map tile |
+| `showTutorial` | `tutorialId` | Queue a tutorial modal |
+| `showDialogTree` | `dialogTreeId` | Queue another dialog |
+| `unlockFeature` | `featureId` | Unlock a feature |
+| `unlockEditLayout` | (none) | Unlock Foundry edit layout |
+| `addResource` | `resourceId`, `amount` | Add resources (TODO) |
+| `setFlag` | `flagId`, `value` | Set a game state flag (TODO) |
+
+### Example: Dialog That Unlocks a Feature
+
+```json
+{
+  "id": "anton-unlock-foundry",
+  "characterName": "Anton DeCassieur",
+  "portrait": {
+    "path": "images/portraits/smith.png",
+    "alt": "Anton DeCassieur"
+  },
+  "onComplete": [
+    { "type": "completeObjective", "objectiveId": "talk-to-anton-foundry" },
+    { "type": "unlockFeature", "featureId": "academy-foundry" }
+  ],
+  "startNodeId": "start",
+  "nodes": {
+    "start": {
+      "id": "start",
+      "message": "The Foundry is ready for you!",
+      "responses": [
+        { "text": "Let's get started.", "nextNodeId": null }
+      ]
+    }
+  }
+}
 ```
 
 ---
 
----
-
-## Dialog Trigger System Architecture
-
-This section describes a consolidated system for triggering dialog trees based on game conditions, similar to how tutorials work but designed for lazy-loaded dialog trees.
-
-### Design Goals
-
-1. **Centralized configuration** - All dialog triggers defined in one place
-2. **Lazy loading** - Don't load dialog tree content until needed
-3. **Consistent with tutorials** - Same condition types and evaluation patterns
-4. **Testable** - Easy to unit test trigger evaluation
-5. **Extensible** - Easy to add new condition types
-
-### New Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/config/dialog-triggers.json` | Maps trigger conditions to dialog tree IDs |
-| `src/types/dialogTriggers.ts` | TypeScript types for trigger system |
-| `src/composables/useDialogTriggers.ts` | Composable for evaluating and firing triggers |
-
-### Type Definitions
-
-**File: `src/types/dialogTriggers.ts`**
-
-```typescript
-/**
- * Trigger condition types for dialog trees
- * Mirrors TutorialTriggerType for consistency
- */
-export type DialogTriggerType =
-  | 'objective-complete'    // When a specific objective is completed
-  | 'objective-active'      // When a specific objective becomes active
-  | 'dialog-complete'       // When another dialog tree is completed
-  | 'feature-interact'      // When a feature is interacted with
-  | 'feature-unlock'        // When a feature is unlocked
-  | 'location-visit'        // When a location is first visited
-  | 'location-enter'        // When entering a location (every time)
-  | 'resource-threshold'    // When resource amount crosses threshold
-  | 'craft-complete'        // When crafting completes (with optional count)
-
-/**
- * Single trigger condition
- */
-export interface DialogTriggerCondition {
-  /** Type of trigger */
-  type: DialogTriggerType
-  /** ID of the objective/dialog/feature/location to check */
-  id?: string
-  /** Numeric value for thresholds (resource amount, craft count) */
-  value?: number
-  /** Comparison operator for value conditions */
-  operator?: 'eq' | 'gte' | 'lte' | 'gt' | 'lt'
-}
-
-/**
- * Complete trigger definition mapping conditions to a dialog tree
- */
-export interface DialogTrigger {
-  /** Unique ID for this trigger (for tracking) */
-  id: string
-  /** Dialog tree ID to show when conditions are met */
-  dialogTreeId: string
-  /** All conditions must be met (AND logic) */
-  conditions: DialogTriggerCondition[]
-  /** Only fire once (default: true) */
-  showOnce?: boolean
-  /** Priority when multiple triggers fire simultaneously (higher = first) */
-  priority?: number
-  /** Human-readable description for debugging */
-  description?: string
-}
-
-/**
- * Root structure of dialog-triggers.json
- */
-export interface DialogTriggersConfig {
-  triggers: DialogTrigger[]
-}
-```
-
-### Trigger Configuration
+## Dialog Triggers
 
 **File: `src/config/dialog-triggers.json`**
+
+Dialog triggers automatically show dialogs when conditions are met.
+
+### Structure
 
 ```json
 {
   "triggers": [
     {
-      "id": "headmaster-foundry-ready",
-      "dialogTreeId": "headmaster-foundry-ready",
+      "id": "trigger-unique-id",
+      "dialogTreeId": "dialog-to-show",
       "conditions": [
-        { "type": "objective-complete", "id": "explore-features" }
+        { "type": "objective-complete", "id": "required-objective" }
       ],
       "priority": 10,
-      "description": "Headmaster explains Foundry is ready after exploring features"
-    },
-    {
-      "id": "anton-efficiency-prompt",
-      "dialogTreeId": "anton-efficiency",
-      "conditions": [
-        { "type": "craft-complete", "value": 1, "operator": "eq" }
-      ],
-      "priority": 10,
-      "description": "Anton comments on inefficiency after first craft"
-    },
-    {
-      "id": "tutorial-resource-generation",
-      "dialogTreeId": "resource-generation-intro",
-      "conditions": [
-        { "type": "objective-complete", "id": "craft-first-items" }
-      ],
-      "priority": 5,
-      "description": "Introduce resource generation after crafting tutorial"
+      "description": "Human-readable description"
     }
   ]
 }
 ```
 
-### Trigger Evaluation Composable
+### Condition Types
 
-**File: `src/composables/useDialogTriggers.ts`**
+| Type | Parameters | Description |
+|------|------------|-------------|
+| `objective-complete` | `id` | Objective is completed |
+| `dialog-complete` | `id` | Dialog tree was completed |
+| `craft-complete` | `value`, `operator` | Craft count matches condition |
+| `resource-threshold` | `id`, `value`, `operator` | Resource amount matches |
+| `location-visit` | `id` (coordinates) | Tile was visited |
 
-```typescript
-import { ref, computed } from 'vue'
-import { useDialogsStore } from '@/stores/dialogs'
-import { useObjectivesStore } from '@/stores/objectives'
-import { useFoundryStore } from '@/stores/foundry'
-import { useResourcesStore } from '@/stores/resources'
-import { useWorldMapStore } from '@/stores/worldMap'
-import type { DialogTrigger, DialogTriggerCondition } from '@/types/dialogTriggers'
-import triggersConfig from '@/config/dialog-triggers.json'
+### Operators for Numeric Conditions
 
-// Track which triggers have fired (persisted to localStorage)
-const STORAGE_KEY = 'idle-artifice-fired-dialog-triggers'
+| Operator | Meaning |
+|----------|---------|
+| `eq` | Equal to |
+| `gte` | Greater than or equal |
+| `lte` | Less than or equal |
+| `gt` | Greater than |
+| `lt` | Less than |
 
-export function useDialogTriggers() {
-  const firedTriggers = ref<Set<string>>(new Set())
+### Example: Dialog After First Craft
 
-  // Load fired triggers from localStorage
-  function loadFiredTriggers(): void {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        firedTriggers.value = new Set(JSON.parse(stored))
-      }
-    } catch (error) {
-      console.error('Failed to load fired triggers:', error)
-    }
-  }
-
-  // Save fired triggers to localStorage
-  function saveFiredTriggers(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([...firedTriggers.value]))
-    } catch (error) {
-      console.error('Failed to save fired triggers:', error)
-    }
-  }
-
-  // Mark a trigger as fired
-  function markTriggerFired(triggerId: string): void {
-    firedTriggers.value.add(triggerId)
-    saveFiredTriggers()
-  }
-
-  // Check if a trigger has already fired
-  function hasTriggerFired(triggerId: string): boolean {
-    return firedTriggers.value.has(triggerId)
-  }
-
-  // Evaluate a single condition
-  function evaluateCondition(condition: DialogTriggerCondition): boolean {
-    const objectivesStore = useObjectivesStore()
-    const dialogsStore = useDialogsStore()
-    const foundryStore = useFoundryStore()
-    const resourcesStore = useResourcesStore()
-    const worldMapStore = useWorldMapStore()
-
-    switch (condition.type) {
-      case 'objective-complete': {
-        const objective = objectivesStore.getObjectiveById(condition.id!)
-        return objective?.status === 'completed'
-      }
-
-      case 'objective-active': {
-        const objective = objectivesStore.getObjectiveById(condition.id!)
-        return objective?.status === 'active'
-      }
-
-      case 'dialog-complete': {
-        return dialogsStore.hasCompletedDialogTree(condition.id!)
-      }
-
-      case 'feature-interact': {
-        return dialogsStore.hasInteractedWithFeature(condition.id!)
-      }
-
-      case 'craft-complete': {
-        const count = foundryStore.completedCraftsCount
-        return evaluateNumericCondition(count, condition.value!, condition.operator || 'gte')
-      }
-
-      case 'resource-threshold': {
-        const amount = resourcesStore.getResourceAmount(condition.id!)
-        return evaluateNumericCondition(amount, condition.value!, condition.operator || 'gte')
-      }
-
-      case 'location-visit': {
-        const [q, r] = condition.id!.split(',').map(Number)
-        return worldMapStore.hasVisitedTile(q, r)
-      }
-
-      default:
-        console.warn(`Unknown trigger condition type: ${condition.type}`)
-        return false
-    }
-  }
-
-  // Helper for numeric comparisons
-  function evaluateNumericCondition(
-    actual: number,
-    expected: number,
-    operator: string
-  ): boolean {
-    switch (operator) {
-      case 'eq': return actual === expected
-      case 'gte': return actual >= expected
-      case 'lte': return actual <= expected
-      case 'gt': return actual > expected
-      case 'lt': return actual < expected
-      default: return actual >= expected
-    }
-  }
-
-  // Evaluate all conditions for a trigger (AND logic)
-  function evaluateTrigger(trigger: DialogTrigger): boolean {
-    // Skip if already fired and showOnce is true (default)
-    if ((trigger.showOnce !== false) && hasTriggerFired(trigger.id)) {
-      return false
-    }
-
-    return trigger.conditions.every(condition => evaluateCondition(condition))
-  }
-
-  // Find and fire the first matching trigger
-  // Returns true if a trigger was fired
-  async function evaluateAndFireTriggers(): Promise<boolean> {
-    const dialogsStore = useDialogsStore()
-
-    // Sort by priority (higher first)
-    const sortedTriggers = [...triggersConfig.triggers].sort(
-      (a, b) => (b.priority || 0) - (a.priority || 0)
-    )
-
-    for (const trigger of sortedTriggers) {
-      if (evaluateTrigger(trigger)) {
-        console.log(`[DialogTrigger] Firing: ${trigger.id} -> ${trigger.dialogTreeId}`)
-        markTriggerFired(trigger.id)
-        await dialogsStore.showDialogTree(trigger.dialogTreeId)
-        return true
-      }
-    }
-
-    return false
-  }
-
-  // Check triggers for a specific event type
-  // Useful for targeted evaluation after specific actions
-  async function evaluateTriggersForEvent(
-    eventType: DialogTriggerCondition['type'],
-    eventId?: string
-  ): Promise<boolean> {
-    const dialogsStore = useDialogsStore()
-
-    // Filter to triggers that have this event type as a condition
-    const relevantTriggers = triggersConfig.triggers.filter(trigger =>
-      trigger.conditions.some(c => c.type === eventType && (!eventId || c.id === eventId))
-    )
-
-    // Sort by priority
-    const sorted = relevantTriggers.sort((a, b) => (b.priority || 0) - (a.priority || 0))
-
-    for (const trigger of sorted) {
-      if (evaluateTrigger(trigger)) {
-        console.log(`[DialogTrigger] Firing: ${trigger.id} -> ${trigger.dialogTreeId}`)
-        markTriggerFired(trigger.id)
-        await dialogsStore.showDialogTree(trigger.dialogTreeId)
-        return true
-      }
-    }
-
-    return false
-  }
-
-  // Reset all fired triggers (for testing/debug)
-  function resetFiredTriggers(): void {
-    firedTriggers.value.clear()
-    localStorage.removeItem(STORAGE_KEY)
-  }
-
-  // Initialize on first use
-  loadFiredTriggers()
-
-  return {
-    firedTriggers: computed(() => firedTriggers.value),
-    hasTriggerFired,
-    evaluateAndFireTriggers,
-    evaluateTriggersForEvent,
-    resetFiredTriggers,
-  }
+```json
+{
+  "id": "anton-efficiency-prompt",
+  "dialogTreeId": "foundry-master-unlock-2-edit",
+  "conditions": [
+    { "type": "craft-complete", "value": 1, "operator": "eq" }
+  ],
+  "priority": 10,
+  "description": "Anton comments on efficiency after first craft"
 }
 ```
 
-### Integration Points
+### Example: Dialog After Multiple Conditions
 
-The trigger system needs to be called at key moments. Add these calls to existing code:
-
-**1. After objective completion (`src/stores/objectives.ts`)**
-
-```typescript
-// In completeObjective(), after evaluateDiscoveryConditions()
-import { useDialogTriggers } from '@/composables/useDialogTriggers'
-
-// ... existing code ...
-
-// Evaluate dialog triggers
-const { evaluateTriggersForEvent } = useDialogTriggers()
-evaluateTriggersForEvent('objective-complete', id)
-```
-
-**2. After craft completion (`src/stores/foundry.ts`)**
-
-```typescript
-// After incrementing completedCraftsCount
-import { useDialogTriggers } from '@/composables/useDialogTriggers'
-
-const { evaluateTriggersForEvent } = useDialogTriggers()
-evaluateTriggersForEvent('craft-complete')
-```
-
-**3. After feature unlock (`src/stores/areaMap.ts`)**
-
-```typescript
-// In updateFeatureState() when unlocking
-import { useDialogTriggers } from '@/composables/useDialogTriggers'
-
-if (newState === 'unlocked') {
-  const { evaluateTriggersForEvent } = useDialogTriggers()
-  evaluateTriggersForEvent('feature-unlock', featureId)
+```json
+{
+  "id": "headmaster-foundry-ready",
+  "dialogTreeId": "headmaster-foundry-ready",
+  "conditions": [
+    { "type": "objective-complete", "id": "explore-features" },
+    { "type": "dialog-complete", "id": "foundry-master-intro" },
+    { "type": "dialog-complete", "id": "quartermaster-intro" },
+    { "type": "dialog-complete", "id": "tavern-keeper-intro" }
+  ],
+  "priority": 10,
+  "description": "All conditions must be true (AND logic)"
 }
 ```
 
-### Benefits of This Architecture
+---
 
-1. **Single source of truth** - All dialog triggers in `dialog-triggers.json`
-2. **No circular dependencies** - Composable pattern avoids store import cycles
-3. **Lazy loading preserved** - Dialog tree content only loaded when triggered
-4. **Easy to test** - `evaluateCondition()` is pure and testable
-5. **Priority system** - Control which dialog shows when multiple triggers match
-6. **Event-based evaluation** - Only check relevant triggers for each event type
-7. **Persistence** - Fired triggers survive page refresh
+## NPC Dialog Progressions
 
-### Migration Path
+**File: `src/config/npcs/{npc-id}.ts`**
 
-To migrate the Foundry questline to this system:
+NPCs have ordered dialog progressions that show in sequence.
 
-1. Create the new files (`dialog-triggers.json`, types, composable)
-2. Add trigger entries for each dialog in your questline
-3. Add integration points to stores
-4. Remove hardcoded trigger logic from stores
-5. Test each trigger fires correctly
+### Structure
+
+```typescript
+export const npcConfig: NPCConfig = {
+  id: 'npc-id',
+  name: 'NPC Name',
+  portrait: {
+    path: 'images/portraits/npc.png',
+    alt: 'NPC portrait',
+  },
+  icon: '🔨',
+  dialogProgression: [
+    { id: 'npc-intro' },
+    {
+      id: 'npc-second-dialog',
+      conditions: [
+        { type: 'objectiveComplete', objectiveId: 'first-objective' },
+      ],
+    },
+  ],
+  fallbackProgression: [
+    { id: 'npc-general-tips', priority: 0 },
+  ],
+}
+```
+
+### How It Works
+
+1. When player clicks NPC, system finds first uncompleted dialog in `dialogProgression`
+2. If dialog has `conditions`, they must be met for it to be available
+3. After all progression dialogs are done, `fallbackProgression` dialogs are used
+4. NPC indicator (!) shows when progression dialogs are available
+
+### Condition Types for Progression
+
+| Type | Parameters | Description |
+|------|------------|-------------|
+| `objectiveComplete` | `objectiveId` | Objective is completed |
+| `dialogComplete` | `dialogId` | Dialog was completed |
+| `featureState` | `featureId`, `state` | Feature is in specific state |
+
+---
+
+## Tutorials
+
+**File: `src/content/tutorials/{tutorial-id}.json`**
+
+### Structure
+
+```json
+{
+  "id": "tutorial-id",
+  "title": "Tutorial Title",
+  "content": "Tutorial content with **markdown** support.",
+  "triggerConditions": [
+    {
+      "type": "immediate",
+      "description": "Triggered programmatically"
+    }
+  ],
+  "showOnce": true
+}
+```
+
+### Triggering Tutorials
+
+**From dialog onComplete:**
+```json
+{ "type": "showTutorial", "tutorialId": "tutorial-id" }
+```
+
+**From component code:**
+```typescript
+const dialogsStore = useDialogsStore()
+dialogsStore.showTutorial('tutorial-id')
+```
+
+---
+
+## Feature States
+
+Features can be locked/unlocked to gate progression.
+
+### Setting Initial State
+
+**File: `src/config/area-maps/{area}.ts`**
+
+```typescript
+{
+  id: 'academy-foundry',
+  type: 'foundry',
+  state: 'locked',  // 'hidden' | 'locked' | 'unlocked'
+  // ...
+}
+```
+
+### Unlocking via Dialog
+
+```json
+{
+  "onComplete": [
+    { "type": "unlockFeature", "featureId": "academy-foundry" }
+  ]
+}
+```
+
+### Dynamic Button States
+
+The `AreaMap.vue` component automatically passes feature state to `NavigationButton` components, disabling them when the feature is locked.
+
+---
+
+## Common Quest Patterns
+
+### Pattern 1: Talk to NPC → Unlock Feature
+
+1. Create objective with `discoveryConditions` based on previous objective
+2. Create dialog tree with `onComplete` actions:
+   - `completeObjective` for the talk objective
+   - `unlockFeature` for the feature
+3. Add dialog to NPC's `dialogProgression` with conditions
+
+### Pattern 2: Complete Action N Times
+
+1. Create objective with `maxProgress` set to target count
+2. In the action handler (e.g., `produceRecipeOutputs`), call:
+   ```typescript
+   objectivesStore.updateProgress('objective-id', currentCount)
+   ```
+3. Objective auto-completes when `currentProgress >= maxProgress`
+
+### Pattern 3: Trigger Dialog After Action
+
+1. Add trigger to `dialog-triggers.json` with condition
+2. In action handler, evaluate triggers:
+   ```typescript
+   import('@/composables/useDialogTriggers').then(({ useDialogTriggers }) => {
+     const { evaluateTriggersForEvent } = useDialogTriggers()
+     evaluateTriggersForEvent('craft-complete')
+   })
+   ```
+
+### Pattern 4: Sequential NPC Dialogs
+
+1. Add multiple entries to NPC's `dialogProgression`
+2. Gate later entries with `conditions`
+3. Each dialog's `onComplete` sets up conditions for the next
+
+### Pattern 5: First-Visit Tutorials
+
+1. Track visit state in relevant store (e.g., `hasVisitedFoundryScreen`)
+2. In component's `onMounted`:
+   ```typescript
+   if (!store.hasVisitedScreen) {
+     store.markScreenVisited()
+     dialogsStore.showTutorial('intro-tutorial')
+   }
+   ```
 
 ---
 
 ## Architecture Reference
 
-### Dialog-to-Objective Flow
+### Flow: Dialog → Objective → Next Quest
 
 ```
-Dialog completes
-  → dialogs.ts completeConversation()
-    → objectivesStore.completeObjective()
-      → evaluateDiscoveryConditions()
-        → Next objective unlocks
+Player completes dialog
+  → dialogs.ts: executeCompletionActions()
+    → completeObjective action
+      → objectives.ts: evaluateDiscoveryConditions()
+        → Next objective becomes active
 ```
 
-### Feature Unlock Flow
+### Flow: Dialog → Feature Unlock
 
 ```
-Dialog completes
-  → dialogs.ts completeConversation()
-    → areaMapStore.updateFeatureState(featureId, 'unlocked')
-      → Feature button becomes clickable
+Player completes dialog
+  → dialogs.ts: executeCompletionActions()
+    → unlockFeature action
+      → areaMap.ts: updateFeatureState()
+        → Feature button becomes clickable
 ```
 
-### Tutorial Trigger Flow
+### Flow: Action → Dialog Trigger
 
 ```
-showTutorial(id)
-  → checks hasSeenTutorial
-    → if not seen, adds to modalQueue
-      → ModalManager displays it
-```
-
-### Craft Completion Flow
-
-```
-State machine tick()
-  → crafting phase completes
-    → produceRecipeOutputs()
-      → increment completedCraftsCount
-        → check for dialog/objective triggers
+Player action (e.g., craft)
+  → Store increments counter
+  → useDialogTriggers: evaluateTriggersForEvent()
+    → Condition matches
+      → dialogs.ts: showDialogTree()
 ```
 
 ---
@@ -1143,30 +486,26 @@ State machine tick()
 
 | Purpose | File Path |
 |---------|-----------|
-| Objective definitions | `src/config/objectives.json` |
-| Objective store | `src/stores/objectives.ts` |
-| Dialog store | `src/stores/dialogs.ts` |
+| Objectives | `src/config/objectives.json` |
 | Dialog trees | `src/content/dialog-trees/*.json` |
+| Dialog triggers | `src/config/dialog-triggers.json` |
 | Tutorials | `src/content/tutorials/*.json` |
-| Academy area config | `src/config/area-maps/academy.ts` |
-| Foundry store | `src/stores/foundry.ts` |
-| Foundry screen | `src/components/screens/FoundryScreen.vue` |
-| Navigation button | `src/components/displays/NavigationButton.vue` |
-| Area map store | `src/stores/areaMap.ts` |
+| NPC configs | `src/config/npcs/*.ts` |
+| Area configs | `src/config/area-maps/*.ts` |
+| Dialogs store | `src/stores/dialogs.ts` |
+| Objectives store | `src/stores/objectives.ts` |
+| Dialog trigger composable | `src/composables/useDialogTriggers.ts` |
 
 ---
 
-## Testing Checklist
+## Adding a New Quest: Checklist
 
-- [ ] Foundry "Enter Foundry" button starts locked
-- [ ] Completing all 3 feature interactions triggers Headmaster dialog
-- [ ] "Talk to Anton at the Foundry" objective appears after Headmaster dialog
-- [ ] Clicking Anton NPC shows unlock dialog
-- [ ] Completing Anton dialog unlocks "Enter Foundry" button
-- [ ] First Foundry screen visit shows intro + queue tutorials
-- [ ] "Edit Layout" button starts locked with 🔒 icon
-- [ ] First craft completion triggers Anton efficiency dialog
-- [ ] Completing efficiency dialog unlocks "Edit Layout" button
-- [ ] Edit Layout tutorial shows after efficiency dialog
-- [ ] Second craft completion completes "Learn the Foundry" objective
-- [ ] All states persist across page refresh
+- [ ] Define objective in `objectives.json` with `discoveryConditions`
+- [ ] Create dialog tree(s) in `content/dialog-trees/`
+- [ ] Add `onComplete` actions to dialog tree(s)
+- [ ] Add NPC dialog progression entries if needed
+- [ ] Add dialog triggers to `dialog-triggers.json` if auto-triggered
+- [ ] Create tutorials in `content/tutorials/` if needed
+- [ ] Update feature state in area config if gating access
+- [ ] Add action tracking in stores if progress-based
+- [ ] Test the full quest flow
