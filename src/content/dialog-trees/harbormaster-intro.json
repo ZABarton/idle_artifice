@@ -5,6 +5,11 @@
     "path": "images/portraits/harbormaster.png",
     "alt": "Harbormaster portrait"
   },
+  "onComplete": [
+    { "type": "completeObjective", "objectiveId": "talk-to-harbormaster" },
+    { "type": "exploreTile", "coordinates": "0,0" },
+    { "type": "showTutorial", "tutorialId": "area-to-world" }
+  ],
   "startNodeId": "welcome",
   "nodes": {
     "welcome": {

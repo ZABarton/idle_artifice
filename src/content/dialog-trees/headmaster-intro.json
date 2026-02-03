@@ -5,6 +5,9 @@
     "path": "images/portraits/headmaster.png",
     "alt": "Gustav Torrek"
   },
+  "onComplete": [
+    { "type": "completeObjective", "objectiveId": "talk-to-headmaster" }
+  ],
   "startNodeId": "welcome",
   "nodes": {
     "welcome": {

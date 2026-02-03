@@ -5,6 +5,9 @@
     "path": "images/portraits/smith.png",
     "alt": "Anton DeCassieur Portrait"
   },
+  "onComplete": [
+    { "type": "updateSubtask", "objectiveId": "explore-features", "subtaskId": "visit-foundry" }
+  ],
   "startNodeId": "welcome",
   "nodes": {
     "welcome": {

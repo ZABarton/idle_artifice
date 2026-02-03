@@ -21,6 +21,10 @@ defineProps<Props>()
 const foundryStore = useFoundryStore()
 const resourcesStore = useResourcesStore()
 
+// Import dialogs store for first-visit tutorials
+import { useDialogsStore } from '@/stores/dialogs'
+const dialogsStore = useDialogsStore()
+
 // Toggle for coordinate labels
 const showCoordinates = ref(true)
 
@@ -31,6 +35,13 @@ function updateWindowWidth() {
 }
 onMounted(() => {
   window.addEventListener('resize', updateWindowWidth)
+
+  // Trigger first-visit tutorials
+  if (!foundryStore.hasVisitedFoundryScreen) {
+    foundryStore.markFoundryScreenVisited()
+    dialogsStore.showTutorial('foundry-intro')
+    dialogsStore.showTutorial('foundry-queue')
+  }
 })
 onUnmounted(() => {
   window.removeEventListener('resize', updateWindowWidth)
@@ -48,6 +59,22 @@ const craftQuantity = ref(1)
 // Check if Anton is actively crafting (disable editing during crafting)
 const isAntonCrafting = computed(() => {
   return foundryStore.anton.currentAction !== 'idle'
+})
+
+// Check if Edit Layout is available (unlocked and Anton not crafting)
+const isEditLayoutAvailable = computed(() => {
+  return foundryStore.isEditLayoutUnlocked && !isAntonCrafting.value
+})
+
+// Tooltip for Edit Layout button
+const editLayoutTitle = computed(() => {
+  if (!foundryStore.isEditLayoutUnlocked) {
+    return 'Complete your first craft to unlock'
+  }
+  if (isAntonCrafting.value) {
+    return 'Cannot edit while Anton is crafting'
+  }
+  return ''
 })
 
 // Get materials from resource store (filtered to show relevant crafting materials)
@@ -415,12 +442,18 @@ function getCellFeedbackClass(cell: GridCell): string | null {
         </label>
         <button
           class="edit-mode-button"
-          :class="{ active: isEditMode }"
-          :disabled="isAntonCrafting"
-          :title="isAntonCrafting ? 'Cannot edit while Anton is crafting' : ''"
+          :class="{ active: isEditMode, locked: !foundryStore.isEditLayoutUnlocked }"
+          :disabled="!isEditLayoutAvailable"
+          :title="editLayoutTitle"
           @click="toggleEditMode"
         >
-          {{ isEditMode ? '💾 Save Layout' : '✏️ Edit Layout' }}
+          {{
+            !foundryStore.isEditLayoutUnlocked
+              ? '🔒 Edit Layout'
+              : isEditMode
+                ? '💾 Save Layout'
+                : '✏️ Edit Layout'
+          }}
         </button>
         <button
           class="restart-button"
@@ -768,6 +801,12 @@ function getCellFeedbackClass(cell: GridCell): string | null {
 .edit-mode-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.edit-mode-button.locked {
+  opacity: 0.6;
+  background-color: rgba(100, 100, 100, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .restart-button {

@@ -5,6 +5,10 @@
     "path": "images/portraits/smith.png",
     "alt": "Anton DeCassieur"
   },
+  "onComplete": [
+    { "type": "unlockEditLayout" },
+    { "type": "showTutorial", "tutorialId": "foundry-edit-layout" }
+  ],
   "startNodeId": "start",
   "nodes": {
     "start": {

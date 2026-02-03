@@ -7,10 +7,12 @@ import type {
   ModalQueueItem,
   DialogHistoryRecord,
   DialogHistoryEntry,
+  CompletionAction,
 } from '@/types/dialogs'
 import { useNotificationsStore } from './notifications'
 import { useObjectivesStore } from './objectives'
 import { useWorldMapStore } from './worldMap'
+import { useAreaMapStore } from './areaMap'
 
 // LocalStorage keys
 const STORAGE_KEY_COMPLETED_TUTORIALS = 'idle-artifice-completed-tutorials'
@@ -497,6 +499,86 @@ export const useDialogsStore = defineStore('dialogs', () => {
   }
 
   /**
+   * Execute completion actions from a dialog tree's onComplete array
+   *
+   * This data-driven approach allows dialog completion behavior to be defined
+   * in the dialog tree JSON files rather than hardcoded in the store.
+   *
+   * @param actions - Array of completion actions to execute
+   */
+  function executeCompletionActions(actions: CompletionAction[]): void {
+    const objectivesStore = useObjectivesStore()
+    const worldMapStore = useWorldMapStore()
+
+    for (const action of actions) {
+      switch (action.type) {
+        case 'completeObjective':
+          objectivesStore.completeObjective(action.objectiveId)
+          break
+
+        case 'updateSubtask':
+          objectivesStore.updateSubtask(action.objectiveId, action.subtaskId, true)
+          break
+
+        case 'exploreTile': {
+          const [q, r] = action.coordinates.split(',').map(Number)
+          worldMapStore.exploreTile(q, r)
+          break
+        }
+
+        case 'showTutorial':
+          showTutorial(action.tutorialId)
+          break
+
+        case 'showDialogTree':
+          // Queue another dialog tree to show after this one completes
+          // Use setTimeout to ensure the current dialog cleanup finishes first
+          setTimeout(() => {
+            showDialogTree(action.dialogTreeId)
+          }, 0)
+          break
+
+        case 'unlockFeature': {
+          const areaMapStore = useAreaMapStore()
+          areaMapStore.updateFeatureState(action.featureId, 'unlocked')
+          break
+        }
+
+        case 'unlockEditLayout': {
+          // Import foundry store dynamically to avoid circular dependency
+          import('./foundry').then(({ useFoundryStore }) => {
+            const foundryStore = useFoundryStore()
+            foundryStore.unlockEditLayout()
+          })
+          break
+        }
+
+        case 'unlockFoundryEntry': {
+          // Import foundry store dynamically to avoid circular dependency
+          import('./foundry').then(({ useFoundryStore }) => {
+            const foundryStore = useFoundryStore()
+            foundryStore.unlockFoundryEntry()
+          })
+          break
+        }
+
+        case 'addResource':
+          // TODO: Implement when resource system is in place
+          console.log(`[Dialog] Would add ${action.amount} of ${action.resourceId}`)
+          break
+
+        case 'setFlag':
+          // TODO: Implement when game flags system is in place
+          console.log(`[Dialog] Would set flag ${action.flagId} to ${action.value}`)
+          break
+
+        default:
+          console.warn(`[Dialog] Unknown completion action type:`, action)
+      }
+    }
+  }
+
+  /**
    * Complete the current conversation and add to history
    */
   function completeConversation(): void {
@@ -515,23 +597,9 @@ export const useDialogsStore = defineStore('dialogs', () => {
     // Save to localStorage
     saveToLocalStorage(STORAGE_KEY_DIALOG_HISTORY, dialogHistory.value)
 
-    // Update objectives based on completed dialog tree
-    const objectivesStore = useObjectivesStore()
-    if (conversationId === 'harbormaster-intro') {
-      objectivesStore.completeObjective('talk-to-harbormaster')
-      // Unlock Academy hex and reveal surrounding hexes
-      const worldMapStore = useWorldMapStore()
-      worldMapStore.exploreTile(0, 0) // Academy at (0, 0)
-      // Trigger tutorial for navigating to World Map
-      showTutorial('area-to-world')
-    } else if (conversationId === 'headmaster-intro') {
-      objectivesStore.completeObjective('talk-to-headmaster')
-    } else if (conversationId === 'foundry-master-intro') {
-      objectivesStore.updateSubtask('explore-features', 'visit-foundry', true)
-    } else if (conversationId === 'quartermaster-intro') {
-      objectivesStore.updateSubtask('explore-features', 'visit-quartermaster', true)
-    } else if (conversationId === 'tavern-keeper-intro') {
-      objectivesStore.updateSubtask('explore-features', 'visit-tavern', true)
+    // Execute completion actions from the dialog tree (data-driven)
+    if (activeDialogTree.value?.onComplete) {
+      executeCompletionActions(activeDialogTree.value.onComplete)
     }
 
     // Evaluate dialog triggers for this dialog completion
