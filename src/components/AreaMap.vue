@@ -8,6 +8,7 @@ import { useObjectivesStore } from '@/stores/objectives'
 import { useResourcesStore } from '@/stores/resources'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useNPCLocationsStore } from '@/stores/npcLocations'
+import { useFoundryStore } from '@/stores/foundry'
 import FeatureCard from './FeatureCard.vue'
 import NPCIndicator from '@/components/displays/NPCIndicator.vue'
 import type { Feature } from '@/types/feature'
@@ -197,11 +198,23 @@ const getMinimizedDisplays = (feature: Feature) => {
   return featureConfig?.minimizedDisplays ?? []
 }
 
+// Foundry store for checking entry unlock state
+const foundryStore = useFoundryStore()
+
 // Compute props for a minimized display, adding feature-state-based props
 const getDisplayProps = (display: { props?: Record<string, unknown> }, feature: Feature) => {
   const baseProps = display.props ?? {}
-  // If the display has a featureId prop (like NavigationButton), add disabled based on feature state
+  // If the display has a featureId prop (like NavigationButton), add disabled based on unlock state
   if ('featureId' in baseProps) {
+    const featureId = baseProps.featureId as string
+    // Check foundry-specific unlock state for the academy-foundry feature
+    if (featureId === 'academy-foundry') {
+      return {
+        ...baseProps,
+        disabled: !foundryStore.isFoundryEntryUnlocked,
+      }
+    }
+    // Default: disable if feature is locked
     return {
       ...baseProps,
       disabled: feature.state === 'locked',

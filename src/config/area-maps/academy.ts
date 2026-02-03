@@ -44,7 +44,7 @@ export const academyConfig: AreaMapConfig = {
       name: 'Foundry',
       description: 'Craft equipment for your explorers.',
       icon: '🔨',
-      state: 'locked',
+      state: 'unlocked',
       isActive: false,
       interactionType: 'inline',
       npcIds: ['anton'],

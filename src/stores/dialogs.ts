@@ -553,6 +553,15 @@ export const useDialogsStore = defineStore('dialogs', () => {
           break
         }
 
+        case 'unlockFoundryEntry': {
+          // Import foundry store dynamically to avoid circular dependency
+          import('./foundry').then(({ useFoundryStore }) => {
+            const foundryStore = useFoundryStore()
+            foundryStore.unlockFoundryEntry()
+          })
+          break
+        }
+
         case 'addResource':
           // TODO: Implement when resource system is in place
           console.log(`[Dialog] Would add ${action.amount} of ${action.resourceId}`)

@@ -180,6 +180,7 @@ export type CompletionAction =
   | { type: 'showDialogTree'; dialogTreeId: string }
   | { type: 'unlockFeature'; featureId: string }
   | { type: 'unlockEditLayout' }
+  | { type: 'unlockFoundryEntry' }
   | { type: 'addResource'; resourceId: string; amount: number }
   | { type: 'setFlag'; flagId: string; value: boolean }
 

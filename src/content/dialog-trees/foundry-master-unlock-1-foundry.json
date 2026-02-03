@@ -7,7 +7,7 @@
   },
   "onComplete": [
     { "type": "completeObjective", "objectiveId": "talk-to-anton-foundry" },
-    { "type": "unlockFeature", "featureId": "academy-foundry" }
+    { "type": "unlockFoundryEntry" }
   ],
   "startNodeId": "start",
   "nodes": {

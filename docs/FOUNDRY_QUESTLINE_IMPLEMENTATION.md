@@ -170,7 +170,8 @@ Actions execute when the dialog completes (player reaches a `nextNodeId: null` r
 | `exploreTile` | `coordinates` (e.g., "0,0") | Explore a world map tile |
 | `showTutorial` | `tutorialId` | Queue a tutorial modal |
 | `showDialogTree` | `dialogTreeId` | Queue another dialog |
-| `unlockFeature` | `featureId` | Unlock a feature |
+| `unlockFeature` | `featureId` | Unlock a feature (entire feature card) |
+| `unlockFoundryEntry` | (none) | Unlock Foundry "Enter Foundry" button |
 | `unlockEditLayout` | (none) | Unlock Foundry edit layout |
 | `addResource` | `resourceId`, `amount` | Add resources (TODO) |
 | `setFlag` | `flagId`, `value` | Set a game state flag (TODO) |

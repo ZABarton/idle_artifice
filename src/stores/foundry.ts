@@ -18,6 +18,7 @@ const STORAGE_KEY_FOUNDRY = 'idle-artifice-foundry'
 const STORAGE_KEY_FOUNDRY_VISITED = 'idle-artifice-foundry-screen-visited'
 const STORAGE_KEY_CRAFTS_COUNT = 'idle-artifice-foundry-crafts-count'
 const STORAGE_KEY_EDIT_LAYOUT_UNLOCKED = 'idle-artifice-foundry-edit-layout-unlocked'
+const STORAGE_KEY_FOUNDRY_ENTRY_UNLOCKED = 'idle-artifice-foundry-entry-unlocked'
 
 // Track if we've shown storage warning to avoid spam
 let hasShownStorageWarning = false
@@ -362,6 +363,7 @@ export const useFoundryStore = defineStore('foundry', () => {
   const hasVisitedFoundryScreen = ref<boolean>(loadBooleanFromStorage(STORAGE_KEY_FOUNDRY_VISITED))
   const completedCraftsCount = ref<number>(loadNumberFromStorage(STORAGE_KEY_CRAFTS_COUNT))
   const isEditLayoutUnlocked = ref<boolean>(loadBooleanFromStorage(STORAGE_KEY_EDIT_LAYOUT_UNLOCKED))
+  const isFoundryEntryUnlocked = ref<boolean>(loadBooleanFromStorage(STORAGE_KEY_FOUNDRY_ENTRY_UNLOCKED))
 
   // Getters - Grid queries
   const grid = computed(() => gridState.value.grid)
@@ -923,6 +925,19 @@ export const useFoundryStore = defineStore('foundry', () => {
       localStorage.setItem(STORAGE_KEY_EDIT_LAYOUT_UNLOCKED, 'true')
     } catch (error) {
       console.error('Failed to save edit layout unlock:', error)
+    }
+  }
+
+  /**
+   * Unlock the Foundry entry (Enter Foundry button)
+   */
+  function unlockFoundryEntry(): void {
+    if (isFoundryEntryUnlocked.value) return
+    isFoundryEntryUnlocked.value = true
+    try {
+      localStorage.setItem(STORAGE_KEY_FOUNDRY_ENTRY_UNLOCKED, 'true')
+    } catch (error) {
+      console.error('Failed to save foundry entry unlock:', error)
     }
   }
 
@@ -1737,5 +1752,8 @@ export const useFoundryStore = defineStore('foundry', () => {
     // Actions - Questline tracking
     markFoundryScreenVisited,
     unlockEditLayout,
+    unlockFoundryEntry,
+    // State - Questline tracking
+    isFoundryEntryUnlocked,
   }
 })
