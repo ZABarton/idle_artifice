@@ -18,6 +18,7 @@ export type QuestChainEdgeType =
   | 'unlocks' // Completing A unlocks B (e.g., objective discovery conditions)
   | 'triggers' // A triggers B (e.g., dialog trigger fires dialog tree)
   | 'completes' // A completes B (e.g., dialog tree completes objective)
+  | 'completes-via-subtasks' // A completes B via subtask completion (e.g., subtask feature completes parent objective)
   | 'requires' // A requires B (e.g., dialog trigger requires objective-complete)
   | 'shows' // A shows B (e.g., dialog tree shows tutorial)
 
@@ -65,6 +66,7 @@ export interface DialogTreeNodeData {
   onComplete?: Array<{
     type: string
     objectiveId?: string
+    subtaskId?: string
     tutorialId?: string
     dialogTreeId?: string
     coordinates?: string

@@ -627,6 +627,11 @@ function getNodeLabel(nodeId: string): string {
   color: #388e3c;
 }
 
+.edge-type.completes-via-subtasks {
+  background-color: #f1f8e9;
+  color: #689f38;
+}
+
 .edge-type.requires {
   background-color: #fff3e0;
   color: #f57c00;

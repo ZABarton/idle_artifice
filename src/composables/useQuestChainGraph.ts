@@ -131,6 +131,21 @@ export function useQuestChainGraph() {
             }
           }
         }
+
+        // Build self-referential edge for objectives with subtasks
+        // This indicates the objective completes when all subtasks are done
+        if (objective.subtasks && objective.subtasks.length > 0) {
+          edges.push({
+            id: `edge:objective:${objective.id}:completes-via-subtasks`,
+            source: `objective:${objective.id}`,
+            target: `objective:${objective.id}`,
+            type: 'completes-via-subtasks',
+            label: `${objective.subtasks.length} subtasks`,
+            data: {
+              description: `Completes when ${objective.subtasks.length} subtasks are finished`,
+            },
+          })
+        }
       }
 
       // Build nodes from dialog trees
@@ -162,6 +177,16 @@ export function useQuestChainGraph() {
                 target: `objective:${action.objectiveId}`,
                 type: 'completes',
                 label: 'completes',
+              })
+            }
+            // updateSubtask also contributes to objective completion
+            if (action.type === 'updateSubtask' && action.objectiveId) {
+              edges.push({
+                id: `edge:dialog-tree:${tree.id}:completes-via-subtasks:objective:${action.objectiveId}`,
+                source: `dialog-tree:${tree.id}`,
+                target: `objective:${action.objectiveId}`,
+                type: 'completes-via-subtasks',
+                label: action.subtaskId ? `subtask: ${action.subtaskId}` : 'updates subtask',
               })
             }
             if (action.type === 'showTutorial' && action.tutorialId) {
@@ -401,8 +426,12 @@ export function useQuestChainGraph() {
 
     // Check for circular dependencies in objectives
     const objectiveNodes = graph.nodes.filter((n) => n.type === 'objective')
+    // Exclude self-loops (completes-via-subtasks) from cycle detection
     const objectiveEdges = graph.edges.filter(
-      (e) => e.source.startsWith('objective:') && e.target.startsWith('objective:')
+      (e) =>
+        e.source.startsWith('objective:') &&
+        e.target.startsWith('objective:') &&
+        e.source !== e.target
     )
 
     function hasCycle(nodeId: string, visited: Set<string>, path: Set<string>): boolean {
@@ -439,9 +468,11 @@ export function useQuestChainGraph() {
     for (const node of objectiveNodes) {
       const data = node.data as ObjectiveNodeData
       if (data.status === 'hidden') {
-        // Check if any edge targets this objective with 'completes' type
+        // Check if any edge targets this objective with 'completes' or 'completes-via-subtasks' type
         const completionEdges = graph.edges.filter(
-          (e) => e.target === node.id && e.type === 'completes'
+          (e) =>
+            e.target === node.id &&
+            (e.type === 'completes' || e.type === 'completes-via-subtasks')
         )
         if (completionEdges.length === 0) {
           issues.push({

@@ -26,6 +26,7 @@ const edgeColors: Record<string, string> = {
   unlocks: '#1976d2',
   triggers: '#7b1fa2',
   completes: '#388e3c',
+  'completes-via-subtasks': '#8bc34a',
   requires: '#f57c00',
   shows: '#0288d1',
 }
