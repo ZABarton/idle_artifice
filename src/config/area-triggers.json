@@ -1,0 +1,32 @@
+{
+  "triggers": [
+    {
+      "id": "harbor-first-visit",
+      "areaType": "harbor",
+      "event": "onFirstVisit",
+      "description": "Show harbormaster introduction on first Harbor visit",
+      "actions": [
+        {
+          "type": "showDialogTree",
+          "dialogId": "harbormaster-intro"
+        }
+      ]
+    },
+    {
+      "id": "academy-first-visit",
+      "areaType": "academy",
+      "event": "onFirstVisit",
+      "description": "Show headmaster introduction on first Academy visit",
+      "actions": [
+        {
+          "type": "showDialogTree",
+          "dialogId": "headmaster-intro"
+        },
+        {
+          "type": "completeObjective",
+          "objectiveId": "visit-academy"
+        }
+      ]
+    }
+  ]
+}
