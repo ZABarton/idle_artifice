@@ -12,6 +12,8 @@ const groupedNodes = computed(() => {
     tutorials: [],
     dialogTriggers: [],
     areaTriggers: [],
+    gameEvents: [],
+    features: [],
   }
 
   for (const node of store.filteredNodes) {
@@ -30,6 +32,12 @@ const groupedNodes = computed(() => {
         break
       case 'area-trigger':
         groups.areaTriggers.push(node)
+        break
+      case 'game-event':
+        groups.gameEvents.push(node)
+        break
+      case 'feature':
+        groups.features.push(node)
         break
     }
   }
@@ -53,6 +61,10 @@ function getNodeIcon(type: string): string {
       return '⚡'
     case 'area-trigger':
       return '📍'
+    case 'game-event':
+      return '🎮'
+    case 'feature':
+      return '🏛️'
     default:
       return '📄'
   }
@@ -170,6 +182,48 @@ function getNodeIcon(type: string): string {
         <ul class="node-list">
           <li
             v-for="node in groupedNodes.areaTriggers"
+            :key="node.id"
+            class="node-item"
+            :class="{ selected: store.selectedNodeId === node.id }"
+            @click="selectNode(node.id)"
+          >
+            <span class="node-icon">{{ getNodeIcon(node.type) }}</span>
+            <span class="node-label">{{ node.label }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Game Events -->
+      <div v-if="groupedNodes.gameEvents.length > 0" class="node-group">
+        <div class="group-header">
+          <span class="group-icon">🎮</span>
+          <span class="group-title">Game Events</span>
+          <span class="group-count">{{ groupedNodes.gameEvents.length }}</span>
+        </div>
+        <ul class="node-list">
+          <li
+            v-for="node in groupedNodes.gameEvents"
+            :key="node.id"
+            class="node-item"
+            :class="{ selected: store.selectedNodeId === node.id }"
+            @click="selectNode(node.id)"
+          >
+            <span class="node-icon">{{ getNodeIcon(node.type) }}</span>
+            <span class="node-label">{{ node.label }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Features -->
+      <div v-if="groupedNodes.features.length > 0" class="node-group">
+        <div class="group-header">
+          <span class="group-icon">🏛️</span>
+          <span class="group-title">Features</span>
+          <span class="group-count">{{ groupedNodes.features.length }}</span>
+        </div>
+        <ul class="node-list">
+          <li
+            v-for="node in groupedNodes.features"
             :key="node.id"
             class="node-item"
             :class="{ selected: store.selectedNodeId === node.id }"

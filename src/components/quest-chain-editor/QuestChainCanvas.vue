@@ -4,11 +4,14 @@ import { VueFlow, useVueFlow, Panel } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
+import dagre from 'dagre'
 import { useQuestChainEditorStore } from '@/stores/questChainEditor'
 import ObjectiveNode from './nodes/ObjectiveNode.vue'
 import DialogTreeNode from './nodes/DialogTreeNode.vue'
 import TutorialNode from './nodes/TutorialNode.vue'
 import TriggerNode from './nodes/TriggerNode.vue'
+import GameEventNode from './nodes/GameEventNode.vue'
+import FeatureNode from './nodes/FeatureNode.vue'
 import type { Node, Edge } from '@vue-flow/core'
 import type {
   ObjectiveNodeData,
@@ -16,6 +19,8 @@ import type {
   TutorialNodeData,
   DialogTriggerNodeData,
   AreaTriggerNodeData,
+  GameEventNodeData,
+  FeatureNodeData,
 } from '@/types/questChainEditor'
 
 const store = useQuestChainEditorStore()
@@ -100,6 +105,28 @@ const nodes = computed<Node[]>(() => {
           hasWarning: issues.hasWarning,
         }
         break
+      case 'game-event':
+        nodeType = 'gameEventNode'
+        nodeData = {
+          nodeId: node.id,
+          label: node.label,
+          nodeData: node.data as GameEventNodeData,
+          isSelected: store.selectedNodeId === node.id,
+          hasError: issues.hasError,
+          hasWarning: issues.hasWarning,
+        }
+        break
+      case 'feature':
+        nodeType = 'featureNode'
+        nodeData = {
+          nodeId: node.id,
+          label: node.label,
+          nodeData: node.data as FeatureNodeData,
+          isSelected: store.selectedNodeId === node.id,
+          hasError: issues.hasError,
+          hasWarning: issues.hasWarning,
+        }
+        break
     }
 
     result.push({
@@ -145,74 +172,52 @@ function handleNodeDragStop(event: { node: Node }) {
   store.saveNodePosition(event.node.id, event.node.position.x, event.node.position.y)
 }
 
-// Auto-layout nodes in a hierarchical structure
+// Auto-layout nodes using dagre for hierarchical graph layout
 function performAutoLayout() {
   if (!store.graph) return
 
-  const incomingEdges = new Map<string, string[]>()
-  const outgoingEdges = new Map<string, string[]>()
-
-  // Build edge maps
-  for (const edge of store.filteredEdges) {
-    if (!incomingEdges.has(edge.target)) incomingEdges.set(edge.target, [])
-    if (!outgoingEdges.has(edge.source)) outgoingEdges.set(edge.source, [])
-    incomingEdges.get(edge.target)!.push(edge.source)
-    outgoingEdges.get(edge.source)!.push(edge.target)
-  }
-
-  // Find root nodes (no incoming edges)
-  const roots = store.filteredNodes.filter(
-    (n) => !incomingEdges.has(n.id) || incomingEdges.get(n.id)!.length === 0
-  )
-
-  // Assign levels using BFS
-  const levels = new Map<string, number>()
-  const queue = roots.map((r) => ({ id: r.id, level: 0 }))
-  const visited = new Set<string>()
-
-  while (queue.length > 0) {
-    const { id, level } = queue.shift()!
-    if (visited.has(id)) continue
-    visited.add(id)
-    levels.set(id, level)
-
-    const children = outgoingEdges.get(id) || []
-    for (const child of children) {
-      if (!visited.has(child)) {
-        queue.push({ id: child, level: level + 1 })
-      }
-    }
-  }
-
-  // Handle orphaned nodes
-  for (const node of store.filteredNodes) {
-    if (!levels.has(node.id)) {
-      levels.set(node.id, 0)
-    }
-  }
-
-  // Group nodes by level
-  const levelGroups = new Map<number, string[]>()
-  for (const [nodeId, level] of levels) {
-    if (!levelGroups.has(level)) levelGroups.set(level, [])
-    levelGroups.get(level)!.push(nodeId)
-  }
-
-  // Position nodes
   const nodeWidth = 220
-  const nodeHeight = 120
-  const levelGap = 150
-  const nodeGap = 30
+  const nodeHeight = 100
 
-  for (const [level, nodeIds] of levelGroups) {
-    const y = level * (nodeHeight + levelGap)
-    const totalWidth = nodeIds.length * nodeWidth + (nodeIds.length - 1) * nodeGap
-    const startX = -totalWidth / 2
+  // Create a new directed graph
+  const g = new dagre.graphlib.Graph()
 
-    nodeIds.forEach((nodeId, index) => {
-      const x = startX + index * (nodeWidth + nodeGap)
+  // Set graph options for top-to-bottom layout
+  g.setGraph({
+    rankdir: 'TB', // Top to bottom
+    nodesep: 50, // Horizontal spacing between nodes
+    ranksep: 120, // Vertical spacing between ranks
+    marginx: 50,
+    marginy: 50,
+  })
+
+  // Default edge label (required by dagre)
+  g.setDefaultEdgeLabel(() => ({}))
+
+  // Add nodes to the graph
+  for (const node of store.filteredNodes) {
+    g.setNode(node.id, { width: nodeWidth, height: nodeHeight })
+  }
+
+  // Add edges to the graph (exclude self-loops for layout purposes)
+  for (const edge of store.filteredEdges) {
+    if (edge.source !== edge.target) {
+      g.setEdge(edge.source, edge.target)
+    }
+  }
+
+  // Run the dagre layout algorithm
+  dagre.layout(g)
+
+  // Apply the calculated positions to the store
+  for (const nodeId of g.nodes()) {
+    const nodeData = g.node(nodeId)
+    if (nodeData) {
+      // Dagre returns center positions, adjust to top-left for Vue Flow
+      const x = nodeData.x - nodeWidth / 2
+      const y = nodeData.y - nodeHeight / 2
       store.saveNodePosition(nodeId, x, y)
-    })
+    }
   }
 
   setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 100)
@@ -246,6 +251,8 @@ onMounted(() => {
         dialogTreeNode: DialogTreeNode as any,
         tutorialNode: TutorialNode as any,
         triggerNode: TriggerNode as any,
+        gameEventNode: GameEventNode as any,
+        featureNode: FeatureNode as any,
       }"
       fit-view-on-init
       :default-viewport="{ zoom: 0.7 }"

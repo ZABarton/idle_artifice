@@ -16,6 +16,8 @@ import type {
   TutorialNodeData,
   DialogTriggerNodeData,
   AreaTriggerNodeData,
+  GameEventNodeData,
+  FeatureNodeData,
 } from '@/types/questChainEditor'
 import type { DialogTree } from '@/types/dialogs'
 
@@ -23,6 +25,19 @@ import type { DialogTree } from '@/types/dialogs'
 import objectivesConfig from '@/config/objectives.json'
 import dialogTriggersConfig from '@/config/dialog-triggers.json'
 import areaTriggersConfig from '@/config/area-triggers.json'
+
+// Import area map configs for features
+import { academyConfig } from '@/config/area-maps/academy'
+import { harborConfig } from '@/config/area-maps/harbor'
+import type { AreaMapConfig } from '@/types/areaMapConfig'
+
+// All area configs to parse for features
+const areaConfigs: AreaMapConfig[] = [academyConfig, harborConfig]
+
+// Mapping of feature types to game events they can trigger
+const featureToGameEvent: Record<string, string> = {
+  foundry: 'craft-complete',
+}
 
 export function useQuestChainGraph() {
   const isLoading = ref(false)
@@ -305,6 +320,72 @@ export function useQuestChainGraph() {
         }
       }
 
+      // Build game event nodes from dialog trigger conditions
+      // Track created game events to avoid duplicates
+      const createdGameEvents = new Set<string>()
+
+      for (const trigger of dialogTriggersConfig.triggers) {
+        for (const condition of trigger.conditions) {
+          // Skip conditions that reference existing node types
+          if (
+            condition.type === 'objective-complete' ||
+            condition.type === 'dialog-complete'
+          ) {
+            continue
+          }
+
+          // Create a unique ID for this game event
+          const eventId = condition.value !== undefined
+            ? `${condition.type}:${condition.value}`
+            : condition.type
+          const gameEventNodeId = `game-event:${eventId}`
+
+          // Create game event node if it doesn't exist yet
+          if (!createdGameEvents.has(gameEventNodeId)) {
+            createdGameEvents.add(gameEventNodeId)
+
+            const operatorLabel = condition.operator === 'eq' ? '=' :
+                                  condition.operator === 'gte' ? '>=' :
+                                  condition.operator === 'lte' ? '<=' :
+                                  condition.operator === 'gt' ? '>' :
+                                  condition.operator === 'lt' ? '<' : ''
+
+            const valueLabel = condition.value !== undefined
+              ? ` ${operatorLabel} ${condition.value}`
+              : ''
+
+            const nodeData: GameEventNodeData = {
+              nodeType: 'game-event',
+              eventType: condition.type,
+              eventId: eventId,
+              description: `Game event: ${condition.type}${valueLabel}`,
+              value: condition.value,
+              operator: condition.operator,
+            }
+
+            nodes.push({
+              id: gameEventNodeId,
+              type: 'game-event',
+              label: `${condition.type}${valueLabel}`,
+              description: nodeData.description,
+              data: nodeData,
+            })
+          }
+
+          // Create edge from game event to dialog trigger
+          edges.push({
+            id: `edge:${gameEventNodeId}:triggers:dialog-trigger:${trigger.id}`,
+            source: gameEventNodeId,
+            target: `dialog-trigger:${trigger.id}`,
+            type: 'triggers',
+            label: 'triggers',
+            data: {
+              conditionType: condition.type,
+            },
+          })
+        }
+      }
+
       // Build nodes from area triggers
       for (const trigger of areaTriggersConfig.triggers) {
         const nodeData: AreaTriggerNodeData = {
@@ -353,6 +434,48 @@ export function useQuestChainGraph() {
               type: 'shows',
               label: 'shows',
             })
+          }
+        }
+      }
+
+      // Build nodes from area map features
+      for (const areaConfig of areaConfigs) {
+        for (const feature of areaConfig.features) {
+          const nodeData: FeatureNodeData = {
+            nodeType: 'feature',
+            featureId: feature.id,
+            featureType: feature.type,
+            name: feature.name,
+            areaType: areaConfig.areaType,
+            icon: feature.icon,
+            interactionType: feature.interactionType,
+          }
+
+          nodes.push({
+            id: `feature:${feature.id}`,
+            type: 'feature',
+            label: feature.name,
+            description: feature.description || `${feature.name} in ${areaConfig.areaType}`,
+            sourceFile: `src/config/area-maps/${areaConfig.areaType}.ts`,
+            data: nodeData,
+          })
+
+          // Create edge from feature to game event if applicable
+          const gameEventType = featureToGameEvent[feature.type]
+          if (gameEventType) {
+            // Find matching game event nodes and create edges
+            for (const gameEventNodeId of createdGameEvents) {
+              const eventType = gameEventNodeId.replace('game-event:', '').split(':')[0]
+              if (eventType === gameEventType) {
+                edges.push({
+                  id: `edge:feature:${feature.id}:triggers:${gameEventNodeId}`,
+                  source: `feature:${feature.id}`,
+                  target: gameEventNodeId,
+                  type: 'triggers',
+                  label: 'generates',
+                })
+              }
+            }
           }
         }
       }

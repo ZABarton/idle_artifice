@@ -12,6 +12,8 @@ export type QuestChainNodeType =
   | 'tutorial' // From tutorials/*.json
   | 'dialog-trigger' // From dialog-triggers.json
   | 'area-trigger' // From area-triggers.json
+  | 'game-event' // Game events like craft-complete, resource thresholds, etc.
+  | 'feature' // Features from area maps (Foundry, Quartermaster, etc.)
 
 // Edge types describing relationships between nodes
 export type QuestChainEdgeType =
@@ -29,7 +31,7 @@ export interface QuestChainNode {
   label: string
   description?: string
   sourceFile?: string // File path this node came from
-  data: ObjectiveNodeData | DialogTreeNodeData | TutorialNodeData | DialogTriggerNodeData | AreaTriggerNodeData
+  data: ObjectiveNodeData | DialogTreeNodeData | TutorialNodeData | DialogTriggerNodeData | AreaTriggerNodeData | GameEventNodeData | FeatureNodeData
 }
 
 // Objective node data (from objectives.json)
@@ -123,6 +125,27 @@ export interface AreaTriggerNodeData {
   }>
 }
 
+// Game event node data (for events like craft-complete, resource thresholds)
+export interface GameEventNodeData {
+  nodeType: 'game-event'
+  eventType: string // e.g., 'craft-complete', 'resource-threshold'
+  eventId: string
+  description?: string
+  value?: number
+  operator?: string
+}
+
+// Feature node data (for features like Foundry, Quartermaster, etc.)
+export interface FeatureNodeData {
+  nodeType: 'feature'
+  featureId: string
+  featureType: string
+  name: string
+  areaType: string
+  icon?: string
+  interactionType?: string
+}
+
 // Edge in the quest chain graph
 export interface QuestChainEdge {
   id: string
@@ -152,6 +175,8 @@ export interface QuestChainFilters {
   showTutorials: boolean
   showDialogTriggers: boolean
   showAreaTriggers: boolean
+  showGameEvents: boolean
+  showFeatures: boolean
   searchQuery: string
   categoryFilter: 'all' | 'main' | 'secondary'
 }

@@ -35,6 +35,8 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
     showTutorials: true,
     showDialogTriggers: true,
     showAreaTriggers: true,
+    showGameEvents: true,
+    showFeatures: true,
     searchQuery: '',
     categoryFilter: 'all',
   })
@@ -55,6 +57,8 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
       if (node.type === 'tutorial' && !filters.value.showTutorials) return false
       if (node.type === 'dialog-trigger' && !filters.value.showDialogTriggers) return false
       if (node.type === 'area-trigger' && !filters.value.showAreaTriggers) return false
+      if (node.type === 'game-event' && !filters.value.showGameEvents) return false
+      if (node.type === 'feature' && !filters.value.showFeatures) return false
 
       // Category filter (only applies to objectives)
       if (filters.value.categoryFilter !== 'all' && node.type === 'objective') {
@@ -110,6 +114,8 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
         tutorials: 0,
         dialogTriggers: 0,
         areaTriggers: 0,
+        gameEvents: 0,
+        features: 0,
         total: 0,
       }
     }
@@ -120,6 +126,8 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
       tutorials: graph.value.nodes.filter((n) => n.type === 'tutorial').length,
       dialogTriggers: graph.value.nodes.filter((n) => n.type === 'dialog-trigger').length,
       areaTriggers: graph.value.nodes.filter((n) => n.type === 'area-trigger').length,
+      gameEvents: graph.value.nodes.filter((n) => n.type === 'game-event').length,
+      features: graph.value.nodes.filter((n) => n.type === 'feature').length,
       total: graph.value.nodes.length,
     }
   })
@@ -205,6 +213,8 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
       showTutorials: true,
       showDialogTriggers: true,
       showAreaTriggers: true,
+      showGameEvents: true,
+      showFeatures: true,
       searchQuery: '',
       categoryFilter: 'all',
     }

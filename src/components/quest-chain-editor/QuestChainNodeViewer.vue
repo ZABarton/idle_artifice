@@ -8,6 +8,8 @@ import type {
   TutorialNodeData,
   DialogTriggerNodeData,
   AreaTriggerNodeData,
+  GameEventNodeData,
+  FeatureNodeData,
 } from '@/types/questChainEditor'
 
 const store = useQuestChainEditorStore()
@@ -25,12 +27,16 @@ const isDialogTree = computed(() => node.value?.type === 'dialog-tree')
 const isTutorial = computed(() => node.value?.type === 'tutorial')
 const isDialogTrigger = computed(() => node.value?.type === 'dialog-trigger')
 const isAreaTrigger = computed(() => node.value?.type === 'area-trigger')
+const isGameEvent = computed(() => node.value?.type === 'game-event')
+const isFeature = computed(() => node.value?.type === 'feature')
 
 const objectiveData = computed(() => node.value?.data as ObjectiveNodeData | undefined)
 const dialogTreeData = computed(() => node.value?.data as DialogTreeNodeData | undefined)
 const tutorialData = computed(() => node.value?.data as TutorialNodeData | undefined)
 const dialogTriggerData = computed(() => node.value?.data as DialogTriggerNodeData | undefined)
 const areaTriggerData = computed(() => node.value?.data as AreaTriggerNodeData | undefined)
+const gameEventData = computed(() => node.value?.data as GameEventNodeData | undefined)
+const featureData = computed(() => node.value?.data as FeatureNodeData | undefined)
 
 // Get connected nodes
 const incomingEdges = computed(() => {
@@ -295,6 +301,72 @@ function getNodeLabel(nodeId: string): string {
         </div>
       </template>
 
+      <!-- Game Event Details -->
+      <template v-if="isGameEvent && gameEventData">
+        <div class="detail-section">
+          <h4>Game Event Details</h4>
+          <div class="detail-row">
+            <span class="detail-label">Event Type:</span>
+            <span class="detail-value mono">{{ gameEventData.eventType }}</span>
+          </div>
+          <div v-if="gameEventData.value !== undefined" class="detail-row">
+            <span class="detail-label">Value:</span>
+            <span class="detail-value">
+              {{ gameEventData.operator || '=' }} {{ gameEventData.value }}
+            </span>
+          </div>
+        </div>
+
+        <div v-if="gameEventData.description" class="detail-section">
+          <h4>Description</h4>
+          <p class="description-text">{{ gameEventData.description }}</p>
+        </div>
+
+        <div class="detail-section">
+          <h4>About Game Events</h4>
+          <p class="description-text hint-text">
+            Game events are triggered by player actions in the game, such as completing
+            a craft or reaching a resource threshold. They connect to dialog triggers
+            to show contextual content.
+          </p>
+        </div>
+      </template>
+
+      <!-- Feature Details -->
+      <template v-if="isFeature && featureData">
+        <div class="detail-section">
+          <h4>Feature Details</h4>
+          <div class="detail-row">
+            <span class="detail-label">ID:</span>
+            <span class="detail-value mono">{{ featureData.featureId }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Name:</span>
+            <span class="detail-value">{{ featureData.name }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Type:</span>
+            <span class="detail-value">{{ featureData.featureType }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Area:</span>
+            <span class="detail-value">{{ featureData.areaType }}</span>
+          </div>
+          <div v-if="featureData.interactionType" class="detail-row">
+            <span class="detail-label">Interaction:</span>
+            <span class="detail-value">{{ featureData.interactionType }}</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>About Features</h4>
+          <p class="description-text hint-text">
+            Features are interactive elements within area maps (like the Foundry or
+            Quartermaster). They can trigger game events when players interact with them.
+          </p>
+        </div>
+      </template>
+
       <!-- Connections -->
       <div v-if="incomingEdges.length > 0 || outgoingEdges.length > 0" class="detail-section">
         <h4>Connections</h4>
@@ -393,6 +465,16 @@ function getNodeLabel(nodeId: string): string {
 .node-type-badge.area-trigger {
   background-color: #e1f5fe;
   color: #0288d1;
+}
+
+.node-type-badge.game-event {
+  background-color: #fff8e1;
+  color: #ff8f00;
+}
+
+.node-type-badge.feature {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
 }
 
 .node-title {
@@ -514,6 +596,12 @@ function getNodeLabel(nodeId: string): string {
   font-size: 0.9rem;
   color: #333;
   line-height: 1.5;
+}
+
+.description-text.hint-text {
+  font-size: 0.8rem;
+  color: #666;
+  font-style: italic;
 }
 
 .subtask-list,

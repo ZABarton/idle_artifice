@@ -3,7 +3,7 @@ import { useQuestChainEditorStore } from '@/stores/questChainEditor'
 
 const store = useQuestChainEditorStore()
 
-function toggleFilter(filterType: 'objectives' | 'dialogTrees' | 'tutorials' | 'dialogTriggers' | 'areaTriggers') {
+function toggleFilter(filterType: 'objectives' | 'dialogTrees' | 'tutorials' | 'dialogTriggers' | 'areaTriggers' | 'gameEvents' | 'features') {
   const filterKey = `show${filterType.charAt(0).toUpperCase() + filterType.slice(1)}` as keyof typeof store.filters
   store.updateFilters({ [filterKey]: !store.filters[filterKey] })
 }
@@ -62,6 +62,26 @@ function toggleFilter(filterType: 'objectives' | 'dialogTrees' | 'tutorials' | '
         <span class="filter-icon">📍</span>
         <span class="filter-text">Area Triggers</span>
         <span class="filter-count">{{ store.nodeCounts.areaTriggers }}</span>
+      </button>
+
+      <button
+        class="filter-btn"
+        :class="{ active: store.filters.showGameEvents }"
+        @click="toggleFilter('gameEvents')"
+      >
+        <span class="filter-icon">🎮</span>
+        <span class="filter-text">Game Events</span>
+        <span class="filter-count">{{ store.nodeCounts.gameEvents }}</span>
+      </button>
+
+      <button
+        class="filter-btn"
+        :class="{ active: store.filters.showFeatures }"
+        @click="toggleFilter('features')"
+      >
+        <span class="filter-icon">🏛️</span>
+        <span class="filter-text">Features</span>
+        <span class="filter-count">{{ store.nodeCounts.features }}</span>
       </button>
     </div>
 
