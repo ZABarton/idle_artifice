@@ -6,13 +6,14 @@
  */
 
 import { markRaw } from 'vue'
-import type { AreaMapConfig } from '@/types/areaMapConfig'
+import type { AreaMapConfig, AreaTrigger } from '@/types/areaMapConfig'
 import FoundryFeature from '@/components/features/FoundryFeature.vue'
 import FoundryScreen from '@/components/screens/FoundryScreen.vue'
 import QuartermasterFeature from '@/components/features/QuartermasterFeature.vue'
 import TavernFeature from '@/components/features/TavernFeature.vue'
 import StatusText from '@/components/displays/StatusText.vue'
 import NavigationButton from '@/components/displays/NavigationButton.vue'
+import areaTriggers from '@/config/area-triggers.json'
 
 export const academyConfig: AreaMapConfig = {
   areaType: 'academy',
@@ -115,24 +116,8 @@ export const academyConfig: AreaMapConfig = {
     },
   ],
 
-  // Event triggers for the Academy
-  triggers: [
-    // First visit to Academy: show intro dialog and complete objective
-    {
-      event: 'onFirstVisit',
-      description: 'Show headmaster introduction on first Academy visit',
-      actions: [
-        {
-          type: 'showDialogTree',
-          dialogId: 'headmaster-intro',
-        },
-        {
-          type: 'completeObjective',
-          objectiveId: 'visit-academy',
-        },
-      ],
-    },
-    // Note: Foundry, Quartermaster, and Tavern dialogs are now triggered
-    // by clicking on NPC portraits/indicators, not by feature interaction
-  ],
+  // Event triggers for the Academy - imported from area-triggers.json
+  triggers: areaTriggers.triggers.filter(
+    (t) => t.areaType === 'academy'
+  ) as AreaTrigger[],
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, onMounted } from 'vue'
+import { computed, watch, onMounted, ref } from 'vue'
 import { VueFlow, useVueFlow, Panel } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { Controls } from '@vue-flow/controls'
@@ -12,7 +12,7 @@ import TutorialNode from './nodes/TutorialNode.vue'
 import TriggerNode from './nodes/TriggerNode.vue'
 import GameEventNode from './nodes/GameEventNode.vue'
 import FeatureNode from './nodes/FeatureNode.vue'
-import type { Node, Edge } from '@vue-flow/core'
+import { MarkerType, type Node, type Edge } from '@vue-flow/core'
 import type {
   ObjectiveNodeData,
   DialogTreeNodeData,
@@ -24,7 +24,22 @@ import type {
 } from '@/types/questChainEditor'
 
 const store = useQuestChainEditorStore()
-const { onNodeClick, fitView } = useVueFlow()
+const { onNodeClick, fitView, setCenter } = useVueFlow()
+
+// Track if the selection came from a canvas click (to avoid double-zooming)
+const selectionFromCanvas = ref(false)
+
+// Zoom to center on a specific node
+function zoomToNode(nodeId: string) {
+  // Get position from store (where we track all node positions)
+  const position = store.nodePositions.get(nodeId)
+  if (position) {
+    // Center on node position (add half node size to center on middle)
+    const x = position.x + 110 // half of nodeWidth (220)
+    const y = position.y + 50 // half of nodeHeight (100)
+    setCenter(x, y, { zoom: 1, duration: 300 })
+  }
+}
 
 // Edge colors by type
 const edgeColors: Record<string, string> = {
@@ -156,16 +171,32 @@ const edges = computed<Edge[]>(() => {
       strokeWidth: 2,
     },
     markerEnd: {
-      type: 'arrowclosed',
+      type: MarkerType.ArrowClosed,
       color: edgeColors[edge.type] || '#888',
     },
   }))
 })
 
-// Handle node click
+// Handle node click on canvas
 onNodeClick((event) => {
+  selectionFromCanvas.value = true
   store.selectNode(event.node.id)
 })
+
+// Zoom to node when selected from sidebar or connections (not from canvas click)
+watch(
+  () => store.selectedNodeId,
+  (newNodeId) => {
+    if (newNodeId && !selectionFromCanvas.value) {
+      // Small delay to ensure the node is rendered
+      setTimeout(() => {
+        zoomToNode(newNodeId)
+      }, 50)
+    }
+    // Reset the flag after processing
+    selectionFromCanvas.value = false
+  }
+)
 
 // Handle node drag
 function handleNodeDragStop(event: { node: Node }) {

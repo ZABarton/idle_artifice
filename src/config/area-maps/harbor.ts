@@ -6,9 +6,10 @@
  */
 
 import { markRaw } from 'vue'
-import type { AreaMapConfig } from '@/types/areaMapConfig'
+import type { AreaMapConfig, AreaTrigger } from '@/types/areaMapConfig'
 import WharfFeature from '@/components/features/WharfFeature.vue'
 import StatusText from '@/components/displays/StatusText.vue'
+import areaTriggers from '@/config/area-triggers.json'
 
 export const harborConfig: AreaMapConfig = {
   areaType: 'harbor',
@@ -54,18 +55,8 @@ export const harborConfig: AreaMapConfig = {
     },
   ],
 
-  // Event triggers for the Harbor
-  triggers: [
-    // First visit to Harbor: show harbormaster intro dialog
-    {
-      event: 'onFirstVisit',
-      description: 'Show harbormaster introduction on first Harbor visit',
-      actions: [
-        {
-          type: 'showDialogTree',
-          dialogId: 'harbormaster-intro',
-        },
-      ],
-    },
-  ],
+  // Event triggers for the Harbor - imported from area-triggers.json
+  triggers: areaTriggers.triggers.filter(
+    (t) => t.areaType === 'harbor'
+  ) as AreaTrigger[],
 }
