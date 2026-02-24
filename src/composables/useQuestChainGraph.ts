@@ -21,10 +21,36 @@ import type {
 } from '@/types/questChainEditor'
 import type { DialogTree } from '@/types/dialogs'
 
-// Import config files
-import objectivesConfig from '@/config/objectives.json'
+// Import config files (static imports for non-editable configs)
+// Note: objectivesConfig is fetched dynamically to support editor saves
 import dialogTriggersConfig from '@/config/dialog-triggers.json'
 import areaTriggersConfig from '@/config/area-triggers.json'
+
+// Type for objectives config
+interface ObjectivesConfig {
+  objectives: Array<{
+    id: string
+    title: string
+    description: string
+    status: string
+    category: string
+    order: number
+    targetLocation?: string
+    currentProgress?: number
+    maxProgress?: number
+    discoveryConditions?: Array<{
+      type: string
+      id?: string
+      description?: string
+    }>
+    subtasks?: Array<{
+      id: string
+      description: string
+      completed: boolean
+      featureId?: string
+    }>
+  }>
+}
 
 // Import area map configs for features
 import { academyConfig } from '@/config/area-maps/academy'
@@ -89,6 +115,18 @@ export function useQuestChainGraph() {
   }
 
   /**
+   * Fetch objectives dynamically (bypasses module cache for fresh data after saves)
+   */
+  async function loadObjectives(): Promise<ObjectivesConfig> {
+    // Add timestamp to bypass browser cache
+    const response = await fetch(`/src/config/objectives.json?t=${Date.now()}`)
+    if (!response.ok) {
+      throw new Error(`Failed to load objectives: ${response.statusText}`)
+    }
+    return response.json()
+  }
+
+  /**
    * Build the complete quest chain graph
    */
   async function buildGraph(): Promise<QuestChainGraph> {
@@ -96,8 +134,12 @@ export function useQuestChainGraph() {
     error.value = null
 
     try {
-      // Load all content
-      await Promise.all([loadDialogTrees(), loadTutorials()])
+      // Load all content (objectives fetched dynamically to get fresh data after saves)
+      const [objectivesConfig] = await Promise.all([
+        loadObjectives(),
+        loadDialogTrees(),
+        loadTutorials(),
+      ])
 
       const nodes: QuestChainNode[] = []
       const edges: QuestChainEdge[] = []

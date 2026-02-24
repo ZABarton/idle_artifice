@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuestChainEditorStore } from '@/stores/questChainEditor'
+import ObjectiveEditForm from './forms/ObjectiveEditForm.vue'
 import type {
   ObjectiveNodeData,
   DialogTreeNodeData,
@@ -14,6 +15,11 @@ import type {
 
 const store = useQuestChainEditorStore()
 const router = useRouter()
+
+// Check if we should show edit mode for current node
+const showObjectiveEditForm = computed(() => {
+  return store.isEditMode && store.selectedNode?.type === 'objective'
+})
 
 const node = computed(() => store.selectedNode)
 const nodeIssues = computed(() => {
@@ -64,6 +70,10 @@ function getNodeLabel(nodeId: string): string {
   const targetNode = store.graph?.nodes.find((n) => n.id === nodeId)
   return targetNode?.label || nodeId
 }
+
+function enterEditMode() {
+  store.setEditMode(true)
+}
 </script>
 
 <template>
@@ -95,58 +105,67 @@ function getNodeLabel(nodeId: string): string {
 
       <!-- Objective Details -->
       <template v-if="isObjective && objectiveData">
-        <div class="detail-section">
-          <h4>Objective Details</h4>
-          <div class="detail-row">
-            <span class="detail-label">ID:</span>
-            <span class="detail-value mono">{{ objectiveData.objectiveId }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Status:</span>
-            <span class="detail-value status-badge" :class="objectiveData.status">
-              {{ objectiveData.status }}
-            </span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Category:</span>
-            <span class="detail-value">{{ objectiveData.category }}</span>
-          </div>
-          <div v-if="objectiveData.targetLocation" class="detail-row">
-            <span class="detail-label">Target:</span>
-            <span class="detail-value mono">{{ objectiveData.targetLocation }}</span>
-          </div>
-          <div v-if="objectiveData.maxProgress" class="detail-row">
-            <span class="detail-label">Progress:</span>
-            <span class="detail-value">
-              {{ objectiveData.currentProgress || 0 }} / {{ objectiveData.maxProgress }}
-            </span>
-          </div>
-        </div>
+        <!-- Edit Mode -->
+        <ObjectiveEditForm v-if="showObjectiveEditForm" :objective-data="objectiveData" />
 
-        <div class="detail-section">
-          <h4>Description</h4>
-          <p class="description-text">{{ objectiveData.description }}</p>
-        </div>
+        <!-- Read-Only Mode -->
+        <template v-else>
+          <div class="detail-section">
+            <div class="section-header">
+              <h4>Objective Details</h4>
+              <button class="btn-edit" @click="enterEditMode">Edit</button>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">ID:</span>
+              <span class="detail-value mono">{{ objectiveData.objectiveId }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status:</span>
+              <span class="detail-value status-badge" :class="objectiveData.status">
+                {{ objectiveData.status }}
+              </span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Category:</span>
+              <span class="detail-value">{{ objectiveData.category }}</span>
+            </div>
+            <div v-if="objectiveData.targetLocation" class="detail-row">
+              <span class="detail-label">Target:</span>
+              <span class="detail-value mono">{{ objectiveData.targetLocation }}</span>
+            </div>
+            <div v-if="objectiveData.maxProgress" class="detail-row">
+              <span class="detail-label">Progress:</span>
+              <span class="detail-value">
+                {{ objectiveData.currentProgress || 0 }} / {{ objectiveData.maxProgress }}
+              </span>
+            </div>
+          </div>
 
-        <div v-if="objectiveData.subtasks?.length" class="detail-section">
-          <h4>Subtasks</h4>
-          <ul class="subtask-list">
-            <li v-for="subtask in objectiveData.subtasks" :key="subtask.id">
-              <span class="subtask-status">{{ subtask.completed ? '✓' : '○' }}</span>
-              {{ subtask.description }}
-            </li>
-          </ul>
-        </div>
+          <div class="detail-section">
+            <h4>Description</h4>
+            <p class="description-text">{{ objectiveData.description }}</p>
+          </div>
 
-        <div v-if="objectiveData.discoveryConditions?.length" class="detail-section">
-          <h4>Discovery Conditions</h4>
-          <ul class="condition-list">
-            <li v-for="(cond, index) in objectiveData.discoveryConditions" :key="index">
-              <span class="condition-type">{{ cond.type }}:</span>
-              {{ cond.description || cond.id }}
-            </li>
-          </ul>
-        </div>
+          <div v-if="objectiveData.subtasks?.length" class="detail-section">
+            <h4>Subtasks</h4>
+            <ul class="subtask-list">
+              <li v-for="subtask in objectiveData.subtasks" :key="subtask.id">
+                <span class="subtask-status">{{ subtask.completed ? '✓' : '○' }}</span>
+                {{ subtask.description }}
+              </li>
+            </ul>
+          </div>
+
+          <div v-if="objectiveData.discoveryConditions?.length" class="detail-section">
+            <h4>Discovery Conditions</h4>
+            <ul class="condition-list">
+              <li v-for="(cond, index) in objectiveData.discoveryConditions" :key="index">
+                <span class="condition-type">{{ cond.type }}:</span>
+                {{ cond.description || cond.id }}
+              </li>
+            </ul>
+          </div>
+        </template>
       </template>
 
       <!-- Dialog Tree Details -->
@@ -545,6 +564,33 @@ function getNodeLabel(nodeId: string): string {
   color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.section-header h4 {
+  margin: 0;
+}
+
+.btn-edit {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #1976d2;
+  background-color: #e3f2fd;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-edit:hover {
+  background-color: #bbdefb;
 }
 
 .detail-row {

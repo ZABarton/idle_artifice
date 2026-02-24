@@ -14,8 +14,35 @@ import type {
   QuestChainValidationIssue,
   QuestChainFilters,
   NodePosition,
+  ObjectiveNodeData,
 } from '@/types/questChainEditor'
 import { useQuestChainGraph } from '@/composables/useQuestChainGraph'
+
+/**
+ * Objective data structure for editing (matches objectives.json schema)
+ */
+export interface ObjectiveEditData {
+  id: string
+  title: string
+  description: string
+  status: 'active' | 'hidden' | 'completed'
+  category: 'main' | 'secondary'
+  order: number
+  targetLocation?: string
+  currentProgress?: number
+  maxProgress?: number
+  discoveryConditions?: Array<{
+    type: string
+    id?: string
+    description?: string
+  }>
+  subtasks?: Array<{
+    id: string
+    description: string
+    completed: boolean
+    featureId?: string
+  }>
+}
 
 export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
   // Graph composable
@@ -40,6 +67,11 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
     searchQuery: '',
     categoryFilter: 'all',
   })
+
+  // Editing state
+  const isEditMode = ref(false)
+  const isSaving = ref(false)
+  const pendingObjectiveChanges = ref<Map<string, Partial<ObjectiveEditData>>>(new Map())
 
   // Getters
   const selectedNode = computed(() => {
@@ -104,6 +136,10 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
   const warningCount = computed(() => {
     return validationIssues.value.filter((issue) => issue.type === 'warning').length
   })
+
+  // Editing getters
+  const isDirty = computed(() => pendingObjectiveChanges.value.size > 0)
+  const pendingChangeCount = computed(() => pendingObjectiveChanges.value.size)
 
   // Node type counts
   const nodeCounts = computed(() => {
@@ -218,6 +254,103 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
       searchQuery: '',
       categoryFilter: 'all',
     }
+    isEditMode.value = false
+    pendingObjectiveChanges.value.clear()
+  }
+
+  // ==================== Editing Actions ====================
+
+  /**
+   * Toggle edit mode
+   */
+  function setEditMode(enabled: boolean): void {
+    isEditMode.value = enabled
+  }
+
+  /**
+   * Update an objective with pending changes
+   */
+  function updateObjective(objectiveId: string, changes: Partial<ObjectiveEditData>): void {
+    const existing = pendingObjectiveChanges.value.get(objectiveId) || {}
+    pendingObjectiveChanges.value.set(objectiveId, { ...existing, ...changes })
+
+    // Also update the graph node data for immediate visual feedback
+    if (graph.value) {
+      const node = graph.value.nodes.find((n) => n.id === `objective:${objectiveId}`)
+      if (node && node.data) {
+        const nodeData = node.data as ObjectiveNodeData
+        if (changes.title !== undefined) {
+          nodeData.title = changes.title
+          node.label = changes.title
+        }
+        if (changes.description !== undefined) {
+          nodeData.description = changes.description
+        }
+        if (changes.status !== undefined) {
+          nodeData.status = changes.status
+        }
+        if (changes.category !== undefined) {
+          nodeData.category = changes.category
+        }
+        if (changes.targetLocation !== undefined) {
+          nodeData.targetLocation = changes.targetLocation
+        }
+      }
+    }
+  }
+
+  /**
+   * Get pending changes for an objective
+   */
+  function getPendingChanges(objectiveId: string): Partial<ObjectiveEditData> | undefined {
+    return pendingObjectiveChanges.value.get(objectiveId)
+  }
+
+  /**
+   * Discard all pending changes
+   */
+  function discardChanges(): void {
+    pendingObjectiveChanges.value.clear()
+    // Reload graph to restore original data
+    loadGraph()
+  }
+
+  /**
+   * Save all pending objective changes to the server
+   */
+  async function saveObjectiveChanges(): Promise<boolean> {
+    if (pendingObjectiveChanges.value.size === 0) return true
+
+    isSaving.value = true
+
+    try {
+      const response = await fetch('/api/dev/save-objectives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          changes: Object.fromEntries(pendingObjectiveChanges.value),
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.text()
+        console.error('Failed to save objectives:', error)
+        return false
+      }
+
+      // Clear pending changes after successful save
+      // Note: We don't reload the graph because:
+      // 1. The in-memory graph is already up-to-date (updateObjective updates it)
+      // 2. Vite caches static imports, so loadGraph would get stale data anyway
+      pendingObjectiveChanges.value.clear()
+
+      return true
+    } catch (e) {
+      console.error('Failed to save objectives:', e)
+      return false
+    } finally {
+      isSaving.value = false
+    }
   }
 
   return {
@@ -228,6 +361,9 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
     nodePositions,
     isLoading,
     filters,
+    isEditMode,
+    isSaving,
+    pendingObjectiveChanges,
 
     // Getters
     selectedNode,
@@ -238,6 +374,8 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
     errorCount,
     warningCount,
     nodeCounts,
+    isDirty,
+    pendingChangeCount,
 
     // Actions
     loadGraph,
@@ -248,5 +386,10 @@ export const useQuestChainEditorStore = defineStore('questChainEditor', () => {
     saveNodePosition,
     getNodeIssues,
     resetEditor,
+    setEditMode,
+    updateObjective,
+    getPendingChanges,
+    discardChanges,
+    saveObjectiveChanges,
   }
 })
